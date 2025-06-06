@@ -193,12 +193,14 @@
 
 
     <script>
+        // --- DOM Elements ---
         const splashScreen = document.getElementById('splash-screen');
         const playGameBtn = document.getElementById('playGameBtn');
         const canvas = document.getElementById("gameCanvas");
         const mobileControls = document.getElementById('mobile-controls');
         const ctx = canvas.getContext("2d");
 
+        // --- Game State ---
         let TILE_SIZE = 40;
         let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
         let score = 0;
@@ -206,10 +208,11 @@
         let lives = 3;
         let gameOver = false;
         let gameStarted = false;
-        let newt, vehicles = [], scenery = { trees: [], waitingNewts: [] };
+        let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [] };
         let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
         let gameTime = 0;
         
+        // --- Game Configuration ---
         const carColors = ["#B71C1C", "#1A237E", "#004D40", "#E65100", "#4A148C", "#37474F", "#C51162", "#d4ac0d"];
         const vehicleTemplates = {
             car: { width: 2.8, heightMultiplier: 1.5, speedMultiplier: 1.0, draw: drawCar },
@@ -220,14 +223,16 @@
         };
         const weightedVehicleTypes = ["car", "car", "car", "truck", "kayakCar", "motorcycle", "bicycle", "truck"];
 
+        // --- Setup and Initialization ---
         function setCanvasDimensions() {
             const container = document.getElementById('game-container');
             const { width, height } = container.getBoundingClientRect();
             canvas.width = width;
             canvas.height = height;
             
-            TILE_SIZE = canvas.height / 18;
+            TILE_SIZE = canvas.height / 18; // Adjusted for larger road
             ROAD_CENTER_Y = canvas.height / 2;
+            // A much wider road, approx 4 moves to cross
             ROAD_TOP_Y = ROAD_CENTER_Y - TILE_SIZE * 3;
             ROAD_BOTTOM_Y = ROAD_CENTER_Y + TILE_SIZE * 3;
         }
@@ -238,7 +243,7 @@
                 height: TILE_SIZE * 0.9,
                 x: canvas.width / 2 - (TILE_SIZE * 0.7) / 2,
                 y: canvas.height - TILE_SIZE * 1.5,
-                speed: TILE_SIZE * 1.5,
+                speed: TILE_SIZE * 1.5, // Larger steps to cross the wider road
                 rotation: 0,
                 targetRotation: 0,
                 walkPhase: 0,
@@ -275,9 +280,11 @@
             gameLoop();
         }
         
+        // --- Scenery and Vehicle Creation ---
         function createScenery() {
             scenery.trees = [];
             scenery.waitingNewts = [];
+            scenery.splats = [];
 
             const numWaitingNewts = Math.floor(Math.random() * 5) + 5;
             for(let i = 0; i < numWaitingNewts; i++) {
@@ -307,6 +314,7 @@
         function createVehicles() {
             vehicles = [];
             const lanes = [
+                // Reposition lanes within the wider road
                 { y: ROAD_CENTER_Y - TILE_SIZE * 1.8, speed: -2.8 }, 
                 { y: ROAD_CENTER_Y + TILE_SIZE * 0.3, speed: 2.2 },
             ];
@@ -328,6 +336,7 @@
             });
         }
         
+        // --- Event Listeners ---
         playGameBtn.addEventListener('click', startGame);
         document.addEventListener("keydown", e => handleInput(e.key));
 
@@ -369,6 +378,7 @@
             }, 250);
         });
 
+        // --- Game Logic ---
         function handleSwipe() {
             if (gameOver) return;
             const dx = touchEndX - touchStartX;
@@ -429,9 +439,21 @@
             if (newt.y < ROAD_TOP_Y) {
                 handleSuccess();
             }
+
+            // Filter out old splats
+            const maxSplatLife = 3000; // 3 seconds
+            scenery.splats = scenery.splats.filter(splat => gameTime - splat.creationTime < maxSplatLife);
         }
 
         function handleCollision() {
+            // Add a splat effect at the newt's position
+            scenery.splats.push({
+                x: newt.x + newt.width / 2,
+                y: newt.y + newt.height / 2,
+                creationTime: gameTime,
+                maxRadius: TILE_SIZE * 0.8
+            });
+
             lives--;
             if (lives <= 0) {
                 gameOver = true;
@@ -449,19 +471,24 @@
             resetNewt();
         }
 
+        // --- Drawing Functions ---
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
+
+            scenery.splats.forEach(drawSplat);
             
             vehicles.forEach(v => {
                 const template = vehicleTemplates[v.type];
                 template.draw(v.x, v.y, v.width, v.height, v.color, v.baseSpeed);
             });
             
-            if (gameStarted) {
+            // Only draw the newt if the game is not over
+            if (gameStarted && !gameOver) {
                 drawNewt(newt.x, newt.y, newt.width, newt.height);
-                drawUI();
             }
+            
+            drawUI();
 
             if (gameOver) {
                 drawGameOver();
@@ -513,6 +540,23 @@
             ctx.restore();
         }
 
+        function drawSplat(splat) {
+            const age = gameTime - splat.creationTime;
+            const maxLife = 3000; // Splat visible for 3 seconds
+
+            const opacity = 1 - (age / maxLife);
+
+            ctx.save();
+            ctx.fillStyle = `rgba(107, 142, 35, ${opacity * 0.7})`; // Olive drab color
+            ctx.beginPath();
+            // Draw a few irregular circles to make a splat shape
+            ctx.ellipse(splat.x, splat.y, splat.maxRadius, splat.maxRadius * 0.7, Math.PI / 4, 0, Math.PI * 2);
+            ctx.ellipse(splat.x + 5, splat.y - 5, splat.maxRadius * 0.5, splat.maxRadius * 0.8, Math.PI / 2, 0, Math.PI * 2);
+            ctx.ellipse(splat.x - 5, splat.y + 5, splat.maxRadius * 0.9, splat.maxRadius * 0.6, -Math.PI / 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
         function drawWaitingNewt(x, y, size) {
             ctx.save();
             ctx.fillStyle = "#d95f26"; 
@@ -554,7 +598,7 @@
             ctx.fillText("Alma Bridge Road", canvas.width / 2, ROAD_CENTER_Y);
 
             ctx.strokeStyle = "#ffd700";
-            ctx.lineWidth = 6;
+            ctx.lineWidth = 6; // Thicker lines for wider road
             ctx.setLineDash([TILE_SIZE * 0.8, TILE_SIZE * 0.9]);
             ctx.beginPath();
             ctx.moveTo(0, ROAD_CENTER_Y);
@@ -618,53 +662,44 @@
         function drawTruck(x, y, w, h, color, speed) {
             ctx.save();
             ctx.translate(x, y);
-
             ctx.fillStyle = 'rgba(0,0,0,0.2)';
             ctx.beginPath();
             ctx.ellipse(w / 2, h * 0.9, w / 2 * 1.05, h * 0.15, 0, 0, Math.PI * 2);
             ctx.fill();
-
             const cabWidth = w * 0.3;
             const trailerWidth = w * 0.65;
             const gap = w * 0.05;
-
             const cabX = speed > 0 ? trailerWidth + gap : 0;
             const trailerX = speed > 0 ? 0 : cabWidth + gap;
-
             ctx.fillStyle = "#bdc3c7";
             ctx.roundRect(trailerX, h * 0.1, trailerWidth, h * 0.8, h * 0.05);
             ctx.fill();
             ctx.fillStyle = "#95a5a6";
             ctx.fillRect(trailerX + trailerWidth * 0.05, h * 0.7, trailerWidth * 0.9, h * 0.2);
-
             ctx.fillStyle = color;
             ctx.roundRect(cabX, h * 0.2, cabWidth, h * 0.7, h * 0.1);
             ctx.fill();
-
             ctx.fillStyle = "rgba(230, 245, 255, 0.8)";
             ctx.roundRect(cabX + cabWidth * 0.1, h * 0.3, cabWidth * 0.8, h * 0.3, h * 0.05);
             ctx.fill();
-
             ctx.fillStyle = "#222";
             ctx.beginPath();
             ctx.arc(trailerX + trailerWidth * 0.3, h * 0.9, h * 0.15, 0, Math.PI * 2);
             ctx.arc(trailerX + trailerWidth * 0.7, h * 0.9, h * 0.15, 0, Math.PI * 2);
             ctx.arc(cabX + cabWidth * 0.6, h * 0.9, h * 0.15, 0, Math.PI * 2);
             ctx.fill();
-
             const lightSize = h * 0.1;
-             if (speed > 0) {
-                 ctx.fillStyle = 'rgba(255, 255, 224, 0.9)';
-                 ctx.fillRect(cabX + cabWidth - lightSize, h * 0.3, lightSize, lightSize);
-             } else {
-                 ctx.fillStyle = 'rgba(255, 50, 50, 0.9)';
-                 ctx.fillRect(trailerX, h * 0.3, lightSize, lightSize);
-                 ctx.fillRect(trailerX, h * 0.6, lightSize, lightSize);
-             }
-
+            if (speed > 0) {
+                ctx.fillStyle = 'rgba(255, 255, 224, 0.9)';
+                ctx.fillRect(cabX + cabWidth - lightSize, h * 0.3, lightSize, lightSize);
+            } else {
+                ctx.fillStyle = 'rgba(255, 50, 50, 0.9)';
+                ctx.fillRect(trailerX, h * 0.3, lightSize, lightSize);
+                ctx.fillRect(trailerX, h * 0.6, lightSize, lightSize);
+            }
             ctx.restore();
         }
-        
+
         function drawKayakCar(x, y, w, h, color, speed) {
             drawCar(x, y, w, h, color, speed);
             ctx.fillStyle = "#d95f26";
@@ -696,9 +731,9 @@
         }
 
         function drawBicycle(x, y, w, h, color, speed) {
-             ctx.save();
+            ctx.save();
             ctx.translate(x, y);
-             ctx.strokeStyle = '#555'; ctx.lineWidth = w * 0.08;
+            ctx.strokeStyle = '#555'; ctx.lineWidth = w * 0.08;
             ctx.beginPath();
             ctx.arc(w * 0.15, h * 0.8, h * 0.18, 0, Math.PI * 2);
             ctx.arc(w * 0.85, h * 0.8, h * 0.18, 0, Math.PI * 2);
@@ -716,6 +751,7 @@
             ctx.save();
             ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
             
+            // Score
             ctx.textAlign = "left";
             ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.roundRect(15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
@@ -723,6 +759,7 @@
             ctx.fillStyle = "white";
             ctx.fillText(`Score: ${score}`, 25, 15 + TILE_SIZE * 0.65);
             
+                // Lives
                 ctx.textAlign = "right";
                 ctx.fillStyle = "rgba(0,0,0,0.5)";
                 ctx.roundRect(canvas.width - TILE_SIZE * 3.5 - 15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
@@ -730,6 +767,7 @@
                 ctx.fillStyle = "white";
                 ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
 
+                // High Score
                 ctx.textAlign = "center";
                 ctx.fillStyle = "rgba(0,0,0,0.5)";
                 ctx.roundRect(canvas.width / 2 - TILE_SIZE * 3, 15, TILE_SIZE * 6, TILE_SIZE * 1, 10);
@@ -769,17 +807,20 @@
                 ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (isNewHighScore ? 3.2 : 2.5));
             }
 
+            // --- Game Loop ---
             function gameLoop(timestamp) {
                 gameTime = timestamp;
                 if (gameOver) {
                     draw();
                     return;
                 }
+                
                 update(timestamp);
                 draw();
                 requestAnimationFrame(gameLoop);
             }
 
+            // --- Initial Call ---
             init();
 
         </script>
