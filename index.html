@@ -193,14 +193,12 @@
 
 
     <script>
-        // --- DOM Elements ---
         const splashScreen = document.getElementById('splash-screen');
         const playGameBtn = document.getElementById('playGameBtn');
         const canvas = document.getElementById("gameCanvas");
         const mobileControls = document.getElementById('mobile-controls');
         const ctx = canvas.getContext("2d");
 
-        // --- Game State ---
         let TILE_SIZE = 40;
         let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
         let score = 0;
@@ -212,27 +210,26 @@
         let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
         let gameTime = 0;
         
-        // --- Game Configuration ---
         const carColors = ["#B71C1C", "#1A237E", "#004D40", "#E65100", "#4A148C", "#37474F", "#C51162", "#d4ac0d"];
         const vehicleTemplates = {
-            car: { width: 2.5, speedMultiplier: 1.0, draw: drawCar },
-            kayakCar: { width: 2.5, speedMultiplier: 0.9, draw: drawKayakCar },
-            motorcycle: { width: 1.8, speedMultiplier: 1.5, draw: drawMotorcycle },
-            bicycle: { width: 1.2, speedMultiplier: 0.6, draw: drawBicycle },
+            car: { width: 2.8, heightMultiplier: 1.5, speedMultiplier: 1.0, draw: drawCar },
+            truck: { width: 4.5, heightMultiplier: 2.8, speedMultiplier: 0.8, draw: drawTruck },
+            kayakCar: { width: 2.8, heightMultiplier: 1.5, speedMultiplier: 0.9, draw: drawKayakCar },
+            motorcycle: { width: 2.0, heightMultiplier: 1.5, speedMultiplier: 1.5, draw: drawMotorcycle },
+            bicycle: { width: 1.5, heightMultiplier: 1.5, speedMultiplier: 0.6, draw: drawBicycle },
         };
-        const weightedVehicleTypes = ["car", "car", "car", "kayakCar", "kayakCar", "motorcycle", "bicycle"];
+        const weightedVehicleTypes = ["car", "car", "car", "truck", "kayakCar", "motorcycle", "bicycle", "truck"];
 
-        // --- Setup and Initialization ---
         function setCanvasDimensions() {
             const container = document.getElementById('game-container');
             const { width, height } = container.getBoundingClientRect();
             canvas.width = width;
             canvas.height = height;
             
-            TILE_SIZE = canvas.height / 15;
+            TILE_SIZE = canvas.height / 18;
             ROAD_CENTER_Y = canvas.height / 2;
-            ROAD_TOP_Y = ROAD_CENTER_Y - TILE_SIZE;
-            ROAD_BOTTOM_Y = ROAD_CENTER_Y + TILE_SIZE * 2;
+            ROAD_TOP_Y = ROAD_CENTER_Y - TILE_SIZE * 3;
+            ROAD_BOTTOM_Y = ROAD_CENTER_Y + TILE_SIZE * 3;
         }
 
         function resetNewt() {
@@ -241,7 +238,7 @@
                 height: TILE_SIZE * 0.9,
                 x: canvas.width / 2 - (TILE_SIZE * 0.7) / 2,
                 y: canvas.height - TILE_SIZE * 1.5,
-                speed: TILE_SIZE,
+                speed: TILE_SIZE * 1.5,
                 rotation: 0,
                 targetRotation: 0,
                 walkPhase: 0,
@@ -278,7 +275,6 @@
             gameLoop();
         }
         
-        // --- Scenery and Vehicle Creation ---
         function createScenery() {
             scenery.trees = [];
             scenery.waitingNewts = [];
@@ -311,8 +307,8 @@
         function createVehicles() {
             vehicles = [];
             const lanes = [
-                { y: ROAD_CENTER_Y - TILE_SIZE * 1.1, speed: -2.8 }, 
-                { y: ROAD_CENTER_Y - TILE_SIZE * 0.1, speed: 2.2 },
+                { y: ROAD_CENTER_Y - TILE_SIZE * 1.8, speed: -2.8 }, 
+                { y: ROAD_CENTER_Y + TILE_SIZE * 0.3, speed: 2.2 },
             ];
             lanes.forEach(lane => {
                 const numVehicles = Math.floor(Math.random() * 2) + 4; 
@@ -324,7 +320,7 @@
                         x: Math.random() * canvas.width * 1.5 + i * (canvas.width * 1.8 / numVehicles), 
                         y: lane.y,
                         width: TILE_SIZE * template.width,
-                        height: TILE_SIZE,
+                        height: TILE_SIZE * template.heightMultiplier,
                         baseSpeed: lane.speed * (TILE_SIZE / 40),
                         color: carColors[Math.floor(Math.random() * carColors.length)],
                     });
@@ -332,7 +328,6 @@
             });
         }
         
-        // --- Event Listeners ---
         playGameBtn.addEventListener('click', startGame);
         document.addEventListener("keydown", e => handleInput(e.key));
 
@@ -374,7 +369,6 @@
             }, 250);
         });
 
-        // --- Game Logic ---
         function handleSwipe() {
             if (gameOver) return;
             const dx = touchEndX - touchStartX;
@@ -455,7 +449,6 @@
             resetNewt();
         }
 
-        // --- Drawing Functions ---
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
@@ -554,22 +547,22 @@
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--road-color');
             ctx.fillRect(0, ROAD_TOP_Y, canvas.width, ROAD_BOTTOM_Y - ROAD_TOP_Y);
             
-            ctx.font = `bold ${TILE_SIZE * 0.6}px 'Poppins'`;
+            ctx.font = `bold ${TILE_SIZE * 0.8}px 'Poppins'`;
             ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText("Alma Bridge Road", canvas.width / 2, ROAD_CENTER_Y + TILE_SIZE * 0.5);
+            ctx.fillText("Alma Bridge Road", canvas.width / 2, ROAD_CENTER_Y);
 
             ctx.strokeStyle = "#ffd700";
-            ctx.lineWidth = 4;
-            ctx.setLineDash([TILE_SIZE * 0.5, TILE_SIZE * 0.6]);
+            ctx.lineWidth = 6;
+            ctx.setLineDash([TILE_SIZE * 0.8, TILE_SIZE * 0.9]);
             ctx.beginPath();
             ctx.moveTo(0, ROAD_CENTER_Y);
             ctx.lineTo(canvas.width, ROAD_CENTER_Y);
             ctx.stroke();
             ctx.setLineDash([]);
 
-            const waterY = ROAD_BOTTOM_Y - TILE_SIZE;
+            const waterY = ROAD_BOTTOM_Y;
             const waterHeight = canvas.height - waterY;
             const grad = ctx.createLinearGradient(0, waterY, 0, canvas.height);
             grad.addColorStop(0, "#3b6fa5");
@@ -577,7 +570,7 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, waterY, canvas.width, waterHeight);
             
-            ctx.font = `bold ${TILE_SIZE * 0.6}px 'Poppins'`;
+            ctx.font = `bold ${TILE_SIZE * 0.8}px 'Poppins'`;
             ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -619,6 +612,56 @@
                 ctx.fillRect(0, h * 0.4, lightSize, lightSize);
                 ctx.fillRect(0, h * 0.6, lightSize, lightSize);
             }
+            ctx.restore();
+        }
+
+        function drawTruck(x, y, w, h, color, speed) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(w / 2, h * 0.9, w / 2 * 1.05, h * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            const cabWidth = w * 0.3;
+            const trailerWidth = w * 0.65;
+            const gap = w * 0.05;
+
+            const cabX = speed > 0 ? trailerWidth + gap : 0;
+            const trailerX = speed > 0 ? 0 : cabWidth + gap;
+
+            ctx.fillStyle = "#bdc3c7";
+            ctx.roundRect(trailerX, h * 0.1, trailerWidth, h * 0.8, h * 0.05);
+            ctx.fill();
+            ctx.fillStyle = "#95a5a6";
+            ctx.fillRect(trailerX + trailerWidth * 0.05, h * 0.7, trailerWidth * 0.9, h * 0.2);
+
+            ctx.fillStyle = color;
+            ctx.roundRect(cabX, h * 0.2, cabWidth, h * 0.7, h * 0.1);
+            ctx.fill();
+
+            ctx.fillStyle = "rgba(230, 245, 255, 0.8)";
+            ctx.roundRect(cabX + cabWidth * 0.1, h * 0.3, cabWidth * 0.8, h * 0.3, h * 0.05);
+            ctx.fill();
+
+            ctx.fillStyle = "#222";
+            ctx.beginPath();
+            ctx.arc(trailerX + trailerWidth * 0.3, h * 0.9, h * 0.15, 0, Math.PI * 2);
+            ctx.arc(trailerX + trailerWidth * 0.7, h * 0.9, h * 0.15, 0, Math.PI * 2);
+            ctx.arc(cabX + cabWidth * 0.6, h * 0.9, h * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+
+            const lightSize = h * 0.1;
+             if (speed > 0) {
+                 ctx.fillStyle = 'rgba(255, 255, 224, 0.9)';
+                 ctx.fillRect(cabX + cabWidth - lightSize, h * 0.3, lightSize, lightSize);
+             } else {
+                 ctx.fillStyle = 'rgba(255, 50, 50, 0.9)';
+                 ctx.fillRect(trailerX, h * 0.3, lightSize, lightSize);
+                 ctx.fillRect(trailerX, h * 0.6, lightSize, lightSize);
+             }
+
             ctx.restore();
         }
         
@@ -669,12 +712,10 @@
             ctx.restore();
         }
 
-
         function drawUI() {
             ctx.save();
             ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
             
-            // Score
             ctx.textAlign = "left";
             ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.roundRect(15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
@@ -682,7 +723,6 @@
             ctx.fillStyle = "white";
             ctx.fillText(`Score: ${score}`, 25, 15 + TILE_SIZE * 0.65);
             
-                // Lives
                 ctx.textAlign = "right";
                 ctx.fillStyle = "rgba(0,0,0,0.5)";
                 ctx.roundRect(canvas.width - TILE_SIZE * 3.5 - 15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
@@ -690,7 +730,6 @@
                 ctx.fillStyle = "white";
                 ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
 
-                // High Score
                 ctx.textAlign = "center";
                 ctx.fillStyle = "rgba(0,0,0,0.5)";
                 ctx.roundRect(canvas.width / 2 - TILE_SIZE * 3, 15, TILE_SIZE * 6, TILE_SIZE * 1, 10);
@@ -730,20 +769,17 @@
                 ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (isNewHighScore ? 3.2 : 2.5));
             }
 
-            // --- Game Loop ---
             function gameLoop(timestamp) {
                 gameTime = timestamp;
                 if (gameOver) {
                     draw();
                     return;
                 }
-                
                 update(timestamp);
                 draw();
                 requestAnimationFrame(gameLoop);
             }
 
-            // --- Initial Call ---
             init();
 
         </script>
