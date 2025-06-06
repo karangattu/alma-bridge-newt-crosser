@@ -207,6 +207,7 @@
         let gameOver = false;
         let gameStarted = false;
         let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [] };
+        let cleaner;
         let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
         let gameTime = 0;
         
@@ -245,6 +246,23 @@
             };
         }
 
+        function initCleaner() {
+            cleaner = {
+                x: -TILE_SIZE * 2,
+                y: 0,
+                width: TILE_SIZE * 1.2,
+                height: TILE_SIZE * 2,
+                speed: TILE_SIZE * 0.05,
+                isActive: false,
+                state: 'idle',
+                targetSplat: null,
+                cleaningStartTime: 0,
+                walkPhase: 0,
+                direction: 'right',
+                exitSide: 'left'
+            };
+        }
+
         function init() {
             setCanvasDimensions();
             score = 0;
@@ -252,6 +270,7 @@
             gameOver = false;
             highScore = parseInt(localStorage.getItem('newtHighScore')) || 0;
             resetNewt();
+            initCleaner();
             createScenery();
             createVehicles();
             if (!gameStarted) {
@@ -394,6 +413,9 @@
                 }
                 return;
             }
+            
+            if (!newt) return;
+
             if (!gameStarted) startGame();
 
             switch (key) {
@@ -404,7 +426,7 @@
             }
         }
 
-        function update(deltaTime) {
+        function update() {
             if (gameOver) return;
             if (gameStarted && newt) {
                 newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
@@ -433,18 +455,109 @@
                 handleSuccess();
             }
 
-            const maxSplatLife = 3000;
-            scenery.splats = scenery.splats.filter(splat => gameTime - splat.creationTime < maxSplatLife);
+            updateCleaner();
+        }
+        
+        function activateCleaner(splat) {
+            cleaner.isActive = true;
+            cleaner.targetSplat = splat;
+            cleaner.state = 'entering';
+
+            const startOnLeft = splat.x < canvas.width / 2;
+            cleaner.x = startOnLeft ? -cleaner.width * 2 : canvas.width + cleaner.width * 2;
+            cleaner.y = ROAD_BOTTOM_Y + TILE_SIZE; 
+            cleaner.direction = startOnLeft ? 'right' : 'left';
+        }
+
+        function updateCleaner() {
+            if (!cleaner.isActive) return;
+
+            cleaner.walkPhase = (gameTime / 150) % (Math.PI * 2);
+            const cleaningDuration = 1500;
+
+            const isExiting = cleaner.state === 'exiting';
+            const targetX = isExiting ? (cleaner.exitSide === 'left' ? -cleaner.width * 2 : canvas.width + cleaner.width) : cleaner.targetSplat.x - cleaner.width / 2;
+            const targetY = isExiting ? ROAD_BOTTOM_Y + TILE_SIZE : cleaner.targetSplat.y - cleaner.height / 2;
+
+            const dx = targetX - cleaner.x;
+            const dy = targetY - cleaner.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (cleaner.state === 'cleaning') {
+                if (gameTime - cleaner.cleaningStartTime > cleaningDuration) {
+                    scenery.splats = scenery.splats.filter(s => s.id !== cleaner.targetSplat.id);
+                    cleaner.targetSplat = null;
+                    cleaner.state = 'exiting';
+                    cleaner.exitSide = cleaner.x < canvas.width / 2 ? 'right' : 'left'; 
+                }
+                return; 
+            }
+
+            if (distance < cleaner.speed * 1.5) {
+                if (!isExiting) {
+                    cleaner.state = 'cleaning';
+                    cleaner.cleaningStartTime = gameTime;
+                } else { 
+                    cleaner.isActive = false;
+                    cleaner.state = 'idle';
+                    if (scenery.splats.length > 0) {
+                        activateCleaner(scenery.splats[0]);
+                    }
+                }
+                return;
+            }
+            
+            let canMove = true;
+            let moveX = 0;
+            let moveY = 0;
+
+            if (Math.abs(dy) > cleaner.speed) {
+                moveY = Math.sign(dy) * cleaner.speed;
+            } else { 
+                moveX = Math.sign(dx) * cleaner.speed;
+                cleaner.direction = moveX > 0 ? 'right' : 'left';
+
+                if (cleaner.y > ROAD_TOP_Y && cleaner.y < ROAD_BOTTOM_Y) {
+                    const safetyBuffer = TILE_SIZE * 4; 
+                    for (const v of vehicles) {
+                        if (Math.abs(v.y - cleaner.y) < TILE_SIZE * 1.5) {
+                            const cleanerFront = cleaner.x + (cleaner.direction === 'right' ? cleaner.width : 0);
+                            
+                            if (cleaner.direction === 'right' && v.baseSpeed < 0 && v.x + v.width > cleanerFront && v.x < cleanerFront + safetyBuffer) {
+                                canMove = false;
+                                break;
+                            }
+                            if (cleaner.direction === 'left' && v.baseSpeed > 0 && v.x < cleanerFront && v.x + v.width > cleanerFront - safetyBuffer) {
+                                canMove = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (canMove) {
+                cleaner.x += moveX;
+                cleaner.y += moveY;
+            }
         }
 
         function handleCollision() {
-            scenery.splats.push({
+            if (!newt) return;
+            
+            const newSplat = {
                 x: newt.x + newt.width / 2,
                 y: newt.y + newt.height / 2,
                 creationTime: gameTime,
-                maxRadius: TILE_SIZE * 0.8
-            });
+                maxRadius: TILE_SIZE * 0.8,
+                id: Date.now() + Math.random()
+            };
+            scenery.splats.push(newSplat);
             
+            if (!cleaner.isActive) {
+                activateCleaner(newSplat);
+            }
+
             newt = null;
             lives--;
 
@@ -469,6 +582,7 @@
             drawBackground();
 
             scenery.splats.forEach(drawSplat);
+            drawHumanCleaner();
             
             vehicles.forEach(v => {
                 const template = vehicleTemplates[v.type];
@@ -530,6 +644,60 @@
 
             ctx.restore();
         }
+        
+        function drawHumanCleaner() {
+            if (!cleaner.isActive) return;
+
+            ctx.save();
+            ctx.translate(cleaner.x, cleaner.y);
+
+            const w = cleaner.width;
+            const h = cleaner.height;
+            const walkCycle = Math.sin(cleaner.walkPhase);
+            const bob = Math.sin(cleaner.walkPhase * 2) * (TILE_SIZE * 0.05);
+
+            ctx.strokeStyle = "#a0522d";
+            ctx.lineWidth = w * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.5, h * 0.5 + bob);
+            const mopAngle = cleaner.direction === 'right' ? Math.PI / 4 : (3 * Math.PI) / 4;
+            const mopEndX = w * 0.5 + Math.cos(mopAngle) * w;
+            const mopEndY = h * 0.5 + bob + Math.sin(mopAngle) * w;
+            ctx.lineTo(mopEndX, mopEndY);
+            ctx.stroke();
+
+            if (cleaner.state === 'cleaning') {
+                const cleaningProgress = (gameTime - cleaner.cleaningStartTime) / 1000;
+                const mopHeadX = cleaner.targetSplat.x - cleaner.x + Math.sin(cleaningProgress * Math.PI * 6) * (w * 0.5);
+                const mopHeadY = cleaner.targetSplat.y - cleaner.y;
+                ctx.fillStyle = "#e6e6e6";
+                ctx.beginPath();
+                ctx.ellipse(mopHeadX, mopHeadY, w * 0.4, w * 0.2, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = "#2c3e50";
+            const legShift = walkCycle * (w * 0.2);
+            ctx.fillRect(w * 0.3 - legShift, h * 0.6 + bob, w * 0.2, h * 0.4);
+            ctx.fillRect(w * 0.5 + legShift, h * 0.6 + bob, w * 0.2, h * 0.4);
+            
+            ctx.fillStyle = "#f39c12";
+            ctx.fillRect(w * 0.15, h * 0.2 + bob, w * 0.7, h * 0.4);
+            
+            ctx.fillStyle = "#bdc3c7";
+            ctx.fillRect(w * 0.1, h * 0.4 + bob, w * 0.8, h * 0.08);
+
+            ctx.fillStyle = "#f1c40f";
+            ctx.beginPath();
+            ctx.arc(w * 0.5, h * 0.15 + bob, w * 0.25, Math.PI, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#e67e22";
+            ctx.beginPath();
+            ctx.arc(w * 0.5, h * 0.15 + bob, w * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
 
         function drawSplat(splat) {
             const age = gameTime - splat.creationTime;
@@ -537,7 +705,7 @@
             const opacity = 1 - (age / maxLife);
 
             ctx.save();
-            ctx.fillStyle = `rgba(107, 142, 35, ${opacity * 0.7})`;
+            ctx.fillStyle = `rgba(107, 142, 35, 0.7)`;
             ctx.beginPath();
             ctx.ellipse(splat.x, splat.y, splat.maxRadius, splat.maxRadius * 0.7, Math.PI / 4, 0, Math.PI * 2);
             ctx.ellipse(splat.x + 5, splat.y - 5, splat.maxRadius * 0.5, splat.maxRadius * 0.8, Math.PI / 2, 0, Math.PI * 2);
@@ -633,10 +801,10 @@
             ctx.closePath();
             ctx.fill();
 
-            if (speed > 0) { // Moving right
+            if (speed > 0) {
                 drawHeadlight(w - 2, h * 0.55, h * 0.12);
                 drawTaillight(2, h * 0.55, h * 0.12);    
-            } else { // Moving left
+            } else {
                 drawHeadlight(2, h * 0.55, h * 0.12);    
                 drawTaillight(w - 2, h * 0.55, h * 0.12); 
             }
@@ -656,7 +824,6 @@
             const trailerWidth = w * 0.65;
             const gap = w * 0.05;
 
-            // Determine positions based on direction
             const cabX = speed > 0 ? trailerWidth + gap : 0;
             const trailerX = speed > 0 ? 0 : cabWidth + gap;
             
@@ -782,51 +949,58 @@
             ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, 15 + TILE_SIZE * 0.65);
 
             ctx.restore();
+        }
+
+        function drawGameOver() {
+            const isNewHighScore = score > 0 && score === highScore;
+            ctx.fillStyle = "rgba(26, 26, 42, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--danger-color');
+            ctx.textAlign = "center";
+            ctx.font = `bold ${TILE_SIZE * 1.5}px 'Poppins'`;
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - TILE_SIZE * 1.5);
+
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+            ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
+            ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 - TILE_SIZE * 0.2);
+            
+            ctx.fillStyle = "#f0f0f0";
+            ctx.font = `400 ${TILE_SIZE * 0.6}px 'Poppins'`;
+            ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.8);
+            
+            if (isNewHighScore) {
+                ctx.fillStyle = "#ffd700";
+                ctx.font = `600 ${TILE_SIZE * 0.7}px 'Poppins'`;
+                ctx.fillText("New High Score!", canvas.width / 2, canvas.height / 2 + TILE_SIZE * 2);
             }
 
-            function drawGameOver() {
-                const isNewHighScore = score > 0 && score === highScore;
-                ctx.fillStyle = "rgba(26, 26, 42, 0.85)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--danger-color');
-                ctx.textAlign = "center";
-                ctx.font = `bold ${TILE_SIZE * 1.5}px 'Poppins'`;
-                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - TILE_SIZE * 1.5);
+            ctx.fillStyle = "white";
+            ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
+            ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (isNewHighScore ? 3.2 : 2.5));
+        }
 
-                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
-                ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
-                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 - TILE_SIZE * 0.2);
-                
-                ctx.fillStyle = "#f0f0f0";
-                ctx.font = `400 ${TILE_SIZE * 0.6}px 'Poppins'`;
-                ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.8);
-                
-                if (isNewHighScore) {
-                    ctx.fillStyle = "#ffd700";
-                    ctx.font = `600 ${TILE_SIZE * 0.7}px 'Poppins'`;
-                    ctx.fillText("New High Score!", canvas.width / 2, canvas.height / 2 + TILE_SIZE * 2);
-                }
-
-                ctx.fillStyle = "white";
-                ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
-                ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (isNewHighScore ? 3.2 : 2.5));
+        let lastFrameTime = 0;
+        function gameLoop(timestamp) {
+            if (!lastFrameTime) {
+                lastFrameTime = timestamp;
             }
+            let deltaTime = (timestamp - lastFrameTime) / 1000;
+            lastFrameTime = timestamp;
+            gameTime = timestamp;
 
-            function gameLoop(timestamp) {
-                gameTime = timestamp;
-                if (gameOver) {
-                    draw();
-                    return;
-                }
-                
-                update(timestamp);
+            if (gameOver) {
                 draw();
-                requestAnimationFrame(gameLoop);
+                return;
             }
+            
+            update(deltaTime);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
 
-            init();
+        init();
 
-        </script>
-    </body>
-    </html>
+    </script>
+</body>
+</html>
