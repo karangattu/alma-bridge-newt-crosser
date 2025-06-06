@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alma Bridge Newt Crosser</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #1a1a2a;
+            --secondary-bg: #2a2a3a;
+            --text-color: #f0f0f0;
+            --accent-color: #50e3c2;
+            /* Lighter road color for better contrast */
+            --road-color: #6c6c7c;
+            --water-color: #3b6fa5;
+            --forest-color: #2e8b57;
+            --danger-color: #e35050;
+            --trunk-color: #5d4037;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4 / 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        canvas {
+            background-color: var(--secondary-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 100;
+            padding: 2rem;
+            box-sizing: border-box;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .splash-title {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 15px var(--accent-color);
+        }
+
+        .splash-subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            max-width: 600px;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .splash-link {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            background: rgba(255,255,255,0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2.5rem;
+        }
+
+        .splash-link a {
+            color: var(--accent-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .play-button {
+            font-family: 'Poppins', sans-serif;
+            background: var(--accent-color);
+            color: var(--primary-bg);
+            border: none;
+            padding: 1rem 3rem;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 5px 20px rgba(80, 227, 194, 0.4);
+        }
+        
+        .play-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(80, 227, 194, 0.6);
+        }
+        
+        #mobile-controls {
+            display: none; /* Hidden by default */
+            margin-top: 1rem;
+            gap: 0.5rem;
+        }
+
+        /* Show controls if touch is enabled */
+        body.touch-enabled #mobile-controls {
+             display: grid;
+             grid-template-columns: repeat(3, 1fr);
+             width: 180px;
+             justify-items: center;
+             align-items: center;
+        }
+
+        #mobile-controls button {
+            width: 50px;
+            height: 50px;
+            background: var(--secondary-bg);
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        body.touch-enabled #mobile-controls .up { grid-column: 2; grid-row: 1; }
+        body.touch-enabled #mobile-controls .left { grid-column: 1; grid-row: 2; }
+        body.touch-enabled #mobile-controls .down { grid-column: 2; grid-row: 2; }
+        body.touch-enabled #mobile-controls .right { grid-column: 3; grid-row: 2; }
+        
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <h1 class="splash-title">Newt Crosser</h1>
+        <p class="splash-subtitle">Use the Arrow Keys, on-screen controls, or swipe to help the newts safely cross the road. Don't get squished!</p>
+        <div class="splash-link">
+             To learn more about the plight of the newts crossing Alma Bridge Road, visit <a href="http://bioblitz.club/newts" target="_blank">bioblitz.club/newts</a>
+        </div>
+        <button class="play-button" id="playGameBtn">Play Game</button>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    
+    <div id="mobile-controls">
+        <button class="up" data-key="ArrowUp">▲</button>
+        <button class="left" data-key="ArrowLeft">◄</button>
+        <button class="down" data-key="ArrowDown">▼</button>
+        <button class="right" data-key="ArrowRight">►</button>
+    </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const splashScreen = document.getElementById('splash-screen');
+        const playGameBtn = document.getElementById('playGameBtn');
+        const canvas = document.getElementById("gameCanvas");
+        const mobileControls = document.getElementById('mobile-controls');
+        const ctx = canvas.getContext("2d");
+
+        // --- Game State ---
+        let TILE_SIZE = 40;
+        let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
+        let score = 0;
+        let lives = 3;
+        let gameOver = false;
+        let gameStarted = false;
+        let newt, vehicles = [], scenery = { trees: [], waitingNewts: [] };
+        let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+        let gameTime = 0;
+        
+        // --- Game Configuration ---
+        const carColors = ["#B71C1C", "#1A237E", "#004D40", "#E65100", "#4A148C", "#37474F", "#C51162", "#d4ac0d"];
+        const vehicleTemplates = {
+            car: { width: 2.5, speedMultiplier: 1.0, draw: drawCar },
+            kayakCar: { width: 2.5, speedMultiplier: 0.9, draw: drawKayakCar },
+            motorcycle: { width: 1.8, speedMultiplier: 1.5, draw: drawMotorcycle },
+            bicycle: { width: 1.2, speedMultiplier: 0.6, draw: drawBicycle },
+        };
+        const weightedVehicleTypes = ["car", "car", "car", "kayakCar", "kayakCar", "motorcycle", "bicycle"];
+
+        // --- Setup and Initialization ---
+        function setCanvasDimensions() {
+            const container = document.getElementById('game-container');
+            const { width, height } = container.getBoundingClientRect();
+            canvas.width = width;
+            canvas.height = height;
+            
+            TILE_SIZE = canvas.height / 15; // Proportional tile size
+            ROAD_CENTER_Y = canvas.height / 2;
+            ROAD_TOP_Y = ROAD_CENTER_Y - TILE_SIZE;
+            ROAD_BOTTOM_Y = ROAD_CENTER_Y + TILE_SIZE * 2;
+        }
+
+        function resetNewt() {
+            newt = {
+                width: TILE_SIZE * 0.7,
+                height: TILE_SIZE * 0.9,
+                x: canvas.width / 2 - (TILE_SIZE * 0.7) / 2,
+                y: canvas.height - TILE_SIZE * 1.5,
+                speed: TILE_SIZE,
+                rotation: 0,
+                targetRotation: 0,
+                walkPhase: 0, // For leg animation
+            };
+        }
+
+        function init() {
+            setCanvasDimensions();
+            score = 0;
+            lives = 3;
+            gameOver = false;
+            resetNewt();
+            createScenery();
+            createVehicles();
+            if (!gameStarted) {
+                draw(); // Draw initial frame
+            }
+        }
+        
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+            splashScreen.style.opacity = '0';
+            splashScreen.style.pointerEvents = 'none';
+            init();
+            gameLoop();
+        }
+        
+        // --- Scenery and Vehicle Creation ---
+        function createScenery() {
+            scenery.trees = [];
+            scenery.waitingNewts = [];
+
+            // Add waiting newts in the forest
+            const numWaitingNewts = Math.floor(Math.random() * 5) + 5; // 5 to 9 newts
+            for(let i = 0; i < numWaitingNewts; i++) {
+                scenery.waitingNewts.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (ROAD_TOP_Y - TILE_SIZE) + TILE_SIZE / 2, // Position them in the forest
+                    size: (Math.random() * 0.3 + 0.4) * TILE_SIZE // smaller than the player
+                });
+            }
+
+            // Create more realistic trees with trunks and layered canopies
+            for(let i = 0; i < canvas.width / (TILE_SIZE * 4); i++) {
+                 scenery.trees.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (ROAD_TOP_Y - TILE_SIZE * 2.5) + TILE_SIZE * 2,
+                    trunkWidth: (Math.random() * 0.2 + 0.15) * TILE_SIZE,
+                    trunkHeight: (Math.random() * 0.6 + 0.4) * TILE_SIZE,
+                    canopyLayers: [
+                        { dy: 0, radius: (Math.random() * 0.4 + 0.8) * TILE_SIZE, color: '#1e5b3a' },
+                        { dy: -TILE_SIZE * 0.3, radius: (Math.random() * 0.4 + 0.7) * TILE_SIZE, color: '#277a4d' },
+                        { dy: -TILE_SIZE * 0.5, radius: (Math.random() * 0.3 + 0.6) * TILE_SIZE, color: '#2e8b57' },
+                    ]
+                });
+            }
+            // Sort trees by y-position to create a sense of depth
+            scenery.trees.sort((a,b) => a.y - b.y);
+        }
+
+        function createVehicles() {
+            vehicles = [];
+            const lanes = [
+                { y: ROAD_CENTER_Y - TILE_SIZE * 1.1, speed: -2.8 }, 
+                { y: ROAD_CENTER_Y - TILE_SIZE * 0.1, speed: 2.2 },
+            ];
+            lanes.forEach(lane => {
+                const numVehicles = Math.floor(Math.random() * 2) + 4; 
+                for (let i = 0; i < numVehicles; i++) {
+                    const typeKey = weightedVehicleTypes[Math.floor(Math.random() * weightedVehicleTypes.length)];
+                    const template = vehicleTemplates[typeKey];
+                    vehicles.push({
+                        type: typeKey,
+                        x: Math.random() * canvas.width * 1.5 + i * (canvas.width * 1.8 / numVehicles), 
+                        y: lane.y,
+                        width: TILE_SIZE * template.width,
+                        height: TILE_SIZE,
+                        baseSpeed: lane.speed * (TILE_SIZE / 40),
+                        color: carColors[Math.floor(Math.random() * carColors.length)],
+                    });
+                }
+            });
+        }
+        
+        // --- Event Listeners ---
+        playGameBtn.addEventListener('click', startGame);
+
+        document.addEventListener("keydown", e => handleInput(e.key));
+
+        // --- Touch Controls ---
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            document.body.classList.add('touch-enabled');
+        }
+        
+        mobileControls.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                handleInput(e.target.dataset.key);
+            }
+        });
+        
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            touchEndX = e.changedTouches[0].clientX;
+            touchEndY = e.changedTouches[0].clientY;
+            handleSwipe();
+        }, { passive: false });
+
+
+        window.addEventListener('resize', () => {
+            setTimeout(() => {
+                const wasRunning = gameStarted && !gameOver;
+                init();
+                if (wasRunning) {
+                    gameStarted = true;
+                    draw();
+                }
+            }, 250);
+        });
+
+        // --- Game Logic ---
+        function handleSwipe() {
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+            const swipeThreshold = 30; // Minimum swipe distance
+
+            if (!gameStarted) startGame();
+
+            if (Math.abs(dx) > Math.abs(dy)) { // Horizontal swipe
+                if (Math.abs(dx) > swipeThreshold) {
+                    handleInput(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
+                }
+            } else { // Vertical swipe
+                if (Math.abs(dy) > swipeThreshold) {
+                    handleInput(dy > 0 ? 'ArrowDown' : 'ArrowUp');
+                }
+            }
+        }
+
+        function handleInput(key) {
+             if (gameOver) {
+                if (key === "Enter") {
+                    gameStarted = true;
+                    init();
+                    gameLoop();
+                }
+                return;
+            }
+            if (!gameStarted) startGame();
+
+            switch (key) {
+                case "ArrowUp": newt.y -= newt.speed; newt.targetRotation = 0; break;
+                case "ArrowDown": if (newt.y < canvas.height - newt.height * 2) newt.y += newt.speed; newt.targetRotation = Math.PI; break;
+                case "ArrowLeft": if (newt.x > 0) newt.x -= newt.speed; newt.targetRotation = -Math.PI / 2; break;
+                case "ArrowRight": if (newt.x < canvas.width - newt.width) newt.x += newt.speed; newt.targetRotation = Math.PI / 2; break;
+            }
+        }
+
+        function update(deltaTime) {
+            if (gameOver) return;
+
+            // Update leg animation phase
+            if (gameStarted) {
+                newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
+            }
+
+            // Smoothly rotate the newt
+            let dy = newt.targetRotation - newt.rotation;
+            if (Math.abs(dy) > Math.PI) dy = dy < 0 ? dy + 2 * Math.PI : dy - 2 * Math.PI;
+            newt.rotation += dy * 0.2;
+
+            const difficultyFactor = 1 + (score / 20);
+
+            vehicles.forEach(v => {
+                v.x += v.baseSpeed * difficultyFactor;
+                if (v.baseSpeed > 0 && v.x > canvas.width + v.width) v.x = -v.width;
+                else if (v.baseSpeed < 0 && v.x < -v.width * 2) v.x = canvas.width + v.width;
+            });
+
+            vehicles.forEach(v => {
+                if (newt.x < v.x + v.width && newt.x + newt.width > v.x && newt.y < v.y + v.height && newt.y + newt.height > v.y) {
+                    handleCollision();
+                }
+            });
+
+            if (newt.y < ROAD_TOP_Y) {
+                handleSuccess();
+            }
+        }
+
+        function handleCollision() {
+            lives--;
+            if (lives <= 0) gameOver = true;
+            else resetNewt();
+        }
+
+        function handleSuccess() {
+            score++;
+            resetNewt();
+        }
+
+        // --- Drawing Functions ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            
+            vehicles.forEach(v => {
+                const template = vehicleTemplates[v.type];
+                template.draw(v.x, v.y, v.width, v.height, v.color, v.baseSpeed);
+            });
+            
+            if (gameStarted) {
+                drawNewt(newt.x, newt.y, newt.width, newt.height);
+                drawUI();
+            }
+
+            if (gameOver) {
+                drawGameOver();
+            }
+        }
+
+        function drawNewt(x, y, w, h) {
+            ctx.save();
+            ctx.translate(x + w / 2, y + h / 2);
+            ctx.rotate(newt.rotation);
+
+            const walkCycle = Math.sin(newt.walkPhase);
+            const legShift = walkCycle * (w * 0.08);
+
+            const legColor = "#af7d1c";
+            const legLength = w * 0.3;  
+            const legThickness = h * 0.15; 
+            const bodySide = w * 0.35;    
+
+            // --- Draw Legs on the bottom layer ---
+            ctx.fillStyle = legColor;
+            ctx.fillRect(-bodySide - legLength + legShift, -h * 0.2, legLength, legThickness);
+            ctx.fillRect(bodySide + legShift, h * 0.2 - legThickness, legLength, legThickness);
+            ctx.fillRect(bodySide - legShift, -h * 0.2, legLength, legThickness);
+            ctx.fillRect(-bodySide - legLength - legShift, h * 0.2 - legThickness, legLength, legThickness);
+
+            // --- Draw Body on top ---
+            ctx.fillStyle = "#cf8e23";
+            ctx.beginPath();
+            ctx.ellipse(0, h * 0.6, w * 0.2, h * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#e59f28";
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w * 0.45, h * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // --- Draw Details on Top of Body ---
+            ctx.fillStyle = "#f5d47a";
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w * 0.35, h * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#e59f28";
+            ctx.beginPath();
+            ctx.ellipse(0, -h * 0.4, w * 0.4, h * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // --- Draw Eyes on top ---
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(-w * 0.15, -h * 0.45, w * 0.05, 0, Math.PI * 2);
+            ctx.arc(w * 0.15, -h * 0.45, w * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawWaitingNewt(x, y, size) {
+            ctx.save();
+            ctx.fillStyle = "#d95f26"; 
+            ctx.globalAlpha = 0.7; 
+            ctx.beginPath();
+            ctx.ellipse(x, y, size * 0.4, size * 0.5, 0, 0, Math.PI * 2);
+            ctx.ellipse(x, y - size * 0.4, size * 0.3, size * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.restore();
+        }
+        
+        function drawBackground() {
+            // Forest Area
+            ctx.fillStyle = "#277a4d";
+            ctx.fillRect(0, 0, canvas.width, ROAD_TOP_Y);
+            
+            scenery.waitingNewts.forEach(n => {
+                drawWaitingNewt(n.x, n.y, n.size);
+            });
+
+            scenery.trees.forEach(tree => {
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--trunk-color');
+                ctx.fillRect(tree.x - tree.trunkWidth / 2, tree.y - tree.trunkHeight, tree.trunkWidth, tree.trunkHeight);
+                tree.canopyLayers.forEach(layer => {
+                     ctx.fillStyle = layer.color;
+                     ctx.beginPath();
+                     ctx.arc(tree.x, tree.y - tree.trunkHeight + layer.dy, layer.radius, 0, Math.PI * 2);
+                     ctx.fill();
+                });
+            });
+
+            // Road
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--road-color');
+            ctx.fillRect(0, ROAD_TOP_Y, canvas.width, ROAD_BOTTOM_Y - ROAD_TOP_Y);
+            
+            ctx.font = `bold ${TILE_SIZE * 0.6}px 'Poppins'`;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("Alma Bridge Road", canvas.width / 2, ROAD_CENTER_Y + TILE_SIZE * 0.5);
+
+            ctx.strokeStyle = "#ffd700";
+            ctx.lineWidth = 4;
+            ctx.setLineDash([TILE_SIZE * 0.5, TILE_SIZE * 0.6]);
+            ctx.beginPath();
+            ctx.moveTo(0, ROAD_CENTER_Y);
+            ctx.lineTo(canvas.width, ROAD_CENTER_Y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Water Area
+            const waterY = ROAD_BOTTOM_Y - TILE_SIZE;
+            const waterHeight = canvas.height - waterY;
+            const grad = ctx.createLinearGradient(0, waterY, 0, canvas.height);
+            grad.addColorStop(0, "#3b6fa5");
+            grad.addColorStop(1, "#2a4d75");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, waterY, canvas.width, waterHeight);
+            
+            ctx.font = `bold ${TILE_SIZE * 0.6}px 'Poppins'`;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("Lexington Reservoir", canvas.width / 2, waterY + waterHeight / 2);
+        }
+        
+        function drawCar(x, y, w, h, color, speed) {
+            ctx.save();
+            ctx.translate(x,y);
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(w / 2, h * 0.9, w/2 * 1.1, h * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wheels
+            ctx.fillStyle = "#222";
+            ctx.beginPath();
+            ctx.arc(w * 0.2, h * 0.85, h * 0.18, 0, Math.PI * 2);
+            ctx.arc(w * 0.75, h * 0.85, h * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.fillStyle = color;
+            ctx.roundRect(0, h * 0.3, w, h * 0.5, h * 0.1);
+            ctx.fill();
+
+            // Cabin
+            ctx.fillStyle = "rgba(230, 245, 255, 0.8)";
+            ctx.beginPath();
+            const cabinX = w * 0.15;
+            const cabinW = w * 0.7;
+            ctx.moveTo(cabinX, h * 0.3);
+            ctx.lineTo(cabinX + w * 0.1, h * 0.1);
+            ctx.lineTo(cabinX + cabinW - w * 0.1, h * 0.1);
+            ctx.lineTo(cabinX + cabinW, h * 0.3);
+            ctx.closePath();
+            ctx.fill();
+
+            // Lights based on direction
+            const lightSize = h * 0.1;
+            if (speed > 0) { // Moving right
+                ctx.fillStyle = 'rgba(255, 255, 224, 0.9)'; // Headlights
+                ctx.fillRect(w - lightSize, h * 0.4, lightSize, lightSize);
+                ctx.fillRect(w - lightSize, h * 0.6, lightSize, lightSize);
+            } else { // Moving left
+                ctx.fillStyle = 'rgba(255, 50, 50, 0.9)'; // Taillights
+                ctx.fillRect(0, h * 0.4, lightSize, lightSize);
+                ctx.fillRect(0, h * 0.6, lightSize, lightSize);
+            }
+
+            ctx.restore();
+        }
+        
+        function drawKayakCar(x, y, w, h, color, speed) {
+            drawCar(x, y, w, h, color, speed);
+            ctx.fillStyle = "#d95f26";
+            ctx.beginPath();
+            ctx.ellipse(x + w / 2, y + h*0.05, w * 0.4, h * 0.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawMotorcycle(x, y, w, h, color, speed) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.beginPath();
+            ctx.ellipse(w / 2, h * 0.85, w/2, h * 0.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wheels
+            ctx.strokeStyle = '#333'; ctx.lineWidth = w * 0.05;
+            ctx.beginPath();
+            ctx.arc(w * 0.15, h * 0.75, h * 0.2, 0, Math.PI * 2);
+            ctx.arc(w * 0.85, h * 0.75, h * 0.2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Body
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.15, h * 0.75);
+            ctx.lineTo(w * 0.4, h * 0.4);
+            ctx.lineTo(w * 0.85, h * 0.75);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawBicycle(x, y, w, h, color, speed) {
+             ctx.save();
+            ctx.translate(x, y);
+             ctx.strokeStyle = '#555'; ctx.lineWidth = w * 0.08;
+            ctx.beginPath();
+            ctx.arc(w * 0.15, h * 0.8, h * 0.18, 0, Math.PI * 2);
+            ctx.arc(w * 0.85, h * 0.8, h * 0.18, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = color; ctx.lineWidth = w * 0.06;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.15, h * 0.8);
+            ctx.lineTo(w * 0.5, h * 0.4);
+            ctx.lineTo(w * 0.85, h * 0.8);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+
+        function drawUI() {
+            ctx.save();
+            ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
+            ctx.textAlign = "left";
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.roundRect(15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.fillText(`Score: ${score}`, 25, 15 + TILE_SIZE * 0.65);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.roundRect(canvas.width - TILE_SIZE * 3.5 - 15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
+            ctx.restore();
+        }
+
+        function drawGameOver() {
+            ctx.fillStyle = "rgba(26, 26, 42, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--danger-color');
+            ctx.textAlign = "center";
+            ctx.font = `bold ${TILE_SIZE * 1.5}px 'Poppins'`;
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - TILE_SIZE);
+
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+            ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
+            ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
+            
+            ctx.fillStyle = "white";
+            ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
+            ctx.fillText("Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.5);
+        }
+
+        // --- Game Loop ---
+        function gameLoop(timestamp) {
+            gameTime = timestamp; // Update global game time
+            if (gameOver) {
+                draw(); // Final draw
+                return;
+            }
+            
+            update(timestamp);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Initial Call ---
+        init();
+
+    </script>
+</body>
+</html>
