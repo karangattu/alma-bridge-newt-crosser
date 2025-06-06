@@ -204,6 +204,7 @@
         let TILE_SIZE = 40;
         let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
         let score = 0;
+        let highScore = 0;
         let lives = 3;
         let gameOver = false;
         let gameStarted = false;
@@ -252,6 +253,7 @@
             score = 0;
             lives = 3;
             gameOver = false;
+            highScore = parseInt(localStorage.getItem('newtHighScore')) || 0;
             resetNewt();
             createScenery();
             createVehicles();
@@ -439,6 +441,10 @@
             lives--;
             if (lives <= 0) {
                 gameOver = true;
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('newtHighScore', highScore);
+                }
             } else {
                 resetNewt();
             }
@@ -667,55 +673,79 @@
         function drawUI() {
             ctx.save();
             ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
+            
+            // Score
             ctx.textAlign = "left";
             ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.roundRect(15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
             ctx.fill();
             ctx.fillStyle = "white";
             ctx.fillText(`Score: ${score}`, 25, 15 + TILE_SIZE * 0.65);
-            ctx.textAlign = "right";
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.roundRect(canvas.width - TILE_SIZE * 3.5 - 15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
-            ctx.fill();
-            ctx.fillStyle = "white";
-            ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
-            ctx.restore();
-        }
-
-        function drawGameOver() {
-            ctx.fillStyle = "rgba(26, 26, 42, 0.85)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--danger-color');
-            ctx.textAlign = "center";
-            ctx.font = `bold ${TILE_SIZE * 1.5}px 'Poppins'`;
-            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - TILE_SIZE);
+                // Lives
+                ctx.textAlign = "right";
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.roundRect(canvas.width - TILE_SIZE * 3.5 - 15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
+                ctx.fill();
+                ctx.fillStyle = "white";
+                ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
 
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
-            ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
-            ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
-            
-            ctx.fillStyle = "white";
-            ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
-            ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.5);
-        }
+                // High Score
+                ctx.textAlign = "center";
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.roundRect(canvas.width / 2 - TILE_SIZE * 3, 15, TILE_SIZE * 6, TILE_SIZE * 1, 10);
+                ctx.fill();
+                ctx.fillStyle = "white";
+                ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, 15 + TILE_SIZE * 0.65);
 
-        // --- Game Loop ---
-        function gameLoop(timestamp) {
-            gameTime = timestamp;
-            if (gameOver) {
-                draw();
-                return;
+                ctx.restore();
             }
-            
-            update(timestamp);
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
 
-        // --- Initial Call ---
-        init();
+            function drawGameOver() {
+                const isNewHighScore = score > 0 && score === highScore;
+                ctx.fillStyle = "rgba(26, 26, 42, 0.85)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--danger-color');
+                ctx.textAlign = "center";
+                ctx.font = `bold ${TILE_SIZE * 1.5}px 'Poppins'`;
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - TILE_SIZE * 1.5);
 
-    </script>
-</body>
-</html>
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+                ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 - TILE_SIZE * 0.2);
+                
+                ctx.fillStyle = "#f0f0f0";
+                ctx.font = `400 ${TILE_SIZE * 0.6}px 'Poppins'`;
+                ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.8);
+                
+                if (isNewHighScore) {
+                    ctx.fillStyle = "#ffd700";
+                    ctx.font = `600 ${TILE_SIZE * 0.7}px 'Poppins'`;
+                    ctx.fillText("New High Score!", canvas.width / 2, canvas.height / 2 + TILE_SIZE * 2);
+                }
+
+                ctx.fillStyle = "white";
+                ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
+                ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (isNewHighScore ? 3.2 : 2.5));
+            }
+
+            // --- Game Loop ---
+            function gameLoop(timestamp) {
+                gameTime = timestamp;
+                if (gameOver) {
+                    draw();
+                    return;
+                }
+                
+                update(timestamp);
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            // --- Initial Call ---
+            init();
+
+        </script>
+    </body>
+    </html>
