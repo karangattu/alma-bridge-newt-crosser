@@ -7,6 +7,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LZ4SSN195H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-LZ4SSN195H');
+    </script>
+    
     <style>
         :root {
             --primary-bg: #1a1a2a;
@@ -285,6 +295,13 @@
             splashScreen.style.pointerEvents = 'none';
             init();
             gameLoop();
+            
+            // --- Google Analytics Event ---
+            // Tracks when a user starts playing the game.
+            gtag('event', 'start_game', {
+                'event_category': 'Game',
+                'event_label': 'Play Button Clicked'
+            });
         }
 
         function restartGame() {
@@ -292,6 +309,12 @@
             gameStarted = true;
             init();
             gameLoop();
+             // --- Google Analytics Event ---
+            // Tracks when a user restarts the game after a game over.
+            gtag('event', 'restart_game', {
+                'event_category': 'Game',
+                'event_label': 'Game Restarted'
+            });
         }
         
         function createScenery() {
@@ -563,9 +586,25 @@
 
             if (lives <= 0) {
                 gameOver = true;
+                
+                // --- Google Analytics Event ---
+                // Tracks when the game ends and sends the final score.
+                gtag('event', 'game_over', {
+                    'event_category': 'Game',
+                    'event_label': 'Player Lost',
+                    'value': score // Sending the final score as the event value
+                });
+
                 if (score > highScore) {
                     highScore = score;
                     localStorage.setItem('newtHighScore', highScore);
+                     // --- Google Analytics Event ---
+                    // Tracks when a new high score is achieved.
+                    gtag('event', 'new_high_score', {
+                        'event_category': 'Game',
+                        'event_label': 'New High Score Achieved',
+                        'value': highScore
+                    });
                 }
             } else {
                 setTimeout(resetNewt, 500);
@@ -575,6 +614,14 @@
         function handleSuccess() {
             score++;
             resetNewt();
+            
+            // --- Google Analytics Event ---
+            // Tracks each time a newt successfully crosses the road.
+            gtag('event', 'newt_crossed', {
+                'event_category': 'Game',
+                'event_label': 'Successful Crossing',
+                'value': score // You can track the current score at each success
+            });
         }
 
         function draw() {
