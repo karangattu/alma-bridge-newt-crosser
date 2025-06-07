@@ -146,7 +146,7 @@
              width: 180px;
              justify-items: center;
              align-items: center;
-        }
+         }
 
         #mobile-controls button {
             width: 50px;
@@ -248,8 +248,8 @@
                 width: TILE_SIZE * 0.7,
                 height: TILE_SIZE * 0.9,
                 x: canvas.width / 2 - (TILE_SIZE * 0.7) / 2,
-                y: canvas.height - TILE_SIZE * 1.5,
-                speed: TILE_SIZE * 1.5,
+                y: canvas.height - TILE_SIZE * 2,
+                speed: TILE_SIZE,
                 rotation: 0,
                 targetRotation: 0,
                 walkPhase: 0,
@@ -296,8 +296,6 @@
             init();
             gameLoop();
             
-            // --- Google Analytics Event ---
-            // Tracks when a user starts playing the game.
             gtag('event', 'start_game', {
                 'event_category': 'Game',
                 'event_label': 'Play Button Clicked'
@@ -309,8 +307,6 @@
             gameStarted = true;
             init();
             gameLoop();
-             // --- Google Analytics Event ---
-            // Tracks when a user restarts the game after a game over.
             gtag('event', 'restart_game', {
                 'event_category': 'Game',
                 'event_label': 'Game Restarted'
@@ -460,7 +456,7 @@
                 newt.rotation += dy * 0.2;
             }
 
-            const difficultyFactor = 1 + (score / 20);
+            const difficultyFactor = Math.min(3.5, 1 + score * 0.08);
 
             vehicles.forEach(v => {
                 v.x += v.baseSpeed * difficultyFactor;
@@ -587,19 +583,15 @@
             if (lives <= 0) {
                 gameOver = true;
                 
-                // --- Google Analytics Event ---
-                // Tracks when the game ends and sends the final score.
                 gtag('event', 'game_over', {
                     'event_category': 'Game',
                     'event_label': 'Player Lost',
-                    'value': score // Sending the final score as the event value
+                    'value': score
                 });
 
                 if (score > highScore) {
                     highScore = score;
                     localStorage.setItem('newtHighScore', highScore);
-                     // --- Google Analytics Event ---
-                    // Tracks when a new high score is achieved.
                     gtag('event', 'new_high_score', {
                         'event_category': 'Game',
                         'event_label': 'New High Score Achieved',
@@ -615,12 +607,10 @@
             score++;
             resetNewt();
             
-            // --- Google Analytics Event ---
-            // Tracks each time a newt successfully crosses the road.
             gtag('event', 'newt_crossed', {
                 'event_category': 'Game',
                 'event_label': 'Successful Crossing',
-                'value': score // You can track the current score at each success
+                'value': score
             });
         }
 
@@ -657,7 +647,7 @@
             const legColor = "#af7d1c";
             const legLength = w * 0.3;  
             const legThickness = h * 0.15; 
-            const bodySide = w * 0.35;    
+            const bodySide = w * 0.35;   
 
             ctx.fillStyle = legColor;
             ctx.fillRect(-bodySide - legLength + legShift, -h * 0.2, legLength, legThickness);
@@ -850,9 +840,9 @@
 
             if (speed > 0) {
                 drawHeadlight(w - 2, h * 0.55, h * 0.12);
-                drawTaillight(2, h * 0.55, h * 0.12);    
+                drawTaillight(2, h * 0.55, h * 0.12);   
             } else {
-                drawHeadlight(2, h * 0.55, h * 0.12);    
+                drawHeadlight(2, h * 0.55, h * 0.12);   
                 drawTaillight(w - 2, h * 0.55, h * 0.12); 
             }
             ctx.restore();
