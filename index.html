@@ -354,7 +354,7 @@
                 for (let i = 0; i < numVehicles; i++) {
                     const typeKey = weightedVehicleTypes[Math.floor(Math.random() * weightedVehicleTypes.length)];
                     const template = vehicleTemplates[typeKey];
-                    vehicles.push({
+                    const vehicle = {
                         type: typeKey,
                         x: Math.random() * canvas.width * 1.5 + i * (canvas.width * 1.8 / numVehicles), 
                         y: lane.y,
@@ -362,7 +362,11 @@
                         height: TILE_SIZE * template.heightMultiplier,
                         baseSpeed: lane.speed * (TILE_SIZE / 40),
                         color: carColors[Math.floor(Math.random() * carColors.length)],
-                    });
+                    };
+                    if (vehicle.type === 'bicycle') {
+                        vehicle.pedalPhase = Math.random() * Math.PI * 2;
+                    }
+                    vehicles.push(vehicle);
                 }
             });
         }
@@ -460,6 +464,10 @@
 
             vehicles.forEach(v => {
                 v.x += v.baseSpeed * difficultyFactor;
+                if (v.type === 'bicycle') {
+                    const pedalSpeed = 0.2;
+                    v.pedalPhase = (v.pedalPhase + pedalSpeed) % (Math.PI * 2);
+                }
                 if (v.baseSpeed > 0 && v.x > canvas.width + v.width) v.x = -v.width;
                 else if (v.baseSpeed < 0 && v.x < -v.width * 2) v.x = canvas.width + v.width;
             });
@@ -623,7 +631,7 @@
             
             vehicles.forEach(v => {
                 const template = vehicleTemplates[v.type];
-                template.draw(v.x, v.y, v.width, v.height, v.color, v.baseSpeed);
+                template.draw(v);
             });
             
             if (gameStarted && !gameOver && newt) {
@@ -812,7 +820,8 @@
             ctx.fillText("Lexington Reservoir", canvas.width / 2, waterY + waterHeight / 2);
         }
         
-        function drawCar(x, y, w, h, color, speed) {
+        function drawCar(vehicle) {
+            const { x, y, width: w, height: h, color, baseSpeed: speed } = vehicle;
             ctx.save();
             ctx.translate(x,y);
             ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -848,7 +857,8 @@
             ctx.restore();
         }
 
-        function drawTruck(x, y, w, h, color, speed) {
+        function drawTruck(vehicle) {
+            const { x, y, width: w, height: h, color, baseSpeed: speed } = vehicle;
             ctx.save();
             ctx.translate(x, y);
 
@@ -913,15 +923,17 @@
              ctx.fillRect(x - glowSize, y - glowSize, glowSize * 2, glowSize * 2);
         }
 
-        function drawKayakCar(x, y, w, h, color, speed) {
-            drawCar(x, y, w, h, color, speed);
+        function drawKayakCar(vehicle) {
+            drawCar(vehicle);
+            const { x, y, width: w, height: h } = vehicle;
             ctx.fillStyle = "#d95f26";
             ctx.beginPath();
             ctx.ellipse(x + w / 2, y + h*0.05, w * 0.4, h * 0.1, 0, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        function drawMotorcycle(x, y, w, h, color, speed) {
+        function drawMotorcycle(vehicle) {
+            const { x, y, width: w, height: h, color } = vehicle;
             ctx.save();
             ctx.translate(x, y);
             ctx.fillStyle = 'rgba(0,0,0,0.15)';
@@ -943,10 +955,13 @@
             ctx.restore();
         }
 
-        function drawBicycle(x, y, w, h, color, speed) {
-             ctx.save();
+        function drawBicycle(vehicle) {
+            const { x, y, width: w, height: h, color, baseSpeed, pedalPhase } = vehicle;
+            ctx.save();
             ctx.translate(x, y);
-             ctx.strokeStyle = '#555'; ctx.lineWidth = w * 0.08;
+            
+            // Draw bicycle frame
+            ctx.strokeStyle = '#555'; ctx.lineWidth = w * 0.08;
             ctx.beginPath();
             ctx.arc(w * 0.15, h * 0.8, h * 0.18, 0, Math.PI * 2);
             ctx.arc(w * 0.85, h * 0.8, h * 0.18, 0, Math.PI * 2);
@@ -957,8 +972,51 @@
             ctx.lineTo(w * 0.5, h * 0.4);
             ctx.lineTo(w * 0.85, h * 0.8);
             ctx.stroke();
+
+            const bodyBob = Math.sin(pedalPhase * 2) * (h * 0.05);
+            const riderX = w * 0.5;
+            const riderY = h * 0.15 + bodyBob;
+
+            ctx.fillStyle = '#2c3e50'; // Dark blue shirt
+            ctx.fillRect(riderX - w * 0.15, riderY, w * 0.3, h * 0.4);
+            
+            ctx.fillStyle = '#f1c40f'; // Helmet
+            ctx.beginPath();
+            ctx.arc(riderX, riderY, h * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Arms
+            ctx.strokeStyle = '#e0aA77'; // Skin color
+            ctx.lineWidth = w * 0.08;
+            ctx.beginPath();
+            const handlebarX = baseSpeed > 0 ? riderX + w * 0.25 : riderX - w * 0.25;
+            ctx.moveTo(riderX, riderY + h * 0.2);
+            ctx.lineTo(handlebarX, h * 0.5);
+            ctx.stroke();
+
+            const hipY = riderY + h * 0.4;
+            const crankX = w * 0.5;
+            const crankY = h * 0.8;
+            const pedalRadius = h * 0.18;
+
+            const pedal1X = crankX + pedalRadius * Math.cos(pedalPhase);
+            const pedal1Y = crankY + pedalRadius * Math.sin(pedalPhase);
+            ctx.beginPath();
+            ctx.moveTo(riderX, hipY);
+            ctx.lineTo(pedal1X, pedal1Y);
+            ctx.stroke();
+
+            const pedal2X = crankX + pedalRadius * Math.cos(pedalPhase + Math.PI);
+            const pedal2Y = crankY + pedalRadius * Math.sin(pedalPhase + Math.PI);
+            ctx.beginPath();
+            ctx.moveTo(riderX, hipY);
+            ctx.lineTo(pedal2X, pedal2Y);
+            ctx.stroke();
+
+
             ctx.restore();
         }
+
 
         function drawUI() {
             ctx.save();
