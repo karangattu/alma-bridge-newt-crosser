@@ -933,14 +933,16 @@
         }
 
         function drawMotorcycle(vehicle) {
-            const { x, y, width: w, height: h, color } = vehicle;
+            const { x, y, width: w, height: h, color, baseSpeed } = vehicle;
             ctx.save();
             ctx.translate(x, y);
+
             ctx.fillStyle = 'rgba(0,0,0,0.15)';
             ctx.beginPath();
-            ctx.ellipse(w / 2, h * 0.85, w/2, h * 0.1, 0, 0, Math.PI * 2);
+            ctx.ellipse(w / 2, h * 0.85, w / 2, h * 0.1, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#333'; ctx.lineWidth = w * 0.05;
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = w * 0.05;
             ctx.beginPath();
             ctx.arc(w * 0.15, h * 0.75, h * 0.2, 0, Math.PI * 2);
             ctx.arc(w * 0.85, h * 0.75, h * 0.2, 0, Math.PI * 2);
@@ -952,6 +954,39 @@
             ctx.lineTo(w * 0.85, h * 0.75);
             ctx.closePath();
             ctx.fill();
+
+            const riderCenterX = w * 0.5;
+            const riderBodyY = h * 0.05;
+
+            ctx.fillStyle = "#2c3e50";
+            ctx.fillRect(riderCenterX - w * 0.1, riderBodyY + h * 0.3, w * 0.2, h * 0.4);
+
+            ctx.fillStyle = "#B71C1C";
+            ctx.beginPath();
+            ctx.moveTo(riderCenterX - w * 0.2, riderBodyY + h * 0.5);
+            ctx.lineTo(riderCenterX - w * 0.1, riderBodyY);
+            ctx.lineTo(riderCenterX + w * 0.2, riderBodyY);
+            ctx.lineTo(riderCenterX + w * 0.1, riderBodyY + h * 0.5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = "#B71C1C";
+            ctx.lineWidth = w * 0.15;
+            ctx.beginPath();
+            const handlebarX = baseSpeed > 0 ? riderCenterX + w * 0.35 : riderCenterX - w * 0.35;
+            ctx.moveTo(riderCenterX, riderBodyY + h * 0.1);
+            ctx.lineTo(handlebarX, h * 0.4);
+            ctx.stroke();
+
+            ctx.fillStyle = "#37474F";
+            ctx.beginPath();
+            ctx.arc(riderCenterX, riderBodyY, h * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "rgba(230, 245, 255, 0.8)";
+            const visorX = baseSpeed > 0 ? riderCenterX + h * 0.05 : riderCenterX - h * 0.15;
+            ctx.fillRect(visorX, riderBodyY - h * 0.08, h * 0.1, h * 0.12);
+
             ctx.restore();
         }
 
@@ -960,7 +995,6 @@
             ctx.save();
             ctx.translate(x, y);
             
-            // Draw bicycle frame
             ctx.strokeStyle = '#555'; ctx.lineWidth = w * 0.08;
             ctx.beginPath();
             ctx.arc(w * 0.15, h * 0.8, h * 0.18, 0, Math.PI * 2);
@@ -977,16 +1011,15 @@
             const riderX = w * 0.5;
             const riderY = h * 0.15 + bodyBob;
 
-            ctx.fillStyle = '#2c3e50'; // Dark blue shirt
+            ctx.fillStyle = '#2c3e50';
             ctx.fillRect(riderX - w * 0.15, riderY, w * 0.3, h * 0.4);
             
-            ctx.fillStyle = '#f1c40f'; // Helmet
+            ctx.fillStyle = '#f1c40f';
             ctx.beginPath();
             ctx.arc(riderX, riderY, h * 0.15, 0, Math.PI * 2);
             ctx.fill();
 
-            // Arms
-            ctx.strokeStyle = '#e0aA77'; // Skin color
+            ctx.strokeStyle = '#e0aA77';
             ctx.lineWidth = w * 0.08;
             ctx.beginPath();
             const handlebarX = baseSpeed > 0 ? riderX + w * 0.25 : riderX - w * 0.25;
