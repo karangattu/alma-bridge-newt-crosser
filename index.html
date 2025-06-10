@@ -220,6 +220,9 @@
         let cleaner;
         let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
         let gameTime = 0;
+        let lastFrameTime = 0;
+        
+        const BASE_SPEED_SCALAR = 0.065; 
         
         const carColors = ["#B71C1C", "#1A237E", "#004D40", "#E65100", "#4A148C", "#37474F", "#C51162", "#d4ac0d"];
         const vehicleTemplates = {
@@ -278,6 +281,7 @@
             score = 0;
             lives = 3;
             gameOver = false;
+            lastFrameTime = 0;
             highScore = parseInt(localStorage.getItem('newtHighScore')) || 0;
             resetNewt();
             initCleaner();
@@ -290,11 +294,11 @@
         
         function startGame() {
             if (gameStarted) return;
-            gameStarted = true;
             splashScreen.style.opacity = '0';
             splashScreen.style.pointerEvents = 'none';
             init();
-            gameLoop();
+            gameStarted = true;
+            requestAnimationFrame(gameLoop);
             
             gtag('event', 'start_game', {
                 'event_category': 'Game',
@@ -304,9 +308,9 @@
 
         function restartGame() {
             if (!gameOver) return;
-            gameStarted = true;
             init();
-            gameLoop();
+            gameStarted = true;
+            requestAnimationFrame(gameLoop);
             gtag('event', 'restart_game', {
                 'event_category': 'Game',
                 'event_label': 'Game Restarted'
@@ -360,7 +364,7 @@
                         y: lane.y,
                         width: TILE_SIZE * template.width,
                         height: TILE_SIZE * template.heightMultiplier,
-                        baseSpeed: lane.speed * (TILE_SIZE / 40),
+                        baseSpeed: lane.speed,
                         color: carColors[Math.floor(Math.random() * carColors.length)],
                     };
                     if (vehicle.type === 'bicycle') {
@@ -401,16 +405,25 @@
             handleSwipe();
         }, { passive: false });
 
+
         window.addEventListener('resize', () => {
             setTimeout(() => {
                 const wasRunning = gameStarted && !gameOver;
+                const wasGameOver = gameOver;
+
                 init();
+
                 if (wasRunning) {
                     gameStarted = true;
+                    requestAnimationFrame(gameLoop);
+                } else if (wasGameOver) {
+                    gameStarted = true;
+                    gameOver = true;
                     draw();
                 }
             }, 250);
         });
+
 
         function handleSwipe() {
             if (gameOver) return;
@@ -439,7 +452,10 @@
             
             if (!newt) return;
 
-            if (!gameStarted) startGame();
+            if (!gameStarted) {
+                startGame();
+                return;
+            }
 
             switch (key) {
                 case "ArrowUp": newt.y -= newt.speed; newt.targetRotation = 0; break;
@@ -448,8 +464,8 @@
                 case "ArrowRight": if (newt.x < canvas.width - newt.width) newt.x += newt.speed; newt.targetRotation = Math.PI / 2; break;
             }
         }
-
-        function update() {
+        
+        function update(deltaTime) {
             if (gameOver) return;
             if (gameStarted && newt) {
                 newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
@@ -463,7 +479,8 @@
             const difficultyFactor = Math.min(3.5, 1 + score * 0.08);
 
             vehicles.forEach(v => {
-                v.x += v.baseSpeed * difficultyFactor;
+                v.x += v.baseSpeed * BASE_SPEED_SCALAR * canvas.width * difficultyFactor * deltaTime;
+
                 if (v.type === 'bicycle') {
                     const pedalSpeed = 0.2;
                     v.pedalPhase = (v.pedalPhase + pedalSpeed) % (Math.PI * 2);
@@ -1108,7 +1125,7 @@
             ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (isNewHighScore ? 3.2 : 2.5));
         }
 
-        let lastFrameTime = 0;
+        
         function gameLoop(timestamp) {
             if (!lastFrameTime) {
                 lastFrameTime = timestamp;
