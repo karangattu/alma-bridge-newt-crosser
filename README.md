@@ -4,15 +4,27 @@ Help the newts safely cross Alma Bridge Road!
 
 ## How to Play
 
-- **Objective:** Guide the newt from the bottom of the screen, across the road, to the safety of the forest at the top. Avoid getting hit by vehicles!
-- **Controls:**
-  - **Keyboard:** Use the Arrow Keys to move up, down, left, or right. Press Enter to restart after a game over.
-  - **Touch/Swipe:** On mobile, swipe in any direction to move. You can also use the on-screen arrow buttons.
-  - **Restart:** Tap the screen or press Enter when the game is over to play again.
+- Objective: Get the newt from the bottom to the top without getting hit.
+- Controls:
+  - Keyboard: Arrow keys to move. P to pause/resume. Enter to restart after Game Over.
+  - Mobile: Swipe to move, or tap the on‑screen arrow buttons. Tap ▶ in the top‑left to pause/resume.
+  - Restart: Tap the screen or press Enter on Game Over.
 
-## Scoring
-- Each successful crossing increases your score by 1.
-- Try to beat your high score!
+## Scoring and Lives
+
+- You start with 3 lives. Collisions cost 1 life.
+- Each successful crossing adds +1 to your score.
+- Your best run is saved as High Score in your browser.
+
+## Tips
+
+- Watch traffic direction and speed; trucks are slower but longer, motorcycles are quick.
+- You can pause anytime to take a breather.
+
+## Run locally
+
+Just open `index.html` in a modern browser. If the canvas doesn’t size correctly, try resizing the window.
 
 ## About
+
 To learn more about the plight of the newts crossing Alma Bridge Road, visit [bioblitz.club/newts](http://bioblitz.club/newts).
