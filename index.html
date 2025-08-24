@@ -1061,48 +1061,78 @@
             const y = runner.y;
             const size = TILE_SIZE;
             const facing = runner.movingRight ? 1 : -1;
-            const bobHeight = Math.sin(runner.runPhase * 2) * (size * 0.05);
+            const bobHeight = Math.sin(runner.runPhase * 2) * (size * 0.08);
             const skinTone = runner.skinTone || '#e0ac69';
 
             ctx.save();
             ctx.translate(x, y + bobHeight);
+            const thighLen = size * 0.28;
+            const shinLen = size * 0.28;
+            const legW = Math.max(2, size * 0.06);
+            const leftOffsetX = -size * 0.12;
+            const rightOffsetX = size * 0.12;
+            const rp = runner.runPhase;
 
-            const legAngle1 = Math.sin(runner.runPhase) * 0.5;
-            const legAngle2 = Math.sin(runner.runPhase + Math.PI) * 0.5;
-            ctx.save();
-            ctx.translate(0, 0);
-            ctx.rotate(legAngle1);
-            ctx.fillStyle = skinTone;
-            ctx.fillRect(-size * 0.03, 0, size * 0.06, size * 0.5);
-            ctx.restore();
+            const drawLeg = (offsetX, phaseOffset) => {
+                const phase = rp + phaseOffset;
+                const hipAngle = Math.sin(phase) * 0.9;
+                const kneeBendFactor = Math.max(0, Math.sin(phase + Math.PI * 0.25));
+                const kneeAngle = -kneeBendFactor * 1.2;
 
-            ctx.save();
-            ctx.translate(0, 0);
-            ctx.rotate(legAngle2);
-            ctx.fillStyle = skinTone;
-            ctx.fillRect(-size * 0.03, 0, size * 0.06, size * 0.5);
-            ctx.restore();
+                ctx.save();
+                ctx.translate(offsetX, 0);
+                ctx.rotate(hipAngle);
+                ctx.fillStyle = skinTone;
+                ctx.fillRect(-legW / 2, 0, legW, thighLen);
+                ctx.translate(0, thighLen);
+                ctx.rotate(kneeAngle);
+                ctx.fillRect(-legW / 2, 0, legW, shinLen);
+                ctx.translate(0, shinLen);
+                const footTilt = (Math.sin(phase + Math.PI * 0.5) * 0.6);
+                ctx.rotate(footTilt);
+                ctx.fillRect(-legW * 1.1, 0, legW * 2.2, legW * 0.9);
+                ctx.restore();
+            };
+
+            drawLeg(leftOffsetX, 0);
+            drawLeg(rightOffsetX, Math.PI);
 
             ctx.fillStyle = runner.outfit.shirt;
             ctx.fillRect(-size * 0.15, -size * 0.5, size * 0.3, size * 0.3);
             ctx.fillStyle = runner.outfit.shorts;
             ctx.fillRect(-size * 0.15, -size * 0.2, size * 0.3, size * 0.2);
 
-            const armAngle1 = Math.sin(runner.runPhase + Math.PI) * 0.7;
-            const armAngle2 = Math.sin(runner.runPhase) * 0.7;
+            const shoulderY = -size * 0.45;
+            const shoulderOffsetX = size * 0.18;
+            const hipLeft = Math.sin(rp) * 0.9;
+            const hipRight = Math.sin(rp + Math.PI) * 0.9;
+            const armAngleLeft = -hipLeft * 0.8;
+            const armAngleRight = -hipRight * 0.8;
+
+            const upperArmLen = size * 0.18;
+            const forearmLen = size * 0.18;
+            const armW = Math.max(2, size * 0.055);
 
             ctx.save();
-            ctx.translate(0, -size * 0.4);
-            ctx.rotate(armAngle1);
+            ctx.translate(-shoulderOffsetX, shoulderY);
+            ctx.rotate(armAngleLeft);
             ctx.fillStyle = skinTone;
-            ctx.fillRect(0, 0, size * 0.25 * facing, size * 0.06);
+            ctx.fillRect(-armW / 2, 0, armW, upperArmLen);
+            ctx.translate(0, upperArmLen);
+            const elbowBend = Math.max(-1, Math.min(1, -Math.sin(rp) * 0.6));
+            ctx.rotate(elbowBend);
+            ctx.fillRect(-armW / 2, 0, armW, forearmLen);
             ctx.restore();
 
             ctx.save();
-            ctx.translate(0, -size * 0.4);
-            ctx.rotate(armAngle2);
+            ctx.translate(shoulderOffsetX, shoulderY);
+            ctx.rotate(armAngleRight);
             ctx.fillStyle = skinTone;
-            ctx.fillRect(0, 0, size * -0.25 * facing, size * 0.06);
+            ctx.fillRect(-armW / 2, 0, armW, upperArmLen);
+            ctx.translate(0, upperArmLen);
+            const elbowBendR = Math.max(-1, Math.min(1, -Math.sin(rp + Math.PI) * 0.6));
+            ctx.rotate(elbowBendR);
+            ctx.fillRect(-armW / 2, 0, armW, forearmLen);
             ctx.restore();
 
             ctx.fillStyle = skinTone;
