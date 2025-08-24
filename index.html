@@ -1116,6 +1116,7 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
+            drawReflections();
             drawParticles();
 
             scenery.runners.forEach(drawRunner);
@@ -1133,6 +1134,8 @@
             }
 
             drawRain();
+
+            drawVignette();
 
             drawUI();
 
@@ -1339,11 +1342,14 @@
             ctx.strokeStyle = "#ffd700";
             ctx.lineWidth = 6;
             ctx.setLineDash([TILE_SIZE * 0.8, TILE_SIZE * 0.9]);
+            const dashOffset = (gameTime / 12) % (TILE_SIZE * 1.7);
+            ctx.lineDashOffset = -dashOffset;
             ctx.beginPath();
             ctx.moveTo(0, ROAD_CENTER_Y);
             ctx.lineTo(canvas.width, ROAD_CENTER_Y);
             ctx.stroke();
             ctx.setLineDash([]);
+            ctx.lineDashOffset = 0;
 
             const waterY = ROAD_BOTTOM_Y;
             const waterHeight = canvas.height - waterY;
@@ -1734,7 +1740,7 @@
             ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
 
             ctx.textAlign = "left";
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillStyle = "rgba(0,0,0,0.62)";
             ctx.roundRect(15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
             ctx.fill();
             ctx.fillStyle = "white";
@@ -1768,6 +1774,49 @@
             if (paused && !gameOver) {
                 drawPauseOverlay();
             }
+        }
+
+        function drawReflections() {
+            if (!raining) return;
+            const reflectHeight = TILE_SIZE * 1.2;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = 0.06;
+            for (let i = 0; i < vehicles.length; i++) {
+                const v = vehicles[i];
+                const rx = v.x + v.width * 0.5;
+                const ry = v.y + v.height * 0.95;
+                const grad = ctx.createLinearGradient(0, ry, 0, ry + reflectHeight);
+                grad.addColorStop(0, 'rgba(200,220,255,0.5)');
+                grad.addColorStop(1, 'rgba(200,220,255,0.0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.ellipse(rx, ry + reflectHeight * 0.2, v.width * 0.6, reflectHeight * 0.6, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            if (newt) {
+                const rx = newt.x + newt.width * 0.5;
+                const ry = newt.y + newt.height * 0.95;
+                const grad = ctx.createLinearGradient(0, ry, 0, ry + reflectHeight);
+                grad.addColorStop(0, 'rgba(255,220,200,0.32)');
+                grad.addColorStop(1, 'rgba(255,220,200,0.0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.ellipse(rx, ry + reflectHeight * 0.2, newt.width * 0.6, reflectHeight * 0.6, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawVignette() {
+            const vAlpha = 0.25;
+            ctx.save();
+            const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.25, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.9);
+            grad.addColorStop(0, `rgba(0,0,0,0)`);
+            grad.addColorStop(1, `rgba(0,0,0,${vAlpha})`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
         }
 
         function drawGameOver() {
