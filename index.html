@@ -269,7 +269,7 @@
                 style="width:100%; padding:.75rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font-family:'Poppins',sans-serif; font-size:1rem; outline:none;" />
             <div id="leaderboardSplash"
                 style="width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:1rem; box-sizing:border-box; text-align:left;">
-                <div style="font-weight:600; margin-bottom:.5rem; color:var(--accent-color);">Top 5 Global Scores</div>
+                <div style="font-weight:600; margin-bottom:.5rem; color:var(--accent-color);">Top 5 Scores</div>
                 <ol id="leaderboardSplashList"
                     style="margin:0; padding-left:1.2rem; font-size:.9rem; line-height:1.4; opacity:.8;">
                     <li>Loading...</li>
@@ -1789,7 +1789,7 @@
             ctx.fill();
             ctx.fillStyle = "white";
             const topGlobal = leaderboardEntries.length ? leaderboardEntries[0].score : 0;
-            const centerText = playerName ? `${playerName} Best: ${globalHighScoreForPlayer || 0}  |  Global Top: ${topGlobal}` : `Global Top: ${topGlobal}`;
+            const centerText = playerName ? `${playerName} Best: ${globalHighScoreForPlayer || 0}  |  Top Score: ${topGlobal}` : `Top Score: ${topGlobal}`;
             ctx.fillText(centerText, canvas.width / 2, 15 + TILE_SIZE * 0.65);
 
             ctx.restore();
@@ -1869,8 +1869,8 @@
             }
 
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
-            ctx.font = `600 ${TILE_SIZE * 0.6}px 'Poppins'`;
-            ctx.fillText('Top 5 Global', canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.8);
+            ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
+            ctx.fillText('Top 5 Scores', canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.8);
             ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
             leaderboardEntries.forEach((e, i) => {
                 ctx.fillStyle = '#fff';
