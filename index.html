@@ -303,6 +303,7 @@
 
         let TILE_SIZE = 40;
         let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
+        let TRAIL_HEIGHT = 0;
         let score = 0;
         let globalHighScoreForPlayer = 0;
         let lives = 3;
@@ -325,9 +326,9 @@
         let rainDrops = [];
         let nextRainStart = 0;
         let rainEndTime = 0;
-        const RAIN_MIN_INTERVAL = 500;
-        const RAIN_MAX_INTERVAL = 4000;
-        const RAIN_MIN_DURATION = 5000;
+        const RAIN_MIN_INTERVAL = 2500;
+        const RAIN_MAX_INTERVAL = 15000;
+        const RAIN_MIN_DURATION = 2000;
         const RAIN_MAX_DURATION = 25000;
         const PARTICLE_COUNT = 40;
 
@@ -401,6 +402,7 @@
             ROAD_CENTER_Y = canvas.height / 2;
             ROAD_TOP_Y = ROAD_CENTER_Y - TILE_SIZE * 3;
             ROAD_BOTTOM_Y = ROAD_CENTER_Y + TILE_SIZE * 3;
+            TRAIL_HEIGHT = TILE_SIZE * 1.2;
         }
 
         function resetNewt() {
@@ -1003,8 +1005,8 @@
         function spawnRunner(count = 1) {
             for (let i = 0; i < count; i++) {
                 const onTopSide = Math.random() < 0.5;
-                const baseY = onTopSide ? ROAD_TOP_Y - TILE_SIZE * 1.3 : ROAD_BOTTOM_Y + TILE_SIZE * 1.0;
-                const y = baseY + (Math.random() - 0.5) * TILE_SIZE * 0.6;
+                const baseY = onTopSide ? (ROAD_TOP_Y - TRAIL_HEIGHT / 2) : (ROAD_BOTTOM_Y + TRAIL_HEIGHT / 2);
+                const y = baseY + (Math.random() - 0.5) * (TRAIL_HEIGHT * 0.6);
 
                 const movingRight = Math.random() < 0.5;
                 const x = movingRight ? -TILE_SIZE * (1 + Math.random() * 3) : canvas.width + TILE_SIZE * (1 + Math.random() * 3);
@@ -1282,6 +1284,9 @@
             ctx.fillStyle = "#277a4d";
             ctx.fillRect(0, 0, canvas.width, ROAD_TOP_Y);
 
+            ctx.fillStyle = '#7a4f2b';
+            ctx.fillRect(0, ROAD_TOP_Y - TRAIL_HEIGHT, canvas.width, TRAIL_HEIGHT);
+
             scenery.waitingNewts.forEach(n => drawWaitingNewt(n.x, n.y, n.size));
             scenery.trees.forEach(tree => {
                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--trunk-color');
@@ -1329,6 +1334,9 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, waterY, canvas.width, waterHeight);
 
+            ctx.fillStyle = '#7a4f2b';
+            ctx.fillRect(0, ROAD_BOTTOM_Y, canvas.width, TRAIL_HEIGHT);
+
             ctx.font = `bold ${TILE_SIZE * 0.8}px 'Poppins'`;
             ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
             ctx.textAlign = "center";
@@ -1341,93 +1349,65 @@
             ctx.save();
             ctx.translate(x, y);
             drawMotionStreak(speed, w, h);
-
-            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
             ctx.beginPath();
-            ctx.ellipse(w / 2, h * 0.93, (w / 2) * 1.1, h * 0.17, 0, 0, Math.PI * 2);
+            ctx.ellipse(w * 0.5, h * 0.95, w * 0.6, h * 0.18, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            drawWheel(w * 0.22, h * 0.86, h * 0.18, wheelRot);
-            drawWheel(w * 0.78, h * 0.86, h * 0.18, wheelRot);
-
-            const bodyGrad = ctx.createLinearGradient(0, h * 0.1, 0, h * 0.9);
-            bodyGrad.addColorStop(0.3, lighten(color, 0.2));
-            bodyGrad.addColorStop(0.6, color);
-            bodyGrad.addColorStop(0.9, darken(color, 0.4));
+            const bodyGrad = ctx.createLinearGradient(0, 0, 0, h);
+            bodyGrad.addColorStop(0, lighten(color, 0.28));
+            bodyGrad.addColorStop(0.45, color);
+            bodyGrad.addColorStop(1, darken(color, 0.3));
             ctx.fillStyle = bodyGrad;
 
+            const radius = Math.min(w, h) * 0.14;
             ctx.beginPath();
-            ctx.moveTo(w * 0.05, h * 0.75);
-
-            ctx.lineTo(w * 0.05, h * 0.45);
-            ctx.quadraticCurveTo(w * 0.02, h * 0.3, w * 0.15, h * 0.2);
-
-            ctx.quadraticCurveTo(w * 0.2, h * 0.15, w * 0.32, h * 0.15);
-
-            ctx.lineTo(w * 0.68, h * 0.15);
-
-            ctx.quadraticCurveTo(w * 0.8, h * 0.15, w * 0.85, h * 0.2);
-
-            ctx.quadraticCurveTo(w * 0.98, h * 0.3, w * 0.95, h * 0.45);
-            ctx.lineTo(w * 0.95, h * 0.75);
-
-            ctx.quadraticCurveTo(w * 0.95, h * 0.9, w * 0.85, h * 0.9);
-            ctx.lineTo(w * 0.15, h * 0.9);
-            ctx.quadraticCurveTo(w * 0.05, h * 0.9, w * 0.05, h * 0.75);
+            ctx.moveTo(radius, h * 0.6);
+            ctx.lineTo(w - radius, h * 0.6);
+            ctx.quadraticCurveTo(w, h * 0.6, w, h * 0.5);
+            ctx.lineTo(w, h * 0.28);
+            ctx.quadraticCurveTo(w, h * 0.18, w - radius, h * 0.18);
+            ctx.lineTo(radius, h * 0.18);
+            ctx.quadraticCurveTo(0, h * 0.18, 0, h * 0.28);
+            ctx.lineTo(0, h * 0.5);
+            ctx.quadraticCurveTo(0, h * 0.6, radius, h * 0.6);
             ctx.closePath();
             ctx.fill();
 
-            const glassGrad = ctx.createLinearGradient(w * 0.5, h * 0.15, w * 0.5, h * 0.5);
-            glassGrad.addColorStop(0, 'rgba(200,230,255,0.95)');
-            glassGrad.addColorStop(0.5, 'rgba(160,190,220,0.8)');
-            glassGrad.addColorStop(1, 'rgba(120,150,190,0.6)');
-            ctx.fillStyle = glassGrad;
-
+            ctx.fillStyle = darken(color, 0.06);
             ctx.beginPath();
-            ctx.moveTo(w * 0.22, h * 0.18);
-            ctx.quadraticCurveTo(w * 0.28, h * 0.15, w * 0.34, h * 0.16);
-            ctx.lineTo(w * 0.66, h * 0.16);
-            ctx.quadraticCurveTo(w * 0.72, h * 0.15, w * 0.78, h * 0.18);
-            ctx.quadraticCurveTo(w * 0.76, h * 0.35, w * 0.74, h * 0.48);
-            ctx.lineTo(w * 0.26, h * 0.48);
-            ctx.quadraticCurveTo(w * 0.24, h * 0.35, w * 0.22, h * 0.18);
+            ctx.moveTo(radius, h * 0.62);
+            ctx.lineTo(w - radius, h * 0.62);
+            ctx.lineTo(w - radius, h * 0.88);
+            ctx.lineTo(radius, h * 0.88);
             ctx.closePath();
             ctx.fill();
 
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-            ctx.lineWidth = 2;
+            const winH = h * 0.22;
+            const winY = h * 0.22;
+            const windowGrad = ctx.createLinearGradient(0, winY, 0, winY + winH);
+            windowGrad.addColorStop(0, 'rgba(200,230,255,0.95)');
+            windowGrad.addColorStop(1, 'rgba(120,150,190,0.55)');
+            ctx.fillStyle = windowGrad;
             ctx.beginPath();
-            ctx.moveTo(w * 0.22, h * 0.18);
-            ctx.lineTo(w * 0.78, h * 0.18);
-            ctx.moveTo(w * 0.26, h * 0.33);
-            ctx.lineTo(w * 0.74, h * 0.33);
-            ctx.moveTo(w * 0.5, h * 0.18);
-            ctx.lineTo(w * 0.5, h * 0.48);
-            ctx.stroke();
-
-            ctx.fillStyle = 'rgba(240,240,240,0.8)';
-            ctx.fillRect(w * 0.2, h * 0.4, w * 0.06, h * 0.04);
-            ctx.fillRect(w * 0.74, h * 0.4, w * 0.06, h * 0.04);
-
-            ctx.fillStyle = darken(color, 0.6);
-            ctx.beginPath();
-            ctx.roundRect(w * 0.1, h * 0.55, w * 0.8, h * 0.14, h * 0.05);
+            ctx.moveTo(w * 0.18, winY + 2);
+            ctx.lineTo(w * 0.82, winY + 2);
+            ctx.lineTo(w * 0.72, winY + winH - 2);
+            ctx.lineTo(w * 0.28, winY + winH - 2);
+            ctx.closePath();
             ctx.fill();
 
-            ctx.fillStyle = 'rgba(240,240,240,0.9)';
-            const plateWidth = w * 0.15;
-            const plateX = w * 0.5 - plateWidth / 2;
-            ctx.fillRect(plateX, h * 0.62, plateWidth, h * 0.07);
+            drawWheel(w * 0.22, h * 0.88, h * 0.18, wheelRot);
+            drawWheel(w * 0.78, h * 0.88, h * 0.18, wheelRot);
 
-            ctx.fillStyle = lighten(color, 0.3);
-            ctx.beginPath();
-            ctx.roundRect(w * 0.1, h * 0.69, w * 0.8, h * 0.05, h * 0.02);
-            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            const plateW = w * 0.14;
+            ctx.fillRect(w * 0.5 - plateW / 2, h * 0.66, plateW, h * 0.06);
 
-            const frontLightX = speed > 0 ? w - w * 0.12 : w * 0.12;
-            const rearLightX = speed > 0 ? w * 0.12 : w - w * 0.12;
-            drawHeadlight(frontLightX, h * 0.6, h * 0.12);
-            drawTaillight(rearLightX, h * 0.6, h * 0.12);
+            const frontLightX = speed > 0 ? w - w * 0.08 : w * 0.08;
+            const rearLightX = speed > 0 ? w * 0.08 : w - w * 0.08;
+            drawHeadlight(frontLightX, h * 0.52, h * 0.10);
+            drawTaillight(rearLightX, h * 0.52, h * 0.10);
 
             ctx.restore();
         }
@@ -1436,91 +1416,54 @@
             const { x, y, width: w, height: h, color, baseSpeed: speed, wheelRot } = vehicle;
             ctx.save();
             ctx.translate(x, y);
-
             drawMotionStreak(speed, w, h);
 
-            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
             ctx.beginPath();
-            ctx.ellipse(w / 2, h * 0.92, (w / 2) * 1.05, h * 0.16, 0, 0, Math.PI * 2);
+            ctx.ellipse(w * 0.5, h * 0.94, w * 0.7, h * 0.14, 0, 0, Math.PI * 2);
             ctx.fill();
 
+            const trailerWidth = w * 0.6;
             const cabWidth = w * 0.28;
-            const sleeperWidth = w * 0.18;
-            const trailerWidth = w * 0.54;
-            const gap = w * 0.02;
-            const cabX = speed > 0 ? trailerWidth + gap + sleeperWidth : 0;
-            const sleeperX = speed > 0 ? trailerWidth + gap : cabWidth;
-            const trailerX = speed > 0 ? 0 : cabWidth + sleeperWidth + gap;
-            const cabFrontX = speed > 0 ? cabX + cabWidth : cabX;
-            const trailerBackX = speed > 0 ? trailerX : trailerX + trailerWidth;
+            const trailerX = speed > 0 ? 0 : cabWidth + w * 0.02;
+            const cabX = speed > 0 ? trailerWidth + w * 0.02 : 0;
 
-            const trailerGrad = ctx.createLinearGradient(0, h * 0.08, 0, h * 0.9);
-            trailerGrad.addColorStop(0, '#dfe5e8');
-            trailerGrad.addColorStop(0.5, '#c4ccd0');
-            trailerGrad.addColorStop(1, '#9aa2a6');
+            const trailerGrad = ctx.createLinearGradient(trailerX, 0, trailerX + trailerWidth, 0);
+            trailerGrad.addColorStop(0, darken('#dfe5e8', 0.0));
+            trailerGrad.addColorStop(0.5, '#d7dde1');
+            trailerGrad.addColorStop(1, darken('#dfe5e8', 0.05));
             ctx.fillStyle = trailerGrad;
-            ctx.roundRect(trailerX, h * 0.08, trailerWidth, h * 0.82, h * 0.04);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-            ctx.lineWidth = 1;
-            for (let i = 1; i < 5; i++) {
-                const px = trailerX + (trailerWidth * i) / 5;
-                ctx.beginPath();
-                ctx.moveTo(px, h * 0.1);
-                ctx.lineTo(px, h * 0.88);
-                ctx.stroke();
-            }
-            ctx.fillStyle = 'rgba(0,0,0,0.15)';
-            ctx.fillRect(trailerX + trailerWidth * 0.04, h * 0.78, trailerWidth * 0.92, h * 0.1);
-
-            const sleeperGrad = ctx.createLinearGradient(0, h * 0.18, 0, h * 0.85);
-            sleeperGrad.addColorStop(0, darken(color, 0.05));
-            sleeperGrad.addColorStop(1, darken(color, 0.25));
-            ctx.fillStyle = sleeperGrad;
-            ctx.roundRect(sleeperX, h * 0.18, sleeperWidth, h * 0.74, h * 0.08);
-            ctx.fill();
-
-            const cabGrad = ctx.createLinearGradient(0, h * 0.18, 0, h * 0.9);
-            cabGrad.addColorStop(0, lighten(color, 0.2));
-            cabGrad.addColorStop(1, darken(color, 0.2));
-            ctx.fillStyle = cabGrad;
-            ctx.roundRect(cabX, h * 0.2, cabWidth, h * 0.72, h * 0.12);
-            ctx.fill();
-
-            ctx.fillStyle = 'rgba(230,245,255,0.9)';
             ctx.beginPath();
-            if (speed > 0) {
-                ctx.moveTo(cabX + cabWidth * 0.2, h * 0.22);
-                ctx.lineTo(cabX + cabWidth * 0.95, h * 0.22);
-                ctx.lineTo(cabX + cabWidth * 0.78, h * 0.5);
-                ctx.lineTo(cabX + cabWidth * 0.2, h * 0.5);
-            } else {
-                ctx.moveTo(cabX + cabWidth * 0.05, h * 0.22);
-                ctx.lineTo(cabX + cabWidth * 0.8, h * 0.22);
-                ctx.lineTo(cabX + cabWidth * 0.8, h * 0.5);
-                ctx.lineTo(cabX + cabWidth * 0.22, h * 0.5);
-            }
+            ctx.roundRect(trailerX, h * 0.14, trailerWidth, h * 0.72, h * 0.04);
+            ctx.fill();
+
+            ctx.fillStyle = darken(color, 0.06);
+            ctx.beginPath();
+            ctx.roundRect(cabX, h * 0.18, cabWidth, h * 0.64, h * 0.08);
+            ctx.fill();
+
+            const wy = h * 0.92;
+            drawWheel(trailerX + trailerWidth * 0.22, wy, h * 0.14, wheelRot);
+            drawWheel(trailerX + trailerWidth * 0.5, wy, h * 0.14, wheelRot + 0.5);
+            drawWheel(trailerX + trailerWidth * 0.78, wy, h * 0.14, wheelRot + 1.0);
+            drawWheel(cabX + cabWidth * 0.55, wy, h * 0.16, wheelRot);
+
+            const cabWindowGrad = ctx.createLinearGradient(cabX, h * 0.2, cabX, h * 0.5);
+            cabWindowGrad.addColorStop(0, 'rgba(200,230,255,0.95)');
+            cabWindowGrad.addColorStop(1, 'rgba(120,150,190,0.6)');
+            ctx.fillStyle = cabWindowGrad;
+            ctx.beginPath();
+            ctx.moveTo(cabX + cabWidth * 0.12, h * 0.28);
+            ctx.lineTo(cabX + cabWidth * 0.88, h * 0.28);
+            ctx.lineTo(cabX + cabWidth * 0.7, h * 0.48);
+            ctx.lineTo(cabX + cabWidth * 0.3, h * 0.48);
             ctx.closePath();
             ctx.fill();
 
-            ctx.fillStyle = '#555';
-            const stackX = speed > 0 ? sleeperX + sleeperWidth * 0.15 : sleeperX + sleeperWidth * 0.85;
-            ctx.fillRect(stackX - w * 0.01, h * 0.05, w * 0.02, h * 0.3);
-            ctx.fillStyle = '#999';
-            ctx.fillRect(stackX - w * 0.012, h * 0.03, w * 0.024, h * 0.05);
+            const trailerBackX = trailerX + trailerWidth;
+            drawHeadlight(cabX + cabWidth * 0.95, h * 0.56, h * 0.16);
+            drawTaillight(trailerBackX - 4, h * 0.56, h * 0.14);
 
-            const rear1 = trailerX + trailerWidth * 0.3;
-            const rear2 = trailerX + trailerWidth * 0.5;
-            const rear3 = trailerX + trailerWidth * 0.7;
-            const front = cabX + cabWidth * 0.55;
-            const wy = h * 0.9;
-            drawWheel(rear1, wy, h * 0.15, wheelRot);
-            drawWheel(rear2, wy, h * 0.15, wheelRot + 0.5);
-            drawWheel(rear3, wy, h * 0.15, wheelRot + 1.0);
-            drawWheel(front, wy, h * 0.16, wheelRot);
-
-            drawHeadlight(cabFrontX, h * 0.55, h * 0.16);
-            drawTaillight(trailerBackX, h * 0.55, h * 0.16);
             ctx.restore();
         }
 
