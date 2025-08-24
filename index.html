@@ -47,6 +47,7 @@
             overflow: hidden;
         }
 
+        /* subtle animated aurora behind the canvas */
         @keyframes auroraMove {
             0% {
                 background-position: 0% 50%;
@@ -174,45 +175,24 @@
         body.touch-enabled #mobile-controls {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            width: calc(100% - 48px);
-            max-width: 420px;
-            position: fixed;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: calc(env(safe-area-inset-bottom, 16px) + 12px);
-            padding: 8px 12px;
+            width: 180px;
             justify-items: center;
             align-items: center;
-            background: linear-gradient(180deg, rgba(10, 10, 14, 0.18), rgba(8, 8, 10, 0.12));
-            border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(6px);
-            gap: 10px;
-            z-index: 60;
         }
 
         #mobile-controls button {
-            width: 64px;
-            height: 64px;
-            min-width: 56px;
-            min-height: 56px;
+            width: 56px;
+            height: 56px;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.06));
             border: 1px solid rgba(255, 255, 255, 0.06);
             color: var(--accent-color);
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             border-radius: 14px;
-            font-weight: 800;
-            box-shadow: 0 6px 22px rgba(0, 0, 0, 0.38);
-            touch-action: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-            user-select: none;
+            font-weight: 700;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
         }
 
-        #mobile-controls button.active {
-            transform: translateY(1px) scale(0.98);
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) inset, 0 6px 18px rgba(80, 227, 194, 0.18);
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
-        }
+        /* legacy styles removed - modern button above */
 
         body.touch-enabled #mobile-controls .up {
             grid-column: 2;
@@ -247,6 +227,7 @@
             }
         }
 
+        /* HUD buttons (e.g., Pause) */
         #hud-buttons {
             position: absolute;
             top: 10px;
@@ -414,17 +395,11 @@
         function setCanvasDimensions() {
             const container = document.getElementById('game-container');
             const { width, height } = container.getBoundingClientRect();
+            canvas.width = width;
+            canvas.height = height;
 
-            // Cap devicePixelRatio on mobile to avoid huge canvas sizes and jank
-            const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-            canvas.width = Math.max(320, Math.round(width * dpr));
-            canvas.height = Math.max(240, Math.round(height * dpr));
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            TILE_SIZE = (canvas.height / dpr) / 18;
-            ROAD_CENTER_Y = (canvas.height / dpr) / 2;
+            TILE_SIZE = canvas.height / 18;
+            ROAD_CENTER_Y = canvas.height / 2;
             ROAD_TOP_Y = ROAD_CENTER_Y - TILE_SIZE * 3;
             ROAD_BOTTOM_Y = ROAD_CENTER_Y + TILE_SIZE * 3;
             TRAIL_HEIGHT = TILE_SIZE * 1.2;
@@ -579,11 +554,6 @@
                 'event_category': 'Game',
                 'event_label': 'Play Button Clicked'
             });
-
-            // show mobile controls when appropriate
-            if (document.body.classList.contains('touch-enabled')) {
-                mobileControls.style.display = 'grid';
-            }
         }
 
         function restartGame() {
@@ -759,89 +729,6 @@
             handleSwipe();
         }, { passive: false });
 
-        // --- Mobile improvements: pointer/drag to move and touch-hold continuous controls ---
-        let activeKeys = {};
-        let pointerDown = false;
-        let pointerId = null;
-
-        function startHoldKey(key, el) {
-            activeKeys[key] = true;
-            if (el) el.classList.add('active');
-        }
-        function stopHoldKey(key, el) {
-            delete activeKeys[key];
-            if (el) el.classList.remove('active');
-        }
-
-        // apply continuous input each frame based on activeKeys
-        function applyContinuousInput(deltaTime) {
-            if (!newt || gameOver || paused) return;
-            const moveAmount = newt.speed * Math.max(1, deltaTime * 60);
-            if (activeKeys['ArrowUp']) { newt.y -= moveAmount; newt.targetRotation = 0; }
-            if (activeKeys['ArrowDown']) { newt.y += moveAmount; newt.targetRotation = Math.PI; }
-            if (activeKeys['ArrowLeft']) { newt.x -= moveAmount; newt.targetRotation = -Math.PI / 2; }
-            if (activeKeys['ArrowRight']) { newt.x += moveAmount; newt.targetRotation = Math.PI / 2; }
-            // clamp
-            newt.x = Math.max(0, Math.min(canvas.width / (window.devicePixelRatio || 1) - newt.width, newt.x));
-            newt.y = Math.max(0, Math.min(canvas.height / (window.devicePixelRatio || 1) - newt.height, newt.y));
-        }
-
-        // enhance mobile control buttons to support hold
-        mobileControls.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('touchstart', (ev) => {
-                ev.preventDefault();
-                startHoldKey(btn.dataset.key, btn);
-            }, { passive: false });
-            btn.addEventListener('touchend', (ev) => {
-                ev.preventDefault();
-                stopHoldKey(btn.dataset.key, btn);
-            }, { passive: false });
-            btn.addEventListener('touchcancel', (ev) => {
-                ev.preventDefault();
-                stopHoldKey(btn.dataset.key, btn);
-            }, { passive: false });
-            btn.addEventListener('mousedown', () => startHoldKey(btn.dataset.key, btn));
-            btn.addEventListener('mouseup', () => stopHoldKey(btn.dataset.key, btn));
-            btn.addEventListener('mouseleave', () => stopHoldKey(btn.dataset.key, btn));
-        });
-
-        // pointer drag to move newt on canvas (better for mobile)
-        canvas.addEventListener('pointerdown', (ev) => {
-            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-            pointerDown = true;
-            pointerId = ev.pointerId;
-            canvas.setPointerCapture(pointerId);
-            const rect = canvas.getBoundingClientRect();
-            const x = (ev.clientX - rect.left);
-            const y = (ev.clientY - rect.top);
-            if (newt && !gameOver && !paused) {
-                // move toward pointer
-                newt.x = Math.max(0, Math.min(canvas.width / (window.devicePixelRatio || 1) - newt.width, x - newt.width / 2));
-                newt.y = Math.max(0, Math.min(canvas.height / (window.devicePixelRatio || 1) - newt.height, y - newt.height / 2));
-            }
-        });
-        canvas.addEventListener('pointermove', (ev) => {
-            if (!pointerDown || ev.pointerId !== pointerId) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (ev.clientX - rect.left);
-            const y = (ev.clientY - rect.top);
-            if (newt && !gameOver && !paused) {
-                newt.x = Math.max(0, Math.min(canvas.width / (window.devicePixelRatio || 1) - newt.width, x - newt.width / 2));
-                newt.y = Math.max(0, Math.min(canvas.height / (window.devicePixelRatio || 1) - newt.height, y - newt.height / 2));
-            }
-        });
-        canvas.addEventListener('pointerup', (ev) => {
-            if (ev.pointerId !== pointerId) return;
-            pointerDown = false;
-            try { canvas.releasePointerCapture(pointerId); } catch (e) { }
-            pointerId = null;
-        });
-
-        // quick vibration helper (if supported)
-        function tryVibrate(ms = 40) {
-            if (navigator.vibrate) navigator.vibrate(ms);
-        }
-
 
         window.addEventListener('load', () => {
             if (nameInput) {
@@ -918,8 +805,6 @@
 
         function update(deltaTime) {
             if (gameOver) return;
-            // apply any held mobile controls
-            applyContinuousInput(deltaTime);
             if (gameStarted && newt) {
                 newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
             }
@@ -1071,7 +956,6 @@
 
         function handleCollision() {
             if (!newt) return;
-            tryVibrate(60);
 
             hitFlashUntil = gameTime + 250;
 
@@ -1102,10 +986,6 @@
 
                 submitScore();
                 fetchLeaderboard(true);
-                // hide mobile controls on game over
-                if (document.body.classList.contains('touch-enabled')) {
-                    mobileControls.style.display = 'none';
-                }
             } else {
                 setTimeout(resetNewt, 500);
             }
