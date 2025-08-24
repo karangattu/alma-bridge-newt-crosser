@@ -232,6 +232,18 @@
             To learn more about the plight of the newts crossing Alma Bridge Road, visit <a
                 href="http://bioblitz.club/newts" target="_blank">bioblitz.club/newts</a>
         </div>
+        <div style="display:flex; flex-direction:column; gap:.75rem; max-width:360px; width:100%; align-items:center;">
+            <input id="playerNameInput" maxlength="20" placeholder="Your name" aria-label="Player name"
+                style="width:100%; padding:.75rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font-family:'Poppins',sans-serif; font-size:1rem; outline:none;" />
+            <div id="leaderboardSplash"
+                style="width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:1rem; box-sizing:border-box; text-align:left;">
+                <div style="font-weight:600; margin-bottom:.5rem; color:var(--accent-color);">Top 5 Global Scores</div>
+                <ol id="leaderboardSplashList"
+                    style="margin:0; padding-left:1.2rem; font-size:.9rem; line-height:1.4; opacity:.8;">
+                    <li>Loading...</li>
+                </ol>
+            </div>
+        </div>
         <button class="play-button" id="playGameBtn">Play Game</button>
     </div>
 
@@ -259,14 +271,17 @@
 
         let TILE_SIZE = 40;
         let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
-        let score = 0;
-        let highScore = 0;
+        let score = 0; // local high score removed; using only global leaderboard now
+        let globalHighScoreForPlayer = 0;
         let lives = 3;
         let gameOver = false;
         let gameStarted = false;
         let paused = false;
         let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [] };
         let cleaner;
+        let playerName = '';
+        let leaderboardEntries = [];
+        let lastLeaderboardFetch = 0;
         let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
         let gameTime = 0;
         let hitFlashUntil = 0;
@@ -277,12 +292,60 @@
         const carColors = ["#B71C1C", "#1A237E", "#004D40", "#E65100", "#4A148C", "#37474F", "#C51162", "#d4ac0d"];
         const vehicleTemplates = {
             car: { width: 2.8, heightMultiplier: 1.5, speedMultiplier: 1.0, draw: drawCar },
-            truck: { width: 4.5, heightMultiplier: 2.8, speedMultiplier: 0.8, draw: drawTruck },
+            truck: { width: 5.2, heightMultiplier: 3.2, speedMultiplier: 0.75, draw: drawTruck },
             kayakCar: { width: 2.8, heightMultiplier: 1.5, speedMultiplier: 0.9, draw: drawKayakCar },
             motorcycle: { width: 2.0, heightMultiplier: 1.5, speedMultiplier: 1.5, draw: drawMotorcycle },
             bicycle: { width: 1.5, heightMultiplier: 1.5, speedMultiplier: 0.6, draw: drawBicycle },
         };
         const weightedVehicleTypes = ["car", "car", "car", "truck", "kayakCar", "motorcycle", "bicycle", "truck"];
+
+        const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzPFFLo3mlmKZahdFkPa8-8rdO2GkSYQaLuL_N1zBwLpf6L9LRX4QtS6hYrksmeRNlS5w/exec';
+
+        async function fetchLeaderboard(force = false) {
+            if (!GOOGLE_SHEET_WEBAPP_URL || GOOGLE_SHEET_WEBAPP_URL.startsWith('PUT_')) return; // not configured
+            if (!force && gameTime - lastLeaderboardFetch < 30000) return; // throttle to 30s
+            try {
+                const res = await fetch(GOOGLE_SHEET_WEBAPP_URL + '?t=' + Date.now(), { cache: 'no-store' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                leaderboardEntries = Array.isArray(data.top) ? data.top.slice(0, 5) : [];
+                if (playerName) {
+                    const me = (data.all || []).find(r => r.name === playerName);
+                    if (me) globalHighScoreForPlayer = me.score;
+                }
+                updateSplashLeaderboard();
+                lastLeaderboardFetch = gameTime;
+            } catch (e) {
+                // silent fail
+            }
+        }
+
+        async function submitScore() {
+            if (!playerName || score <= 0) return;
+            if (!GOOGLE_SHEET_WEBAPP_URL || GOOGLE_SHEET_WEBAPP_URL.startsWith('PUT_')) return;
+            try {
+                const form = new URLSearchParams({ name: playerName, score: String(score) });
+                await fetch(GOOGLE_SHEET_WEBAPP_URL, { method: 'POST', body: form });
+                fetchLeaderboard(true);
+            } catch (e) {
+                console.warn('Submit score failed', e);
+            }
+        }
+
+        function updateSplashLeaderboard() {
+            const listEl = document.getElementById('leaderboardSplashList');
+            if (!listEl) return;
+            listEl.innerHTML = '';
+            if (!leaderboardEntries.length) {
+                listEl.innerHTML = '<li>No scores yet</li>';
+                return;
+            }
+            leaderboardEntries.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `${entry.name}: ${entry.score}`;
+                listEl.appendChild(li);
+            });
+        }
 
         function setCanvasDimensions() {
             const container = document.getElementById('game-container');
@@ -332,7 +395,6 @@
             lives = 3;
             gameOver = false;
             lastFrameTime = 0;
-            highScore = parseInt(localStorage.getItem('newtHighScore')) || 0;
             resetNewt();
             initCleaner();
             createScenery();
@@ -340,6 +402,7 @@
             if (!gameStarted) {
                 draw();
             }
+            fetchLeaderboard(true);
         }
 
         function startGame() {
@@ -416,6 +479,7 @@
                         height: TILE_SIZE * template.heightMultiplier,
                         baseSpeed: lane.speed,
                         color: carColors[Math.floor(Math.random() * carColors.length)],
+                        wheelRot: Math.random() * Math.PI * 2,
                     };
                     if (vehicle.type === 'bicycle') {
                         vehicle.pedalPhase = Math.random() * Math.PI * 2;
@@ -425,7 +489,14 @@
             });
         }
 
-        playGameBtn.addEventListener('click', startGame);
+        const nameInput = document.getElementById('playerNameInput');
+        if (nameInput) {
+            nameInput.addEventListener('input', () => { playerName = nameInput.value.trim(); });
+        }
+        playGameBtn.addEventListener('click', () => {
+            playerName = (nameInput && nameInput.value.trim()) || playerName;
+            startGame();
+        });
         document.addEventListener("keydown", e => handleInput(e.key));
         document.addEventListener('keydown', e => {
             if (e.key === 'p' || e.key === 'P') {
@@ -544,7 +615,12 @@
             const difficultyFactor = Math.min(3.5, 1 + score * 0.08);
 
             vehicles.forEach(v => {
-                v.x += v.baseSpeed * BASE_SPEED_SCALAR * canvas.width * difficultyFactor * deltaTime;
+                const speedPxPerSec = v.baseSpeed * BASE_SPEED_SCALAR * canvas.width * difficultyFactor;
+                v.x += speedPxPerSec * deltaTime;
+                if (v.type !== 'bicycle') {
+                    const wheelRadius = v.height * 0.16;
+                    v.wheelRot = (v.wheelRot + (speedPxPerSec * deltaTime) / Math.max(1, wheelRadius)) % (Math.PI * 2);
+                }
 
                 if (v.type === 'bicycle') {
                     const pedalSpeed = 0.2;
@@ -681,15 +757,8 @@
                     'value': score
                 });
 
-                if (score > highScore) {
-                    highScore = score;
-                    localStorage.setItem('newtHighScore', highScore);
-                    gtag('event', 'new_high_score', {
-                        'event_category': 'Game',
-                        'event_label': 'New High Score Achieved',
-                        'value': highScore
-                    });
-                }
+                submitScore();
+                fetchLeaderboard(true);
             } else {
                 setTimeout(resetNewt, 500);
             }
@@ -914,7 +983,7 @@
         }
 
         function drawCar(vehicle) {
-            const { x, y, width: w, height: h, color, baseSpeed: speed } = vehicle;
+            const { x, y, width: w, height: h, color, baseSpeed: speed, wheelRot } = vehicle;
             ctx.save();
             ctx.translate(x, y);
 
@@ -925,8 +994,8 @@
             ctx.ellipse(w / 2, h * 0.92, (w / 2) * 1.1, h * 0.16, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            drawWheel(w * 0.22, h * 0.86, h * 0.18);
-            drawWheel(w * 0.78, h * 0.86, h * 0.18);
+            drawWheel(w * 0.22, h * 0.86, h * 0.18, wheelRot);
+            drawWheel(w * 0.78, h * 0.86, h * 0.18, wheelRot);
 
             const grad = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.8);
             grad.addColorStop(0, lighten(color, 0.15));
@@ -967,7 +1036,7 @@
         }
 
         function drawTruck(vehicle) {
-            const { x, y, width: w, height: h, color, baseSpeed: speed } = vehicle;
+            const { x, y, width: w, height: h, color, baseSpeed: speed, wheelRot } = vehicle;
             ctx.save();
             ctx.translate(x, y);
 
@@ -978,52 +1047,83 @@
             ctx.ellipse(w / 2, h * 0.92, (w / 2) * 1.05, h * 0.16, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            const cabWidth = w * 0.3;
-            const trailerWidth = w * 0.65;
-            const gap = w * 0.05;
-
-            const cabX = speed > 0 ? trailerWidth + gap : 0;
-            const trailerX = speed > 0 ? 0 : cabWidth + gap;
-
+            const cabWidth = w * 0.28;
+            const sleeperWidth = w * 0.18;
+            const trailerWidth = w * 0.54;
+            const gap = w * 0.02;
+            const cabX = speed > 0 ? trailerWidth + gap + sleeperWidth : 0;
+            const sleeperX = speed > 0 ? trailerWidth + gap : cabWidth;
+            const trailerX = speed > 0 ? 0 : cabWidth + sleeperWidth + gap;
             const cabFrontX = speed > 0 ? cabX + cabWidth : cabX;
             const trailerBackX = speed > 0 ? trailerX : trailerX + trailerWidth;
 
-            const trailerGrad = ctx.createLinearGradient(0, h * 0.1, 0, h * 0.9);
-            trailerGrad.addColorStop(0, '#cfd8dc');
-            trailerGrad.addColorStop(1, '#9ea7aa');
+            const trailerGrad = ctx.createLinearGradient(0, h * 0.08, 0, h * 0.9);
+            trailerGrad.addColorStop(0, '#dfe5e8');
+            trailerGrad.addColorStop(0.5, '#c4ccd0');
+            trailerGrad.addColorStop(1, '#9aa2a6');
             ctx.fillStyle = trailerGrad;
-            ctx.roundRect(trailerX, h * 0.1, trailerWidth, h * 0.8, h * 0.05);
+            ctx.roundRect(trailerX, h * 0.08, trailerWidth, h * 0.82, h * 0.04);
             ctx.fill();
             ctx.strokeStyle = 'rgba(0,0,0,0.08)';
             ctx.lineWidth = 1;
-            for (let i = 1; i < 4; i++) {
-                const px = trailerX + (trailerWidth * i) / 4;
+            for (let i = 1; i < 5; i++) {
+                const px = trailerX + (trailerWidth * i) / 5;
                 ctx.beginPath();
-                ctx.moveTo(px, h * 0.12);
+                ctx.moveTo(px, h * 0.1);
                 ctx.lineTo(px, h * 0.88);
                 ctx.stroke();
             }
-            ctx.fillStyle = '#95a5a6';
-            ctx.fillRect(trailerX + trailerWidth * 0.05, h * 0.74, trailerWidth * 0.9, h * 0.14);
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.fillRect(trailerX + trailerWidth * 0.04, h * 0.78, trailerWidth * 0.92, h * 0.1);
 
-            const cabGrad = ctx.createLinearGradient(0, h * 0.2, 0, h * 0.9);
-            cabGrad.addColorStop(0, lighten(color, 0.15));
-            cabGrad.addColorStop(1, darken(color, 0.15));
+            const sleeperGrad = ctx.createLinearGradient(0, h * 0.18, 0, h * 0.85);
+            sleeperGrad.addColorStop(0, darken(color, 0.05));
+            sleeperGrad.addColorStop(1, darken(color, 0.25));
+            ctx.fillStyle = sleeperGrad;
+            ctx.roundRect(sleeperX, h * 0.18, sleeperWidth, h * 0.74, h * 0.08);
+            ctx.fill();
+
+            const cabGrad = ctx.createLinearGradient(0, h * 0.18, 0, h * 0.9);
+            cabGrad.addColorStop(0, lighten(color, 0.2));
+            cabGrad.addColorStop(1, darken(color, 0.2));
             ctx.fillStyle = cabGrad;
-            ctx.roundRect(cabX, h * 0.2, cabWidth, h * 0.7, h * 0.1);
+            ctx.roundRect(cabX, h * 0.2, cabWidth, h * 0.72, h * 0.12);
             ctx.fill();
 
-            ctx.fillStyle = 'rgba(230, 245, 255, 0.85)';
-            ctx.roundRect(cabX + cabWidth * 0.12, h * 0.3, cabWidth * 0.76, h * 0.32, h * 0.05);
+            ctx.fillStyle = 'rgba(230,245,255,0.9)';
+            ctx.beginPath();
+            if (speed > 0) {
+                ctx.moveTo(cabX + cabWidth * 0.2, h * 0.22);
+                ctx.lineTo(cabX + cabWidth * 0.95, h * 0.22);
+                ctx.lineTo(cabX + cabWidth * 0.78, h * 0.5);
+                ctx.lineTo(cabX + cabWidth * 0.2, h * 0.5);
+            } else {
+                ctx.moveTo(cabX + cabWidth * 0.05, h * 0.22);
+                ctx.lineTo(cabX + cabWidth * 0.8, h * 0.22);
+                ctx.lineTo(cabX + cabWidth * 0.8, h * 0.5);
+                ctx.lineTo(cabX + cabWidth * 0.22, h * 0.5);
+            }
+            ctx.closePath();
             ctx.fill();
 
-            ctx.fillStyle = "#222";
-            drawWheel(trailerX + trailerWidth * 0.3, h * 0.9, h * 0.16);
-            drawWheel(trailerX + trailerWidth * 0.7, h * 0.9, h * 0.16);
-            drawWheel(cabX + cabWidth * 0.6, h * 0.9, h * 0.16);
+            ctx.fillStyle = '#555';
+            const stackX = speed > 0 ? sleeperX + sleeperWidth * 0.15 : sleeperX + sleeperWidth * 0.85;
+            ctx.fillRect(stackX - w * 0.01, h * 0.05, w * 0.02, h * 0.3);
+            ctx.fillStyle = '#999';
+            ctx.fillRect(stackX - w * 0.012, h * 0.03, w * 0.024, h * 0.05);
 
-            drawHeadlight(cabFrontX, h * 0.5, h * 0.15);
-            drawTaillight(trailerBackX, h * 0.5, h * 0.15);
+            const rear1 = trailerX + trailerWidth * 0.3;
+            const rear2 = trailerX + trailerWidth * 0.5;
+            const rear3 = trailerX + trailerWidth * 0.7;
+            const front = cabX + cabWidth * 0.55;
+            const wy = h * 0.9;
+            drawWheel(rear1, wy, h * 0.15, wheelRot);
+            drawWheel(rear2, wy, h * 0.15, wheelRot + 0.5);
+            drawWheel(rear3, wy, h * 0.15, wheelRot + 1.0);
+            drawWheel(front, wy, h * 0.16, wheelRot);
+
+            drawHeadlight(cabFrontX, h * 0.55, h * 0.16);
+            drawTaillight(trailerBackX, h * 0.55, h * 0.16);
             ctx.restore();
         }
 
@@ -1057,7 +1157,7 @@
         }
 
         function drawMotorcycle(vehicle) {
-            const { x, y, width: w, height: h, color, baseSpeed } = vehicle;
+            const { x, y, width: w, height: h, color, baseSpeed, wheelRot } = vehicle;
             ctx.save();
             ctx.translate(x, y);
 
@@ -1068,8 +1168,8 @@
             ctx.ellipse(w / 2, h * 0.88, w / 2, h * 0.12, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            drawWheel(w * 0.15, h * 0.78, h * 0.2);
-            drawWheel(w * 0.85, h * 0.78, h * 0.2);
+            drawWheel(w * 0.15, h * 0.78, h * 0.2, wheelRot);
+            drawWheel(w * 0.85, h * 0.78, h * 0.2, wheelRot);
 
             const frameGrad = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.8);
             frameGrad.addColorStop(0, lighten(color, 0.1));
@@ -1117,8 +1217,11 @@
             ctx.restore();
         }
 
-        function drawWheel(cx, cy, r) {
+        function drawWheel(cx, cy, r, rot = 0) {
             ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(rot);
+            ctx.translate(-cx, -cy);
             ctx.fillStyle = '#222';
             ctx.beginPath();
             ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -1131,6 +1234,15 @@
             ctx.beginPath();
             ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2);
             ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = r * 0.1;
+            for (let i = 0; i < 4; i++) {
+                const a = (Math.PI / 2) * i;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(a) * r * 0.85, cy + Math.sin(a) * r * 0.85);
+                ctx.stroke();
+            }
             ctx.restore();
         }
 
@@ -1258,12 +1370,15 @@
             ctx.fillStyle = "white";
             ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
 
+            // Center panel: player's global best and global top
             ctx.textAlign = "center";
             ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.roundRect(canvas.width / 2 - TILE_SIZE * 3, 15, TILE_SIZE * 6, TILE_SIZE * 1, 10);
+            ctx.roundRect(canvas.width / 2 - TILE_SIZE * 4, 15, TILE_SIZE * 8, TILE_SIZE * 1, 10);
             ctx.fill();
             ctx.fillStyle = "white";
-            ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, 15 + TILE_SIZE * 0.65);
+            const topGlobal = leaderboardEntries.length ? leaderboardEntries[0].score : 0;
+            const centerText = playerName ? `${playerName} Best: ${globalHighScoreForPlayer || 0}  |  Global Top: ${topGlobal}` : `Global Top: ${topGlobal}`;
+            ctx.fillText(centerText, canvas.width / 2, 15 + TILE_SIZE * 0.65);
 
             ctx.restore();
 
@@ -1280,7 +1395,6 @@
         }
 
         function drawGameOver() {
-            const isNewHighScore = score > 0 && score === highScore;
             ctx.fillStyle = "rgba(26, 26, 42, 0.85)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1293,19 +1407,24 @@
             ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
             ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 - TILE_SIZE * 0.2);
 
-            ctx.fillStyle = "#f0f0f0";
-            ctx.font = `400 ${TILE_SIZE * 0.6}px 'Poppins'`;
-            ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.8);
-
-            if (isNewHighScore) {
-                ctx.fillStyle = "#ffd700";
-                ctx.font = `600 ${TILE_SIZE * 0.7}px 'Poppins'`;
-                ctx.fillText("New High Score!", canvas.width / 2, canvas.height / 2 + TILE_SIZE * 2);
+            if (playerName) {
+                ctx.fillStyle = "#f0f0f0";
+                ctx.font = `400 ${TILE_SIZE * 0.6}px 'Poppins'`;
+                ctx.fillText(`${playerName} Best: ${globalHighScoreForPlayer || score}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.6);
             }
 
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+            ctx.font = `600 ${TILE_SIZE * 0.6}px 'Poppins'`;
+            ctx.fillText('Top 5 Global', canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.8);
+            ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
+            leaderboardEntries.forEach((e, i) => {
+                ctx.fillStyle = '#fff';
+                const medal = i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '';
+                ctx.fillText(`${medal}${e.name}: ${e.score}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * (2.4 + i * 0.6));
+            });
             ctx.fillStyle = "white";
             ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
-            ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (isNewHighScore ? 3.2 : 2.5));
+            ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (2.5 + leaderboardEntries.length * 0.6));
         }
 
 
