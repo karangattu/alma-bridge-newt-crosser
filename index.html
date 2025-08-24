@@ -271,7 +271,7 @@
 
         let TILE_SIZE = 40;
         let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
-        let score = 0; // local high score removed; using only global leaderboard now
+        let score = 0;
         let globalHighScoreForPlayer = 0;
         let lives = 3;
         let gameOver = false;
@@ -302,8 +302,8 @@
         const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzPFFLo3mlmKZahdFkPa8-8rdO2GkSYQaLuL_N1zBwLpf6L9LRX4QtS6hYrksmeRNlS5w/exec';
 
         async function fetchLeaderboard(force = false) {
-            if (!GOOGLE_SHEET_WEBAPP_URL || GOOGLE_SHEET_WEBAPP_URL.startsWith('PUT_')) return; // not configured
-            if (!force && gameTime - lastLeaderboardFetch < 30000) return; // throttle to 30s
+            if (!GOOGLE_SHEET_WEBAPP_URL || GOOGLE_SHEET_WEBAPP_URL.startsWith('PUT_')) return;
+            if (!force && gameTime - lastLeaderboardFetch < 30000) return;
             try {
                 const res = await fetch(GOOGLE_SHEET_WEBAPP_URL + '?t=' + Date.now(), { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -316,7 +316,6 @@
                 updateSplashLeaderboard();
                 lastLeaderboardFetch = gameTime;
             } catch (e) {
-                // silent fail
             }
         }
 
@@ -468,24 +467,33 @@
             ];
             lanes.forEach(lane => {
                 const numVehicles = Math.floor(Math.random() * 2) + 4;
-                for (let i = 0; i < numVehicles; i++) {
+                const laneVehicles = [];
+                for (let i = 0; i < numVehicles * 3; i++) {
                     const typeKey = weightedVehicleTypes[Math.floor(Math.random() * weightedVehicleTypes.length)];
                     const template = vehicleTemplates[typeKey];
-                    const vehicle = {
+                    const w = TILE_SIZE * template.width;
+                    const speedDir = lane.speed > 0 ? 1 : -1;
+                    const x = Math.random() * canvas.width * 1.2 + i * (canvas.width / numVehicles * 0.9);
+                    const v = {
                         type: typeKey,
-                        x: Math.random() * canvas.width * 1.5 + i * (canvas.width * 1.8 / numVehicles),
+                        x,
                         y: lane.y,
-                        width: TILE_SIZE * template.width,
+                        width: w,
                         height: TILE_SIZE * template.heightMultiplier,
                         baseSpeed: lane.speed,
                         color: carColors[Math.floor(Math.random() * carColors.length)],
-                        wheelRot: Math.random() * Math.PI * 2,
+                        wheelRot: Math.random() * Math.PI * 2
                     };
-                    if (vehicle.type === 'bicycle') {
-                        vehicle.pedalPhase = Math.random() * Math.PI * 2;
-                    }
-                    vehicles.push(vehicle);
+                    if (v.type === 'bicycle') v.pedalPhase = Math.random() * Math.PI * 2;
+                    laneVehicles.push(v);
                 }
+                laneVehicles.sort((a,b)=> a.x - b.x);
+                const spaced = [];
+                laneVehicles.forEach(v => {
+                    const last = spaced[spaced.length - 1];
+                    if (!last || v.x - (last.x + last.width) > TILE_SIZE * 1.5) spaced.push(v);
+                });
+                spaced.forEach(v => vehicles.push(v));
             });
         }
 
@@ -986,52 +994,66 @@
             const { x, y, width: w, height: h, color, baseSpeed: speed, wheelRot } = vehicle;
             ctx.save();
             ctx.translate(x, y);
-
             drawMotionStreak(speed, w, h);
-
             ctx.fillStyle = 'rgba(0,0,0,0.22)';
             ctx.beginPath();
-            ctx.ellipse(w / 2, h * 0.92, (w / 2) * 1.1, h * 0.16, 0, 0, Math.PI * 2);
+            ctx.ellipse(w / 2, h * 0.93, (w / 2) * 1.1, h * 0.17, 0, 0, Math.PI * 2);
             ctx.fill();
-
             drawWheel(w * 0.22, h * 0.86, h * 0.18, wheelRot);
             drawWheel(w * 0.78, h * 0.86, h * 0.18, wheelRot);
-
-            const grad = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.8);
-            grad.addColorStop(0, lighten(color, 0.15));
-            grad.addColorStop(1, darken(color, 0.15));
-            ctx.fillStyle = grad;
-            ctx.roundRect(0, h * 0.3, w, h * 0.5, h * 0.12);
-            ctx.fill();
-
-            const glassGrad = ctx.createLinearGradient(0, h * 0.08, 0, h * 0.35);
-            glassGrad.addColorStop(0, 'rgba(240, 248, 255, 0.95)');
-            glassGrad.addColorStop(1, 'rgba(180, 210, 230, 0.65)');
-            ctx.fillStyle = glassGrad;
+            const bodyGrad = ctx.createLinearGradient(0, h * 0.25, 0, h * 0.9);
+            bodyGrad.addColorStop(0, lighten(color, 0.3));
+            bodyGrad.addColorStop(0.5, color);
+            bodyGrad.addColorStop(1, darken(color, 0.35));
+            ctx.fillStyle = bodyGrad;
             ctx.beginPath();
-            const cabinX = w * 0.12;
-            const cabinW = w * 0.76;
-            ctx.moveTo(cabinX, h * 0.32);
-            ctx.lineTo(cabinX + w * 0.12, h * 0.08);
-            ctx.lineTo(cabinX + cabinW - w * 0.12, h * 0.08);
-            ctx.lineTo(cabinX + cabinW, h * 0.32);
+            ctx.moveTo(w * 0.05, h * 0.45);
+            ctx.quadraticCurveTo(w * 0.02, h * 0.3, w * 0.15, h * 0.2);
+            ctx.lineTo(w * 0.32, h * 0.15);
+            ctx.lineTo(w * 0.68, h * 0.15);
+            ctx.lineTo(w * 0.85, h * 0.2);
+            ctx.quadraticCurveTo(w * 0.98, h * 0.3, w * 0.95, h * 0.45);
+            ctx.lineTo(w * 0.95, h * 0.75);
+            ctx.quadraticCurveTo(w * 0.95, h * 0.9, w * 0.85, h * 0.9);
+            ctx.lineTo(w * 0.15, h * 0.9);
+            ctx.quadraticCurveTo(w * 0.05, h * 0.9, w * 0.05, h * 0.75);
             ctx.closePath();
             ctx.fill();
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+            const glassGrad = ctx.createLinearGradient(0, h * 0.15, 0, h * 0.55);
+            glassGrad.addColorStop(0, 'rgba(235,245,255,0.95)');
+            glassGrad.addColorStop(1, 'rgba(160,190,210,0.55)');
+            ctx.fillStyle = glassGrad;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.22, h * 0.18);
+            ctx.lineTo(w * 0.34, h * 0.16);
+            ctx.lineTo(w * 0.66, h * 0.16);
+            ctx.lineTo(w * 0.78, h * 0.18);
+            ctx.lineTo(w * 0.74, h * 0.48);
+            ctx.lineTo(w * 0.26, h * 0.48);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(w * 0.05, h * 0.55);
-            ctx.lineTo(w * 0.95, h * 0.55);
+            ctx.moveTo(w * 0.22, h * 0.18);
+            ctx.lineTo(w * 0.78, h * 0.18);
+            ctx.moveTo(w * 0.26, h * 0.33);
+            ctx.lineTo(w * 0.74, h * 0.33);
+            ctx.moveTo(w * 0.5, h * 0.18);
+            ctx.lineTo(w * 0.5, h * 0.48);
             ctx.stroke();
-
-            if (speed > 0) {
-                drawHeadlight(w - 2, h * 0.55, h * 0.12);
-                drawTaillight(2, h * 0.55, h * 0.12);
-            } else {
-                drawHeadlight(2, h * 0.55, h * 0.12);
-                drawTaillight(w - 2, h * 0.55, h * 0.12);
-            }
+            ctx.fillStyle = darken(color,0.55);
+            ctx.beginPath();
+            ctx.rect(w*0.1,h*0.55,w*0.8,h*0.14);
+            ctx.fill();
+            ctx.fillStyle = lighten(color,0.4);
+            ctx.beginPath();
+            ctx.rect(w*0.1,h*0.69,w*0.8,h*0.05);
+            ctx.fill();
+            const frontLightX = speed > 0 ? w - 2 : 2;
+            const rearLightX = speed > 0 ? 2 : w - 2;
+            drawHeadlight(frontLightX, h * 0.6, h * 0.12);
+            drawTaillight(rearLightX, h * 0.6, h * 0.12);
             ctx.restore();
         }
 
