@@ -32,7 +32,7 @@
         }
 
         body {
-            background-color: var(--primary-bg);
+            background: radial-gradient(1200px 600px at 10% 10%, #16202b 0%, var(--primary-bg) 25%, #0f1720 100%), linear-gradient(180deg, rgba(80, 227, 194, 0.03), rgba(0, 0, 0, 0.03));
             color: var(--text-color);
             font-family: 'Poppins', sans-serif;
             display: flex;
@@ -45,6 +45,32 @@
             padding: 1rem;
             box-sizing: border-box;
             overflow: hidden;
+        }
+
+        /* subtle animated aurora behind the canvas */
+        @keyframes auroraMove {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(120deg, rgba(80, 227, 194, 0.04), rgba(80, 150, 255, 0.03), rgba(255, 200, 120, 0.02));
+            background-size: 300% 300%;
+            animation: auroraMove 18s ease-in-out infinite;
+            pointer-events: none;
         }
 
         #game-container {
@@ -127,12 +153,16 @@
             border-radius: 50px;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 5px 20px rgba(80, 227, 194, 0.4);
+            box-shadow: 0 6px 28px rgba(80, 227, 194, 0.28), 0 2px 6px rgba(0, 0, 0, 0.4) inset;
         }
 
         .play-button:hover {
             transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(80, 227, 194, 0.6);
+            box-shadow: 0 10px 36px rgba(80, 227, 194, 0.45), 0 2px 6px rgba(0, 0, 0, 0.45) inset;
+        }
+
+        .play-button:active {
+            transform: scale(0.98);
         }
 
         #mobile-controls {
@@ -151,16 +181,18 @@
         }
 
         #mobile-controls button {
-            width: 50px;
-            height: 50px;
-            background: var(--secondary-bg);
-            border: 2px solid var(--accent-color);
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.06));
+            border: 1px solid rgba(255, 255, 255, 0.06);
             color: var(--accent-color);
-            font-size: 1.5rem;
-            border-radius: 50%;
-            font-weight: bold;
-            cursor: pointer;
+            font-size: 1.6rem;
+            border-radius: 14px;
+            font-weight: 700;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
         }
+
+        /* legacy styles removed - modern button above */
 
         body.touch-enabled #mobile-controls .up {
             grid-column: 2;
@@ -288,7 +320,9 @@
         let lastFrameTime = 0;
         let gameStartTime = 0;
         let lastRunnerSpawnTime = 0;
-        
+        let particles = [];
+        const PARTICLE_COUNT = 40;
+
         const BASE_SPEED_SCALAR = 0.065;
         const RUNNER_SPAWN_INTERVAL = 30000;
 
@@ -401,10 +435,25 @@
             initCleaner();
             createScenery();
             createVehicles();
+            initParticles();
             if (!gameStarted) {
                 draw();
             }
             fetchLeaderboard(true);
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (ROAD_TOP_Y - 10),
+                    r: 1 + Math.random() * 2,
+                    alpha: 0.07 + Math.random() * 0.18,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: -5 - Math.random() * 10
+                });
+            }
         }
 
         function startGame() {
@@ -413,14 +462,13 @@
             splashScreen.style.pointerEvents = 'none';
             init();
             gameStarted = true;
-            gameStartTime = Date.now(); // Record when game started
-            
-            // Spawn initial runner with a slight delay
+            gameStartTime = Date.now();
+
             setTimeout(() => {
                 spawnRunner();
                 lastRunnerSpawnTime = Date.now();
             }, 2000);
-            
+
             requestAnimationFrame(gameLoop);
 
             gtag('event', 'start_game', {
@@ -478,10 +526,10 @@
                 { y: ROAD_CENTER_Y - TILE_SIZE * 1.8, speed: -2.8 },
                 { y: ROAD_CENTER_Y + TILE_SIZE * 0.3, speed: 2.2 },
             ];
-            
+
             const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
             const timeBasedVehicleAddition = Math.min(2, Math.floor(timePlayed / 45));
-            
+
             lanes.forEach(lane => {
                 const baseVehicleCount = 2;
                 const numVehicles = Math.floor(Math.random() * 2) + baseVehicleCount + timeBasedVehicleAddition;
@@ -510,7 +558,7 @@
                     if (v.type === 'bicycle') v.pedalPhase = Math.random() * Math.PI * 2;
                     laneVehicles.push(v);
                 }
-                laneVehicles.sort((a,b)=> a.x - b.x);
+                laneVehicles.sort((a, b) => a.x - b.x);
                 const spaced = [];
                 const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
                 const baseSpacing = TILE_SIZE * 3.0;
@@ -527,26 +575,26 @@
         const nameInput = document.getElementById('playerNameInput');
         if (nameInput) {
             nameInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Tab' || 
-                    e.key === 'Shift' || 
-                    e.key === 'Control' || 
-                    e.key === 'Alt' || 
-                    e.key === 'Meta' || 
+                if (e.key === 'Tab' ||
+                    e.key === 'Shift' ||
+                    e.key === 'Control' ||
+                    e.key === 'Alt' ||
+                    e.key === 'Meta' ||
                     e.key === 'CapsLock') {
                     if (e.key === 'Tab') {
                         e.preventDefault();
                     }
                     return;
                 }
-                
+
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     playGameBtn.click();
                 }
             });
-            
-            nameInput.addEventListener('input', () => { 
-                playerName = nameInput.value.trim(); 
+
+            nameInput.addEventListener('input', () => {
+                playerName = nameInput.value.trim();
             });
         }
         playGameBtn.addEventListener('click', () => {
@@ -676,13 +724,14 @@
             if (gameStarted && newt) {
                 newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
             }
-            
+
             if (gameStarted && gameTime - lastRunnerSpawnTime > RUNNER_SPAWN_INTERVAL) {
                 spawnRunner();
                 lastRunnerSpawnTime = gameTime;
             }
-            
+
             updateRunners(deltaTime);
+            updateParticles(deltaTime);
             if (newt) {
                 let dy = newt.targetRotation - newt.rotation;
                 if (Math.abs(dy) > Math.PI) dy = dy < 0 ? dy + 2 * Math.PI : dy - 2 * Math.PI;
@@ -721,6 +770,19 @@
             }
 
             updateCleaner();
+        }
+
+        function updateParticles(deltaTime) {
+            for (const p of particles) {
+                p.x += p.vx * deltaTime * 0.6;
+                p.y += p.vy * deltaTime * 0.6;
+                if (p.y + p.r < 0 || p.x < -50 || p.x > canvas.width + 50) {
+                    p.x = Math.random() * canvas.width;
+                    p.y = ROAD_TOP_Y - 5 - Math.random() * 30;
+                    p.vx = (Math.random() - 0.5) * 6;
+                    p.vy = -5 - Math.random() * 6;
+                }
+            }
         }
 
         function activateCleaner(splat) {
@@ -858,20 +920,20 @@
         function spawnRunner() {
             const onTopSide = Math.random() < 0.5;
             const y = onTopSide ? ROAD_TOP_Y - TILE_SIZE * 1.3 : ROAD_BOTTOM_Y + TILE_SIZE * 1.0;
-            
+
             const movingRight = Math.random() < 0.5;
             const x = movingRight ? -TILE_SIZE : canvas.width + TILE_SIZE;
-            
+
             const speed = TILE_SIZE * 1.3 * (0.8 + Math.random() * 0.4);
             const colors = ["#e53935", "#1e88e5", "#43a047", "#fb8c00", "#8e24aa", "#01579b"];
             const shirtColor = colors[Math.floor(Math.random() * colors.length)];
             const shortsColor = colors[Math.floor(Math.random() * colors.length)];
-            
+
             const skinTones = ['#e0ac69', '#c68642', '#8d5524', '#f1c27d', '#ffdbac'];
             const hairColors = ['#2c1e0e', '#4a3520', '#5a3825', '#70482b', '#a56b46', '#dbb471', '#090806'];
             const skinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
             const hairColor = hairColors[Math.floor(Math.random() * hairColors.length)];
-            
+
             scenery.runners.push({
                 x,
                 y,
@@ -888,15 +950,15 @@
                 }
             });
         }
-        
+
         function updateRunners(deltaTime) {
             if (paused) return;
-            
+
             scenery.runners.forEach(runner => {
                 runner.x += runner.speed * deltaTime;
                 runner.runPhase = (runner.runPhase + deltaTime * runner.runSpeed * 7) % (Math.PI * 2);
             });
-            
+
             scenery.runners = scenery.runners.filter(runner => {
                 if (runner.movingRight) {
                     return runner.x < canvas.width + TILE_SIZE * 2;
@@ -905,7 +967,7 @@
                 }
             });
         }
-        
+
         function drawRunner(runner) {
             const x = runner.x;
             const y = runner.y;
@@ -913,10 +975,10 @@
             const facing = runner.movingRight ? 1 : -1;
             const bobHeight = Math.sin(runner.runPhase * 2) * (size * 0.05);
             const skinTone = runner.skinTone || '#e0ac69';
-            
+
             ctx.save();
             ctx.translate(x, y + bobHeight);
-            
+
             const legAngle1 = Math.sin(runner.runPhase) * 0.5;
             const legAngle2 = Math.sin(runner.runPhase + Math.PI) * 0.5;
             ctx.save();
@@ -925,50 +987,51 @@
             ctx.fillStyle = skinTone;
             ctx.fillRect(-size * 0.03, 0, size * 0.06, size * 0.5);
             ctx.restore();
-            
+
             ctx.save();
             ctx.translate(0, 0);
             ctx.rotate(legAngle2);
             ctx.fillStyle = skinTone;
             ctx.fillRect(-size * 0.03, 0, size * 0.06, size * 0.5);
             ctx.restore();
-            
+
             ctx.fillStyle = runner.outfit.shirt;
             ctx.fillRect(-size * 0.15, -size * 0.5, size * 0.3, size * 0.3);
             ctx.fillStyle = runner.outfit.shorts;
             ctx.fillRect(-size * 0.15, -size * 0.2, size * 0.3, size * 0.2);
-            
+
             const armAngle1 = Math.sin(runner.runPhase + Math.PI) * 0.7;
             const armAngle2 = Math.sin(runner.runPhase) * 0.7;
-            
+
             ctx.save();
             ctx.translate(0, -size * 0.4);
             ctx.rotate(armAngle1);
             ctx.fillStyle = skinTone;
             ctx.fillRect(0, 0, size * 0.25 * facing, size * 0.06);
             ctx.restore();
-            
+
             ctx.save();
             ctx.translate(0, -size * 0.4);
             ctx.rotate(armAngle2);
             ctx.fillStyle = skinTone;
             ctx.fillRect(0, 0, size * -0.25 * facing, size * 0.06);
             ctx.restore();
-            
+
             ctx.fillStyle = skinTone;
             ctx.beginPath();
             ctx.arc(0, -size * 0.6, size * 0.1, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.restore();
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
+            drawParticles();
 
             scenery.runners.forEach(drawRunner);
-            
+
             scenery.splats.forEach(drawSplat);
             drawHumanCleaner();
 
@@ -986,6 +1049,19 @@
             if (gameOver) {
                 drawGameOver();
             }
+        }
+
+        function drawParticles() {
+            if (!particles || !particles.length) return;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (const p of particles) {
+                ctx.fillStyle = `rgba(200,230,255,${p.alpha})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
         }
 
         function drawNewt(x, y, w, h) {
@@ -1177,48 +1253,48 @@
             ctx.save();
             ctx.translate(x, y);
             drawMotionStreak(speed, w, h);
-            
+
             ctx.fillStyle = 'rgba(0,0,0,0.22)';
             ctx.beginPath();
             ctx.ellipse(w / 2, h * 0.93, (w / 2) * 1.1, h * 0.17, 0, 0, Math.PI * 2);
             ctx.fill();
-            
+
             drawWheel(w * 0.22, h * 0.86, h * 0.18, wheelRot);
             drawWheel(w * 0.78, h * 0.86, h * 0.18, wheelRot);
-            
+
             const bodyGrad = ctx.createLinearGradient(0, h * 0.1, 0, h * 0.9);
             bodyGrad.addColorStop(0.3, lighten(color, 0.2));
             bodyGrad.addColorStop(0.6, color);
             bodyGrad.addColorStop(0.9, darken(color, 0.4));
             ctx.fillStyle = bodyGrad;
-            
+
             ctx.beginPath();
             ctx.moveTo(w * 0.05, h * 0.75);
-            
+
             ctx.lineTo(w * 0.05, h * 0.45);
             ctx.quadraticCurveTo(w * 0.02, h * 0.3, w * 0.15, h * 0.2);
-            
+
             ctx.quadraticCurveTo(w * 0.2, h * 0.15, w * 0.32, h * 0.15);
-            
+
             ctx.lineTo(w * 0.68, h * 0.15);
-            
+
             ctx.quadraticCurveTo(w * 0.8, h * 0.15, w * 0.85, h * 0.2);
-            
+
             ctx.quadraticCurveTo(w * 0.98, h * 0.3, w * 0.95, h * 0.45);
             ctx.lineTo(w * 0.95, h * 0.75);
-            
+
             ctx.quadraticCurveTo(w * 0.95, h * 0.9, w * 0.85, h * 0.9);
             ctx.lineTo(w * 0.15, h * 0.9);
             ctx.quadraticCurveTo(w * 0.05, h * 0.9, w * 0.05, h * 0.75);
             ctx.closePath();
             ctx.fill();
-            
+
             const glassGrad = ctx.createLinearGradient(w * 0.5, h * 0.15, w * 0.5, h * 0.5);
             glassGrad.addColorStop(0, 'rgba(200,230,255,0.95)');
             glassGrad.addColorStop(0.5, 'rgba(160,190,220,0.8)');
             glassGrad.addColorStop(1, 'rgba(120,150,190,0.6)');
             ctx.fillStyle = glassGrad;
-            
+
             ctx.beginPath();
             ctx.moveTo(w * 0.22, h * 0.18);
             ctx.quadraticCurveTo(w * 0.28, h * 0.15, w * 0.34, h * 0.16);
@@ -1229,7 +1305,7 @@
             ctx.quadraticCurveTo(w * 0.24, h * 0.35, w * 0.22, h * 0.18);
             ctx.closePath();
             ctx.fill();
-            
+
             ctx.strokeStyle = 'rgba(255,255,255,0.4)';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -1240,31 +1316,31 @@
             ctx.moveTo(w * 0.5, h * 0.18);
             ctx.lineTo(w * 0.5, h * 0.48);
             ctx.stroke();
-            
+
             ctx.fillStyle = 'rgba(240,240,240,0.8)';
             ctx.fillRect(w * 0.2, h * 0.4, w * 0.06, h * 0.04);
             ctx.fillRect(w * 0.74, h * 0.4, w * 0.06, h * 0.04);
-            
+
             ctx.fillStyle = darken(color, 0.6);
             ctx.beginPath();
             ctx.roundRect(w * 0.1, h * 0.55, w * 0.8, h * 0.14, h * 0.05);
             ctx.fill();
-            
+
             ctx.fillStyle = 'rgba(240,240,240,0.9)';
             const plateWidth = w * 0.15;
-            const plateX = w * 0.5 - plateWidth/2;
+            const plateX = w * 0.5 - plateWidth / 2;
             ctx.fillRect(plateX, h * 0.62, plateWidth, h * 0.07);
-            
+
             ctx.fillStyle = lighten(color, 0.3);
             ctx.beginPath();
             ctx.roundRect(w * 0.1, h * 0.69, w * 0.8, h * 0.05, h * 0.02);
             ctx.fill();
-            
+
             const frontLightX = speed > 0 ? w - w * 0.12 : w * 0.12;
             const rearLightX = speed > 0 ? w * 0.12 : w - w * 0.12;
             drawHeadlight(frontLightX, h * 0.6, h * 0.12);
             drawTaillight(rearLightX, h * 0.6, h * 0.12);
-            
+
             ctx.restore();
         }
 
@@ -1524,6 +1600,24 @@
             return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
         }
 
+        if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
+                else r = Object.assign({ tl: 0, tr: 0, br: 0, bl: 0 }, r);
+                this.beginPath();
+                this.moveTo(x + r.tl, y);
+                this.lineTo(x + w - r.tr, y);
+                this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+                this.lineTo(x + w, y + h - r.br);
+                this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+                this.lineTo(x + r.bl, y + h);
+                this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+                this.lineTo(x, y + r.tl);
+                this.quadraticCurveTo(x, y, x + r.tl, y);
+                this.closePath();
+            };
+        }
+
         function drawBicycle(vehicle) {
             const { x, y, width: w, height: h, color, baseSpeed, pedalPhase } = vehicle;
             ctx.save();
@@ -1603,7 +1697,6 @@
             ctx.fillStyle = "white";
             ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
 
-            // Center panel: player's global best and global top
             ctx.textAlign = "center";
             ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.roundRect(canvas.width / 2 - TILE_SIZE * 4, 15, TILE_SIZE * 8, TILE_SIZE * 1, 10);
