@@ -277,7 +277,7 @@
         let gameOver = false;
         let gameStarted = false;
         let paused = false;
-        let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [] };
+        let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [], runners: [] };
         let cleaner;
         let playerName = '';
         let leaderboardEntries = [];
@@ -286,8 +286,11 @@
         let gameTime = 0;
         let hitFlashUntil = 0;
         let lastFrameTime = 0;
-
+        let gameStartTime = 0;
+        let lastRunnerSpawnTime = 0;
+        
         const BASE_SPEED_SCALAR = 0.065;
+        const RUNNER_SPAWN_INTERVAL = 30000;
 
         const carColors = ["#B71C1C", "#1A237E", "#004D40", "#E65100", "#4A148C", "#37474F", "#C51162", "#d4ac0d"];
         const vehicleTemplates = {
@@ -410,6 +413,14 @@
             splashScreen.style.pointerEvents = 'none';
             init();
             gameStarted = true;
+            gameStartTime = Date.now(); // Record when game started
+            
+            // Spawn initial runner with a slight delay
+            setTimeout(() => {
+                spawnRunner();
+                lastRunnerSpawnTime = Date.now();
+            }, 2000);
+            
             requestAnimationFrame(gameLoop);
 
             gtag('event', 'start_game', {
@@ -422,6 +433,7 @@
             if (!gameOver) return;
             init();
             gameStarted = true;
+            gameStartTime = Date.now();
             requestAnimationFrame(gameLoop);
             gtag('event', 'restart_game', {
                 'event_category': 'Game',
@@ -433,6 +445,7 @@
             scenery.trees = [];
             scenery.waitingNewts = [];
             scenery.splats = [];
+            scenery.runners = [];
 
             const numWaitingNewts = Math.floor(Math.random() * 5) + 5;
             for (let i = 0; i < numWaitingNewts; i++) {
@@ -465,10 +478,15 @@
                 { y: ROAD_CENTER_Y - TILE_SIZE * 1.8, speed: -2.8 },
                 { y: ROAD_CENTER_Y + TILE_SIZE * 0.3, speed: 2.2 },
             ];
+            
+            const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
+            const timeBasedVehicleAddition = Math.min(2, Math.floor(timePlayed / 45));
+            
             lanes.forEach(lane => {
-                const numVehicles = Math.floor(Math.random() * 2) + 4;
+                const baseVehicleCount = 2;
+                const numVehicles = Math.floor(Math.random() * 2) + baseVehicleCount + timeBasedVehicleAddition;
                 const laneVehicles = [];
-                for (let i = 0; i < numVehicles * 3; i++) {
+                for (let i = 0; i < numVehicles * 4; i++) {
                     const typeKey = weightedVehicleTypes[Math.floor(Math.random() * weightedVehicleTypes.length)];
                     const template = vehicleTemplates[typeKey];
                     const w = TILE_SIZE * template.width;
@@ -484,14 +502,23 @@
                         color: carColors[Math.floor(Math.random() * carColors.length)],
                         wheelRot: Math.random() * Math.PI * 2
                     };
+                    const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
+                    const speedReductionFactor = Math.max(0, 0.20 - (score * 0.02) - (timePlayed / 150) * 0.15);
+                    if (speedReductionFactor > 0) {
+                        v.baseSpeed *= (1 - speedReductionFactor);
+                    }
                     if (v.type === 'bicycle') v.pedalPhase = Math.random() * Math.PI * 2;
                     laneVehicles.push(v);
                 }
                 laneVehicles.sort((a,b)=> a.x - b.x);
                 const spaced = [];
+                const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
+                const baseSpacing = TILE_SIZE * 3.0;
+                const minSpacingReduction = Math.min(1.0, (score / 10) + (timePlayed / 180));
+                const minSpacing = baseSpacing - (baseSpacing - TILE_SIZE * 1.5) * minSpacingReduction;
                 laneVehicles.forEach(v => {
                     const last = spaced[spaced.length - 1];
-                    if (!last || v.x - (last.x + last.width) > TILE_SIZE * 1.5) spaced.push(v);
+                    if (!last || v.x - (last.x + last.width) > minSpacing) spaced.push(v);
                 });
                 spaced.forEach(v => vehicles.push(v));
             });
@@ -499,14 +526,43 @@
 
         const nameInput = document.getElementById('playerNameInput');
         if (nameInput) {
-            nameInput.addEventListener('input', () => { playerName = nameInput.value.trim(); });
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab' || 
+                    e.key === 'Shift' || 
+                    e.key === 'Control' || 
+                    e.key === 'Alt' || 
+                    e.key === 'Meta' || 
+                    e.key === 'CapsLock') {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                    }
+                    return;
+                }
+                
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    playGameBtn.click();
+                }
+            });
+            
+            nameInput.addEventListener('input', () => { 
+                playerName = nameInput.value.trim(); 
+            });
         }
         playGameBtn.addEventListener('click', () => {
             playerName = (nameInput && nameInput.value.trim()) || playerName;
             startGame();
         });
-        document.addEventListener("keydown", e => handleInput(e.key));
+        document.addEventListener("keydown", e => {
+            if (document.activeElement === nameInput) {
+                return;
+            }
+            handleInput(e.key);
+        });
         document.addEventListener('keydown', e => {
+            if (document.activeElement === nameInput) {
+                return;
+            }
             if (e.key === 'p' || e.key === 'P') {
                 togglePause();
             }
@@ -541,6 +597,12 @@
             handleSwipe();
         }, { passive: false });
 
+
+        window.addEventListener('load', () => {
+            if (nameInput) {
+                setTimeout(() => nameInput.focus(), 500);
+            }
+        });
 
         window.addEventListener('resize', () => {
             setTimeout(() => {
@@ -614,13 +676,23 @@
             if (gameStarted && newt) {
                 newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
             }
+            
+            if (gameStarted && gameTime - lastRunnerSpawnTime > RUNNER_SPAWN_INTERVAL) {
+                spawnRunner();
+                lastRunnerSpawnTime = gameTime;
+            }
+            
+            updateRunners(deltaTime);
             if (newt) {
                 let dy = newt.targetRotation - newt.rotation;
                 if (Math.abs(dy) > Math.PI) dy = dy < 0 ? dy + 2 * Math.PI : dy - 2 * Math.PI;
                 newt.rotation += dy * 0.2;
             }
 
-            const difficultyFactor = Math.min(3.5, 1 + score * 0.08);
+            const timePlayed = (Date.now() - gameStartTime) / 1000;
+            const scoreDifficulty = 0.7 + score * 0.05 + Math.pow(score, 1.5) * 0.005;
+            const timeDifficulty = Math.min(1.0, timePlayed / 120) * 0.8;
+            const difficultyFactor = Math.min(3.5, scoreDifficulty + timeDifficulty);
 
             vehicles.forEach(v => {
                 const speedPxPerSec = v.baseSpeed * BASE_SPEED_SCALAR * canvas.width * difficultyFactor;
@@ -783,10 +855,120 @@
             });
         }
 
+        function spawnRunner() {
+            const onTopSide = Math.random() < 0.5;
+            const y = onTopSide ? ROAD_TOP_Y - TILE_SIZE * 1.3 : ROAD_BOTTOM_Y + TILE_SIZE * 1.0;
+            
+            const movingRight = Math.random() < 0.5;
+            const x = movingRight ? -TILE_SIZE : canvas.width + TILE_SIZE;
+            
+            const speed = TILE_SIZE * 1.3 * (0.8 + Math.random() * 0.4);
+            const colors = ["#e53935", "#1e88e5", "#43a047", "#fb8c00", "#8e24aa", "#01579b"];
+            const shirtColor = colors[Math.floor(Math.random() * colors.length)];
+            const shortsColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            const skinTones = ['#e0ac69', '#c68642', '#8d5524', '#f1c27d', '#ffdbac'];
+            const hairColors = ['#2c1e0e', '#4a3520', '#5a3825', '#70482b', '#a56b46', '#dbb471', '#090806'];
+            const skinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
+            const hairColor = hairColors[Math.floor(Math.random() * hairColors.length)];
+            
+            scenery.runners.push({
+                x,
+                y,
+                movingRight,
+                onTopSide,
+                speed: movingRight ? speed : -speed,
+                runPhase: Math.random() * Math.PI * 2,
+                runSpeed: 1.2 + Math.random() * 0.8,
+                skinTone,
+                hairColor,
+                outfit: {
+                    shirt: shirtColor,
+                    shorts: shortsColor
+                }
+            });
+        }
+        
+        function updateRunners(deltaTime) {
+            if (paused) return;
+            
+            scenery.runners.forEach(runner => {
+                runner.x += runner.speed * deltaTime;
+                runner.runPhase = (runner.runPhase + deltaTime * runner.runSpeed * 7) % (Math.PI * 2);
+            });
+            
+            scenery.runners = scenery.runners.filter(runner => {
+                if (runner.movingRight) {
+                    return runner.x < canvas.width + TILE_SIZE * 2;
+                } else {
+                    return runner.x > -TILE_SIZE * 2;
+                }
+            });
+        }
+        
+        function drawRunner(runner) {
+            const x = runner.x;
+            const y = runner.y;
+            const size = TILE_SIZE;
+            const facing = runner.movingRight ? 1 : -1;
+            const bobHeight = Math.sin(runner.runPhase * 2) * (size * 0.05);
+            const skinTone = runner.skinTone || '#e0ac69';
+            
+            ctx.save();
+            ctx.translate(x, y + bobHeight);
+            
+            const legAngle1 = Math.sin(runner.runPhase) * 0.5;
+            const legAngle2 = Math.sin(runner.runPhase + Math.PI) * 0.5;
+            ctx.save();
+            ctx.translate(0, 0);
+            ctx.rotate(legAngle1);
+            ctx.fillStyle = skinTone;
+            ctx.fillRect(-size * 0.03, 0, size * 0.06, size * 0.5);
+            ctx.restore();
+            
+            ctx.save();
+            ctx.translate(0, 0);
+            ctx.rotate(legAngle2);
+            ctx.fillStyle = skinTone;
+            ctx.fillRect(-size * 0.03, 0, size * 0.06, size * 0.5);
+            ctx.restore();
+            
+            ctx.fillStyle = runner.outfit.shirt;
+            ctx.fillRect(-size * 0.15, -size * 0.5, size * 0.3, size * 0.3);
+            ctx.fillStyle = runner.outfit.shorts;
+            ctx.fillRect(-size * 0.15, -size * 0.2, size * 0.3, size * 0.2);
+            
+            const armAngle1 = Math.sin(runner.runPhase + Math.PI) * 0.7;
+            const armAngle2 = Math.sin(runner.runPhase) * 0.7;
+            
+            ctx.save();
+            ctx.translate(0, -size * 0.4);
+            ctx.rotate(armAngle1);
+            ctx.fillStyle = skinTone;
+            ctx.fillRect(0, 0, size * 0.25 * facing, size * 0.06);
+            ctx.restore();
+            
+            ctx.save();
+            ctx.translate(0, -size * 0.4);
+            ctx.rotate(armAngle2);
+            ctx.fillStyle = skinTone;
+            ctx.fillRect(0, 0, size * -0.25 * facing, size * 0.06);
+            ctx.restore();
+            
+            ctx.fillStyle = skinTone;
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.6, size * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
 
+            scenery.runners.forEach(drawRunner);
+            
             scenery.splats.forEach(drawSplat);
             drawHumanCleaner();
 
@@ -995,43 +1177,59 @@
             ctx.save();
             ctx.translate(x, y);
             drawMotionStreak(speed, w, h);
+            
             ctx.fillStyle = 'rgba(0,0,0,0.22)';
             ctx.beginPath();
             ctx.ellipse(w / 2, h * 0.93, (w / 2) * 1.1, h * 0.17, 0, 0, Math.PI * 2);
             ctx.fill();
+            
             drawWheel(w * 0.22, h * 0.86, h * 0.18, wheelRot);
             drawWheel(w * 0.78, h * 0.86, h * 0.18, wheelRot);
-            const bodyGrad = ctx.createLinearGradient(0, h * 0.25, 0, h * 0.9);
-            bodyGrad.addColorStop(0, lighten(color, 0.3));
-            bodyGrad.addColorStop(0.5, color);
-            bodyGrad.addColorStop(1, darken(color, 0.35));
+            
+            const bodyGrad = ctx.createLinearGradient(0, h * 0.1, 0, h * 0.9);
+            bodyGrad.addColorStop(0.3, lighten(color, 0.2));
+            bodyGrad.addColorStop(0.6, color);
+            bodyGrad.addColorStop(0.9, darken(color, 0.4));
             ctx.fillStyle = bodyGrad;
+            
             ctx.beginPath();
-            ctx.moveTo(w * 0.05, h * 0.45);
+            ctx.moveTo(w * 0.05, h * 0.75);
+            
+            ctx.lineTo(w * 0.05, h * 0.45);
             ctx.quadraticCurveTo(w * 0.02, h * 0.3, w * 0.15, h * 0.2);
-            ctx.lineTo(w * 0.32, h * 0.15);
+            
+            ctx.quadraticCurveTo(w * 0.2, h * 0.15, w * 0.32, h * 0.15);
+            
             ctx.lineTo(w * 0.68, h * 0.15);
-            ctx.lineTo(w * 0.85, h * 0.2);
+            
+            ctx.quadraticCurveTo(w * 0.8, h * 0.15, w * 0.85, h * 0.2);
+            
             ctx.quadraticCurveTo(w * 0.98, h * 0.3, w * 0.95, h * 0.45);
             ctx.lineTo(w * 0.95, h * 0.75);
+            
             ctx.quadraticCurveTo(w * 0.95, h * 0.9, w * 0.85, h * 0.9);
             ctx.lineTo(w * 0.15, h * 0.9);
             ctx.quadraticCurveTo(w * 0.05, h * 0.9, w * 0.05, h * 0.75);
             ctx.closePath();
             ctx.fill();
-            const glassGrad = ctx.createLinearGradient(0, h * 0.15, 0, h * 0.55);
-            glassGrad.addColorStop(0, 'rgba(235,245,255,0.95)');
-            glassGrad.addColorStop(1, 'rgba(160,190,210,0.55)');
+            
+            const glassGrad = ctx.createLinearGradient(w * 0.5, h * 0.15, w * 0.5, h * 0.5);
+            glassGrad.addColorStop(0, 'rgba(200,230,255,0.95)');
+            glassGrad.addColorStop(0.5, 'rgba(160,190,220,0.8)');
+            glassGrad.addColorStop(1, 'rgba(120,150,190,0.6)');
             ctx.fillStyle = glassGrad;
+            
             ctx.beginPath();
             ctx.moveTo(w * 0.22, h * 0.18);
-            ctx.lineTo(w * 0.34, h * 0.16);
+            ctx.quadraticCurveTo(w * 0.28, h * 0.15, w * 0.34, h * 0.16);
             ctx.lineTo(w * 0.66, h * 0.16);
-            ctx.lineTo(w * 0.78, h * 0.18);
-            ctx.lineTo(w * 0.74, h * 0.48);
+            ctx.quadraticCurveTo(w * 0.72, h * 0.15, w * 0.78, h * 0.18);
+            ctx.quadraticCurveTo(w * 0.76, h * 0.35, w * 0.74, h * 0.48);
             ctx.lineTo(w * 0.26, h * 0.48);
+            ctx.quadraticCurveTo(w * 0.24, h * 0.35, w * 0.22, h * 0.18);
             ctx.closePath();
             ctx.fill();
+            
             ctx.strokeStyle = 'rgba(255,255,255,0.4)';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -1042,18 +1240,31 @@
             ctx.moveTo(w * 0.5, h * 0.18);
             ctx.lineTo(w * 0.5, h * 0.48);
             ctx.stroke();
-            ctx.fillStyle = darken(color,0.55);
+            
+            ctx.fillStyle = 'rgba(240,240,240,0.8)';
+            ctx.fillRect(w * 0.2, h * 0.4, w * 0.06, h * 0.04);
+            ctx.fillRect(w * 0.74, h * 0.4, w * 0.06, h * 0.04);
+            
+            ctx.fillStyle = darken(color, 0.6);
             ctx.beginPath();
-            ctx.rect(w*0.1,h*0.55,w*0.8,h*0.14);
+            ctx.roundRect(w * 0.1, h * 0.55, w * 0.8, h * 0.14, h * 0.05);
             ctx.fill();
-            ctx.fillStyle = lighten(color,0.4);
+            
+            ctx.fillStyle = 'rgba(240,240,240,0.9)';
+            const plateWidth = w * 0.15;
+            const plateX = w * 0.5 - plateWidth/2;
+            ctx.fillRect(plateX, h * 0.62, plateWidth, h * 0.07);
+            
+            ctx.fillStyle = lighten(color, 0.3);
             ctx.beginPath();
-            ctx.rect(w*0.1,h*0.69,w*0.8,h*0.05);
+            ctx.roundRect(w * 0.1, h * 0.69, w * 0.8, h * 0.05, h * 0.02);
             ctx.fill();
-            const frontLightX = speed > 0 ? w - 2 : 2;
-            const rearLightX = speed > 0 ? 2 : w - 2;
+            
+            const frontLightX = speed > 0 ? w - w * 0.12 : w * 0.12;
+            const rearLightX = speed > 0 ? w * 0.12 : w - w * 0.12;
             drawHeadlight(frontLightX, h * 0.6, h * 0.12);
             drawTaillight(rearLightX, h * 0.6, h * 0.12);
+            
             ctx.restore();
         }
 
