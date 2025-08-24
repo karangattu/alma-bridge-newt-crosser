@@ -47,6 +47,7 @@
             overflow: hidden;
         }
 
+        /* subtle animated aurora behind the canvas */
         @keyframes auroraMove {
             0% {
                 background-position: 0% 50%;
@@ -191,6 +192,7 @@
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
         }
 
+        /* legacy styles removed - modern button above */
 
         body.touch-enabled #mobile-controls .up {
             grid-column: 2;
@@ -225,6 +227,7 @@
             }
         }
 
+        /* HUD buttons (e.g., Pause) */
         #hud-buttons {
             position: absolute;
             top: 10px;
@@ -248,43 +251,6 @@
         #hud-buttons button:hover {
             background: rgba(0, 0, 0, 0.6);
         }
-        #joystick-wrap {
-            position: fixed;
-            left: 18px;
-            bottom: 18px;
-            width: 140px;
-            height: 140px;
-            display: none;
-            pointer-events: none;
-            z-index: 50;
-        }
-        body.touch-enabled #joystick-wrap {
-            display: block;
-        }
-        #joystick-base {
-            position: absolute;
-            left: 0; top: 0; right: 0; bottom: 0;
-            margin: auto;
-            width: 112px; height: 112px;
-            border-radius: 999px;
-            background: rgba(0,0,0,0.28);
-            border: 2px solid rgba(255,255,255,0.06);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.45);
-            opacity: 0.8;
-            pointer-events: auto;
-            touch-action: none;
-        }
-        #joystick-thumb {
-            position: absolute;
-            width: 56px; height: 56px;
-            left: 50%; top: 50%; transform: translate(-50%, -50%);
-            border-radius: 999px;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
-            box-shadow: 0 6px 18px rgba(0,0,0,0.5);
-            pointer-events: none;
-            opacity: 0.98;
-        }
-        body.touch-enabled.joystick-enabled #mobile-controls { display: none; }
     </style>
 </head>
 
@@ -327,12 +293,6 @@
         <button class="right" data-key="ArrowRight">►</button>
     </div>
 
-        <div id="joystick-wrap" aria-hidden="false">
-            <div id="joystick-base">
-                <div id="joystick-thumb"></div>
-            </div>
-        </div>
-
 
     <script>
         const splashScreen = document.getElementById('splash-screen');
@@ -366,11 +326,6 @@
         let rainDrops = [];
         let nextRainStart = 0;
         let rainEndTime = 0;
-    let joystickEnabled = false;
-    let joystickActive = false;
-    let joystickVector = { x: 0, y: 0 };
-    const JOYSTICK_MAX_RADIUS = 56;
-    const JOYSTICK_MOVE_MULTIPLIER = 3.0;
         const RAIN_MIN_INTERVAL = 2500;
         const RAIN_MAX_INTERVAL = 15000;
         const RAIN_MIN_DURATION = 2000;
@@ -754,104 +709,6 @@
                 handleInput(e.target.dataset.key);
             }
         });
-        
-        const joystickWrap = document.getElementById('joystick-wrap');
-        const joystickBase = document.getElementById('joystick-base');
-        const joystickThumb = document.getElementById('joystick-thumb');
-
-        
-        try {
-            const pref = localStorage.getItem('useJoystick');
-            joystickEnabled = pref === '1' || pref === 'true';
-        } catch (e) { joystickEnabled = false; }
-        if (joystickEnabled) document.body.classList.add('joystick-enabled');
-    if (joystickWrap) joystickWrap.style.display = joystickEnabled ? 'block' : 'none';
-
-        
-        function createJoystickToggle() {
-            if (!document.body.classList.contains('touch-enabled')) return;
-            const btn = document.createElement('button');
-            btn.id = 'joystickToggleBtn';
-            btn.title = 'Toggle virtual joystick';
-            btn.textContent = joystickEnabled ? '🕹️' : '🤚';
-            btn.style.fontSize = '18px';
-            btn.style.padding = '6px 8px';
-            btn.addEventListener('click', () => {
-                joystickEnabled = !joystickEnabled;
-                try { localStorage.setItem('useJoystick', joystickEnabled ? '1' : '0'); } catch (e) {}
-                document.body.classList.toggle('joystick-enabled', joystickEnabled);
-                if (joystickWrap) joystickWrap.style.display = joystickEnabled ? 'block' : 'none';
-                btn.textContent = joystickEnabled ? '🕹️' : '🤚';
-            });
-            const hud = document.getElementById('hud-buttons');
-            if (hud) hud.appendChild(btn);
-        }
-        createJoystickToggle();
-
-        
-        let jsPointerId = null;
-        let baseRect = null;
-        function updateJoystickThumb(posX, posY) {
-            const rect = baseRect || joystickBase.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            const dx = posX - cx;
-            const dy = posY - cy;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const clamped = Math.min(dist, JOYSTICK_MAX_RADIUS);
-            const nx = (dx / (dist || 1)) * clamped;
-            const ny = (dy / (dist || 1)) * clamped;
-            
-            joystickThumb.style.transform = `translate(calc(-50% + ${nx}px), calc(-50% + ${ny}px))`;
-            joystickVector.x = nx / JOYSTICK_MAX_RADIUS;
-            joystickVector.y = ny / JOYSTICK_MAX_RADIUS;
-        }
-
-        joystickBase.addEventListener('touchstart', (ev) => {
-            if (!joystickEnabled) return;
-            ev.preventDefault();
-            const t = ev.changedTouches[0];
-            jsPointerId = t.identifier;
-            baseRect = joystickBase.getBoundingClientRect();
-            joystickActive = true;
-            updateJoystickThumb(t.clientX, t.clientY);
-        }, { passive: false });
-
-        joystickBase.addEventListener('touchmove', (ev) => {
-            if (!joystickEnabled || !joystickActive) return;
-            for (const t of ev.changedTouches) {
-                if (t.identifier === jsPointerId) {
-                    ev.preventDefault();
-                    updateJoystickThumb(t.clientX, t.clientY);
-                    break;
-                }
-            }
-        }, { passive: false });
-
-        function releaseJoystick() {
-            joystickActive = false;
-            jsPointerId = null;
-            joystickVector.x = 0; joystickVector.y = 0;
-            
-            joystickThumb.style.transition = 'transform 120ms ease-out';
-            joystickThumb.style.transform = 'translate(-50%, -50%)';
-            setTimeout(() => { joystickThumb.style.transition = ''; }, 150);
-        }
-
-        joystickBase.addEventListener('touchend', (ev) => {
-            if (!joystickEnabled) return;
-            for (const t of ev.changedTouches) {
-                if (t.identifier === jsPointerId) {
-                    ev.preventDefault();
-                    releaseJoystick();
-                    break;
-                }
-            }
-        }, { passive: false });
-
-        joystickBase.addEventListener('touchcancel', (ev) => {
-            if (!joystickEnabled) return; releaseJoystick();
-        });
         const pauseBtn = document.getElementById('pauseBtn');
         pauseBtn.addEventListener('click', () => togglePause());
 
@@ -950,21 +807,6 @@
             if (gameOver) return;
             if (gameStarted && newt) {
                 newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
-            }
-
-            
-            if (joystickEnabled && joystickVector && newt && !gameOver && gameStarted && !paused) {
-                
-                const moveX = joystickVector.x * TILE_SIZE * JOYSTICK_MOVE_MULTIPLIER * deltaTime * 60;
-                const moveY = joystickVector.y * TILE_SIZE * JOYSTICK_MOVE_MULTIPLIER * deltaTime * 60;
-                if (Math.abs(moveX) > 0.01) {
-                    newt.x = Math.max(0, Math.min(canvas.width - newt.width, newt.x + moveX));
-                    newt.targetRotation = moveX > 0 ? Math.PI / 2 : -Math.PI / 2;
-                }
-                if (Math.abs(moveY) > 0.01) {
-                    newt.y = Math.max(0, Math.min(canvas.height - newt.height * 2, newt.y + moveY));
-                    newt.targetRotation = moveY > 0 ? Math.PI : 0;
-                }
             }
 
             if (gameStarted && gameTime - lastRunnerSpawnTime > RUNNER_SPAWN_INTERVAL) {
