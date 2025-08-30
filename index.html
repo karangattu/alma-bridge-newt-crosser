@@ -47,7 +47,6 @@
             overflow: hidden;
         }
 
-        /* subtle animated aurora behind the canvas */
         @keyframes auroraMove {
             0% {
                 background-position: 0% 50%;
@@ -192,7 +191,6 @@
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
         }
 
-        /* legacy styles removed - modern button above */
 
         body.touch-enabled #mobile-controls .up {
             grid-column: 2;
@@ -227,7 +225,6 @@
             }
         }
 
-        /* HUD buttons (e.g., Pause) */
         #hud-buttons {
             position: absolute;
             top: 10px;
@@ -283,6 +280,7 @@
         <canvas id="gameCanvas"></canvas>
         <div id="hud-buttons" aria-label="Game controls">
             <button id="pauseBtn" aria-label="Pause or resume">⏸</button>
+            <button id="muteBtn" aria-label="Mute or unmute" title="Mute / Unmute">🔊</button>
         </div>
     </div>
 
@@ -306,11 +304,27 @@
         let TRAIL_HEIGHT = 0;
         let score = 0;
         let globalHighScoreForPlayer = 0;
+    let rawCrossings = 0;
         let lives = 3;
         let gameOver = false;
         let gameStarted = false;
         let paused = false;
         let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [], runners: [] };
+    let collectibles = [];
+    let nextCollectibleSpawnAt = 0;
+    const COLLECTIBLE_SPAWN_INTERVAL = 5000;
+    let combo = 0;
+    let comboMultiplier = 1;
+    let playerHasShield = false;
+    let trafficSlowUntil = 0;
+    let luckActive = false;
+    let nextCrossingBonus = 0;
+    let achievements = {};
+    let notifications = [];
+    let dailySeed = 0;
+    let dailyBest = 0;
+    let muted = false;
+    let audioCtx = null;
         let cleaner;
         let playerName = '';
         let leaderboardEntries = [];
@@ -438,6 +452,10 @@
         function init() {
             setCanvasDimensions();
             score = 0;
+            rawCrossings = 0;
+            combo = 0;
+            comboMultiplier = 1;
+            playerHasShield = false;
             lives = 3;
             gameOver = false;
             lastFrameTime = 0;
@@ -446,6 +464,10 @@
             createScenery();
             createVehicles();
             initParticles();
+            collectibles = [];
+            scheduleNextCollectible(gameTime || performance.now());
+            loadAchievements();
+            initDaily();
             if (!gameStarted) {
                 draw();
             }
@@ -687,6 +709,9 @@
             handleInput(e.key);
         });
         document.addEventListener('keydown', e => {
+            if (e.key === 'm' || e.key === 'M') toggleMute();
+        });
+        document.addEventListener('keydown', e => {
             if (e.key === 'r' || e.key === 'R') {
                 if (raining) stopRain(); else startRain(performance.now());
             }
@@ -711,6 +736,8 @@
         });
         const pauseBtn = document.getElementById('pauseBtn');
         pauseBtn.addEventListener('click', () => togglePause());
+    const muteBtn = document.getElementById('muteBtn');
+    muteBtn.addEventListener('click', () => toggleMute());
 
         canvas.addEventListener('touchstart', e => {
             e.preventDefault();
@@ -817,6 +844,8 @@
             updateRunners(deltaTime);
             updateParticles(deltaTime);
             updateRain(deltaTime);
+            updateCollectibles();
+            if (newt) checkCollectibleCollisions();
             if (newt) {
                 let dy = newt.targetRotation - newt.rotation;
                 if (Math.abs(dy) > Math.PI) dy = dy < 0 ? dy + 2 * Math.PI : dy - 2 * Math.PI;
@@ -957,6 +986,16 @@
         function handleCollision() {
             if (!newt) return;
 
+            if (playerHasShield) {
+                // absorb one collision
+                playerHasShield = false;
+                addNotification('Shield saved you!');
+                unlockAchievement('shield_save', 'Safety First: Shield absorbed a hit');
+                playSound('shield');
+                hitFlashUntil = gameTime + 120;
+                return; // no death
+            }
+
             hitFlashUntil = gameTime + 250;
 
             const newSplat = {
@@ -974,6 +1013,9 @@
 
             newt = null;
             lives--;
+            combo = 0;
+            comboMultiplier = 1;
+            playSound('hit');
 
             if (lives <= 0) {
                 gameOver = true;
@@ -986,13 +1028,24 @@
 
                 submitScore();
                 fetchLeaderboard(true);
+                updateDailyBest();
             } else {
                 setTimeout(resetNewt, 500);
             }
         }
 
         function handleSuccess() {
-            score++;
+            rawCrossings++;
+            combo++;
+            comboMultiplier = 1 + Math.floor(combo / 3) * 0.5; // 1.0,1.0,1.0 -> 1.5 -> 2.0 etc
+            const award = 1 * comboMultiplier;
+            score = Math.round(score + award);
+            playSound('cross');
+            if (combo === 3) unlockAchievement('combo3', 'Hot Streak: 3 crossings combo');
+            if (combo === 6) unlockAchievement('combo6', 'On Fire: 6 crossings combo');
+            if (rawCrossings === 1) unlockAchievement('first_cross', 'First Crossing');
+            if (rawCrossings === 10) unlockAchievement('ten_cross', 'Ten Crossings');
+            if (raining) unlockAchievement('rain_cross', 'Storm Runner: Crossed in rain');
             resetNewt();
 
             gtag('event', 'newt_crossed', {
@@ -1148,6 +1201,7 @@
             drawBackground();
             drawReflections();
             drawParticles();
+            drawCollectibles();
 
             scenery.runners.forEach(drawRunner);
 
@@ -1168,6 +1222,7 @@
             drawVignette();
 
             drawUI();
+            drawNotifications();
 
             if (gameOver) {
                 drawGameOver();
@@ -1776,6 +1831,12 @@
             ctx.fillStyle = "white";
             ctx.fillText(`Score: ${score}`, 25, 15 + TILE_SIZE * 0.65);
 
+            // combo & multiplier (bottom-left overlay of score box)
+            ctx.font = `400 ${TILE_SIZE * 0.35}px 'Poppins'`;
+            ctx.fillStyle = combo > 1 ? (combo >= 6 ? '#ffbf00' : '#50e3c2') : 'rgba(255,255,255,0.6)';
+            ctx.fillText(`x${comboMultiplier.toFixed(1)} Combo:${combo}`, 25, 15 + TILE_SIZE * 1.0);
+            ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
+
             ctx.textAlign = "right";
             ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.roundRect(canvas.width - TILE_SIZE * 3.5 - 15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
@@ -1791,6 +1852,26 @@
             const topGlobal = leaderboardEntries.length ? leaderboardEntries[0].score : 0;
             const centerText = playerName ? `${playerName} Best: ${globalHighScoreForPlayer || 0}  |  Top Score: ${topGlobal}` : `Top Score: ${topGlobal}`;
             ctx.fillText(centerText, canvas.width / 2, 15 + TILE_SIZE * 0.65);
+
+            // daily best small label
+            ctx.font = `400 ${TILE_SIZE * 0.3}px 'Poppins'`;
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText(`Daily Best: ${dailyBest}`, canvas.width / 2, 15 + TILE_SIZE * 1.05);
+            ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
+
+            // shield indicator top-left corner of lives box
+            if (playerHasShield) {
+                ctx.save();
+                ctx.strokeStyle = '#50e3c2';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(canvas.width - TILE_SIZE * 0.9, 15 + TILE_SIZE * 0.5, TILE_SIZE * 0.3, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.font = `700 ${TILE_SIZE * 0.35}px 'Poppins'`;
+                ctx.fillStyle = '#50e3c2';
+                ctx.fillText('S', canvas.width - TILE_SIZE * 0.9, 15 + TILE_SIZE * 0.6);
+                ctx.restore();
+            }
 
             ctx.restore();
 
@@ -1861,6 +1942,9 @@
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
             ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
             ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 - TILE_SIZE * 0.2);
+            ctx.fillStyle = '#fff';
+            ctx.font = `400 ${TILE_SIZE * 0.55}px 'Poppins'`;
+            ctx.fillText(`Raw Crossings: ${rawCrossings}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.4);
 
             if (playerName) {
                 ctx.fillStyle = "#f0f0f0";
@@ -1880,6 +1964,10 @@
             ctx.fillStyle = "white";
             ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
             ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (2.5 + leaderboardEntries.length * 0.6));
+            // show unlocked summary small
+            const unlockedCount = Object.values(achievements).filter(a => a.unlocked).length;
+            ctx.font = `400 ${TILE_SIZE * 0.4}px 'Poppins'`;
+            ctx.fillText(`${unlockedCount} Achievements Unlocked Today`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * (3.1 + leaderboardEntries.length * 0.6));
         }
 
 
@@ -1919,6 +2007,248 @@
         }
 
         init();
+
+        function scheduleNextCollectible(now) {
+            const ref = typeof now === 'number' ? now : performance.now();
+            nextCollectibleSpawnAt = ref + (COLLECTIBLE_SPAWN_INTERVAL * (0.6 + Math.random() * 0.8));
+        }
+
+        function spawnCollectible(type) {
+            const weighted = ['firefly','firefly','firefly','shield','worm','slug','clover','egg','firefly'];
+            const cType = type || weighted[Math.floor(Math.random()*weighted.length)];
+            const areaTop = ROAD_TOP_Y - TRAIL_HEIGHT * 0.6;
+            const areaBottom = ROAD_BOTTOM_Y + TRAIL_HEIGHT * 0.6;
+            const y = Math.random() < 0.5 ?
+                (Math.random() * (areaTop - TILE_SIZE) + TILE_SIZE) :
+                (ROAD_BOTTOM_Y + Math.random() * (canvas.height - ROAD_BOTTOM_Y - TILE_SIZE * 2));
+            const x = Math.random() * (canvas.width - TILE_SIZE) + TILE_SIZE / 2;
+            collectibles.push({ id: Date.now() + Math.random(), x, y, type: cType, created: gameTime, pulse: Math.random() * Math.PI * 2 });
+        }
+
+    function updateCollectibles() {
+            if (gameTime >= nextCollectibleSpawnAt && collectibles.length < 5 && !paused) {
+                spawnCollectible();
+                scheduleNextCollectible(gameTime);
+            }
+            collectibles = collectibles.filter(c => gameTime - c.created < 20000);
+            collectibles.forEach(c => c.pulse += 0.05);
+        }
+
+        function drawCollectibles() {
+            if (!collectibles.length) return;
+            collectibles.forEach(c => {
+                ctx.save();
+                const size = TILE_SIZE * (c.type === 'shield' ? 0.45 : 0.35);
+                const pulseScale = 1 + Math.sin(c.pulse * 3) * 0.15;
+                ctx.translate(c.x, c.y);
+                if (c.type === 'firefly') {
+                    const grad = ctx.createRadialGradient(0, 0, size * 0.1, 0, 0, size * 1.4);
+                    grad.addColorStop(0, 'rgba(255, 240, 120, 0.95)');
+                    grad.addColorStop(0.4, 'rgba(255, 200, 50, 0.6)');
+                    grad.addColorStop(1, 'rgba(255, 160, 0, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size * pulseScale, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (c.type === 'shield') {
+                    ctx.strokeStyle = '#50e3c2';
+                    ctx.lineWidth = 3;
+                    ctx.globalAlpha = 0.85;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size * pulseScale, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 0.25;
+                    ctx.fillStyle = '#50e3c2';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size * 0.7 * pulseScale, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (c.type === 'worm') {
+                    ctx.fillStyle = '#b87333';
+                    ctx.beginPath();
+                    for (let i=0;i<6;i++){ ctx.ellipse(-size*0.6 + i*size*0.25, Math.sin(c.pulse*4+i)*size*0.15, size*0.18, size*0.22, 0, 0, Math.PI*2);} 
+                    ctx.fill();
+                } else if (c.type === 'slug') {
+                    ctx.fillStyle = '#6c9a3a';
+                    ctx.beginPath();
+                    ctx.ellipse(0,0,size*0.9,size*0.45,0,0,Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle='#88c452';
+                    ctx.beginPath();
+                    ctx.ellipse(-size*0.2,-size*0.1,size*0.25,size*0.18,0,0,Math.PI*2);
+                    ctx.fill();
+                } else if (c.type === 'clover') {
+                    ctx.fillStyle = '#2e8b57';
+                    for (let i=0;i<4;i++){ ctx.beginPath(); ctx.ellipse(Math.cos(i*Math.PI/2)*size*0.35, Math.sin(i*Math.PI/2)*size*0.35, size*0.3, size*0.25, 0,0,Math.PI*2); ctx.fill(); }
+                } else if (c.type === 'egg') {
+                    ctx.fillStyle = '#f2e6c9';
+                    ctx.beginPath();
+                    ctx.ellipse(0,0,size*0.4,size*0.55,0,0,Math.PI*2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+        }
+
+        function checkCollectibleCollisions() {
+            const n = newt;
+            if (!n) return;
+            collectibles = collectibles.filter(c => {
+                const dx = Math.abs(c.x - (n.x + n.width / 2));
+                const dy = Math.abs(c.y - (n.y + n.height / 2));
+                if (dx < n.width * 0.7 && dy < n.height * 0.7) {
+                    if (c.type === 'firefly') {
+                        const add = 2 * comboMultiplier;
+                        score = Math.round(score + add);
+                        addNotification(`+${add} firefly`);
+                        playSound('collect');
+                        unlockAchievement('collect1', 'First Firefly');
+                    } else if (c.type === 'shield') {
+                        playerHasShield = true;
+                        addNotification('Shield Acquired');
+                        unlockAchievement('shield1', 'Protective Slime: Got a shield');
+                        playSound('shield');
+                    } else if (c.type === 'worm') {
+                        if (lives < 5) { lives++; addNotification('Life +1'); playSound('collect'); }
+                        unlockAchievement('worm1','Found a Worm');
+                    } else if (c.type === 'slug') {
+                        trafficSlowUntil = gameTime + 6000;
+                        addNotification('Traffic Slowed');
+                        unlockAchievement('slug1','Slug Slowdown');
+                        playSound('collect');
+                    } else if (c.type === 'clover') {
+                        luckActive = true;
+                        addNotification('Luck Active');
+                        unlockAchievement('clover1','Lucky Clover');
+                        playSound('collect');
+                    } else if (c.type === 'egg') {
+                        const add2 = Math.round(5 * comboMultiplier);
+                        score += add2;
+                        nextCrossingBonus += 2;
+                        addNotification(`Egg +${add2}`);
+                        unlockAchievement('egg1','Newt Egg Bonus');
+                        playSound('collect');
+                    }
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        /* Achievements */
+        function loadAchievements() {
+            try { achievements = JSON.parse(localStorage.getItem('newt_achievements') || '{}'); } catch (e) { achievements = {}; }
+        }
+        function saveAchievements() {
+            try { localStorage.setItem('newt_achievements', JSON.stringify(achievements)); } catch (e) { }
+        }
+        function unlockAchievement(key, label) {
+            if (!achievements[key]) achievements[key] = { unlocked: false, label };
+            if (!achievements[key].unlocked) {
+                achievements[key].unlocked = true;
+                achievements[key].label = label;
+                addNotification(label, '#50e3c2');
+                saveAchievements();
+            }
+        }
+
+        function addNotification(text, color) {
+            notifications.push({ id: Date.now() + Math.random(), text, color: color || '#ffd760', created: gameTime });
+            if (notifications.length > 5) notifications.shift();
+        }
+        function drawNotifications() {
+            const life = 4000;
+            const baseY = TILE_SIZE * 2.2;
+            notifications = notifications.filter(n => gameTime - n.created < life);
+            notifications.forEach((n, i) => {
+                const age = gameTime - n.created;
+                const alpha = age < 300 ? age / 300 : (age > life - 400 ? (life - age) / 400 : 1);
+                const y = baseY + i * (TILE_SIZE * 0.55);
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, alpha);
+                ctx.font = `600 ${TILE_SIZE * 0.45}px 'Poppins'`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                const w = ctx.measureText(n.text).width + 30;
+                ctx.roundRect(canvas.width / 2 - w / 2, y - TILE_SIZE * 0.45, w, TILE_SIZE * 0.8, 12);
+                ctx.fill();
+                ctx.fillStyle = n.color;
+                ctx.fillText(n.text, canvas.width / 2, y);
+                ctx.restore();
+            });
+        }
+
+        function initDaily() {
+            const dateStr = new Date().toISOString().slice(0, 10);
+            dailySeed = hashString(dateStr) & 0xffffffff;
+            try { dailyBest = parseInt(localStorage.getItem('newt_daily_' + dateStr) || '0', 10); } catch (e) { dailyBest = 0; }
+        }
+        function updateDailyBest() {
+            const dateStr = new Date().toISOString().slice(0, 10);
+            if (score > dailyBest) {
+                dailyBest = score;
+                try { localStorage.setItem('newt_daily_' + dateStr, String(dailyBest)); } catch (e) { }
+                addNotification('New Daily Best!');
+            }
+        }
+        function hashString(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+        const baseCreateVehicles = createVehicles;
+        createVehicles = function () {
+            vehicles = [];
+            const lanes = [
+                { y: ROAD_CENTER_Y - TILE_SIZE * 1.8, speed: -2.8 },
+                { y: ROAD_CENTER_Y + TILE_SIZE * 0.3, speed: 2.2 },
+            ];
+            if (rawCrossings >= 5 || score >= 20) {
+                lanes.push({ y: ROAD_CENTER_Y - TILE_SIZE * 0.5, speed: 3.3 });
+            }
+            if (rawCrossings >= 12 || score >= 45) {
+                lanes.push({ y: ROAD_CENTER_Y + TILE_SIZE * 1.6, speed: -3.6 });
+            }
+            lanes.forEach(lane => {
+                const baseVehicleCount = 2;
+                const numVehicles = Math.floor(Math.random() * 2) + baseVehicleCount + Math.min(2, Math.floor(rawCrossings / 8));
+                const laneVehicles = [];
+                for (let i = 0; i < numVehicles * 4; i++) {
+                    const typeKey = weightedVehicleTypes[Math.floor(Math.random() * weightedVehicleTypes.length)];
+                    const template = vehicleTemplates[typeKey];
+                    const w = TILE_SIZE * template.width;
+                    const x = Math.random() * canvas.width * 1.2 + i * (canvas.width / numVehicles * 0.9);
+                    const v = { type: typeKey, x, y: lane.y, width: w, height: TILE_SIZE * template.heightMultiplier, baseSpeed: lane.speed, color: carColors[Math.floor(Math.random() * carColors.length)], wheelRot: Math.random() * Math.PI * 2 };
+                    if (v.type === 'bicycle') v.pedalPhase = Math.random() * Math.PI * 2;
+                    laneVehicles.push(v);
+                }
+                laneVehicles.sort((a, b) => a.x - b.x);
+                const spaced = [];
+                const baseSpacing = TILE_SIZE * 3.0;
+                const minSpacingReduction = Math.min(1.0, (score / 10) + (rawCrossings / 12));
+                const minSpacing = baseSpacing - (baseSpacing - TILE_SIZE * 1.5) * minSpacingReduction;
+                laneVehicles.forEach(v => { const last = spaced[spaced.length - 1]; if (!last || v.x - (last.x + last.width) > minSpacing) spaced.push(v); });
+                spaced.forEach(v => vehicles.push(v));
+            });
+        };
+
+        function ensureAudio() { if (!audioCtx && !muted) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } }
+        function playSound(type) {
+            if (muted) return;
+            ensureAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g).connect(audioCtx.destination);
+            if (type === 'cross') { o.frequency.value = 660; } else if (type === 'collect') { o.frequency.value = 880; } else if (type === 'hit') { o.frequency.value = 90; } else if (type === 'shield') { o.frequency.value = 400; }
+            o.type = type === 'hit' ? 'sawtooth' : 'sine';
+            g.gain.setValueAtTime(0.001, now);
+            g.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+            o.start(now);
+            o.stop(now + 0.4);
+        }
+        function toggleMute() { muted = !muted; const btn = document.getElementById('muteBtn'); if (btn) btn.textContent = muted ? '🔇' : '🔊'; if (!muted) ensureAudio(); }
+
+    addNotification('Welcome! Collect items!', '#50e3c2');
+        unlockAchievement('session_start', 'Session Started');
 
     </script>
 </body>
