@@ -248,6 +248,202 @@
         #hud-buttons button:hover {
             background: rgba(0, 0, 0, 0.6);
         }
+
+        #daily-goals-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid rgba(80, 227, 194, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            max-width: 250px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+            display: none;
+        }
+
+        .goal-item {
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+        }
+
+        .goal-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #50e3c2, #4dd0b1);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill.completed {
+            background: linear-gradient(90deg, #ffd700, #ffed4a);
+            animation: progressGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes progressGlow {
+            0% {
+                box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            }
+
+            100% {
+                box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            }
+        }
+
+        .goal-reward {
+            font-size: 0.75rem;
+            color: #ffd700;
+            font-weight: 500;
+        }
+
+        #combo-meter {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #50e3c2;
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            min-width: 200px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+
+        #combo-meter.milestone {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+            transform: translateX(-50%) scale(1.1);
+            animation: milestoneAlert 0.6s ease-in-out;
+        }
+
+        @keyframes milestoneAlert {
+
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1.1);
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.2);
+            }
+        }
+
+        .combo-progress {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            margin: 8px 0 4px 0;
+            overflow: hidden;
+        }
+
+        .combo-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #50e3c2, #4dd0b1);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .combo-fill.milestone {
+            background: linear-gradient(90deg, #ffd700, #ffed4a);
+            animation: comboGlow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes comboGlow {
+            0% {
+                box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            }
+
+            100% {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 1);
+            }
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            20%,
+            40%,
+            60%,
+            80%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-2px);
+            }
+        }
+
+        .screen-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(80, 227, 194, 0.2) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1000;
+            animation: flash 0.3s ease-out;
+        }
+
+        @keyframes flash {
+            0% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #daily-goals-panel {
+                max-width: 200px;
+                font-size: 0.8rem;
+            }
+
+            #combo-meter {
+                bottom: 80px;
+                min-width: 180px;
+                font-size: 0.9rem;
+            }
+
+            #goalsToggleBtn {
+                background: rgba(80, 227, 194, 0.2);
+                border-color: rgba(80, 227, 194, 0.4);
+            }
+        }
     </style>
 </head>
 
@@ -278,7 +474,26 @@
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+
+        <div id="daily-goals-panel">
+            <div style="font-weight: 700; margin-bottom: 8px; color: #50e3c2; font-size: 0.9rem;">
+                📅 Daily Goals
+            </div>
+            <div id="daily-goals-list">
+            </div>
+        </div>
+
+        <!-- Combo Meter -->
+        <div id="combo-meter" style="display: none;">
+            <div id="combo-text">Combo: 0</div>
+            <div class="combo-progress">
+                <div class="combo-fill" id="combo-fill" style="width: 0%;"></div>
+            </div>
+            <div id="combo-milestone" style="font-size: 0.8rem; color: #ffd700;"></div>
+        </div>
+
         <div id="hud-buttons" aria-label="Game controls">
+            <button id="goalsToggleBtn" aria-label="Toggle daily goals" title="Daily Goals">🎯</button>
             <button id="pauseBtn" aria-label="Pause or resume">⏸</button>
             <button id="muteBtn" aria-label="Mute or unmute" title="Mute / Unmute">🔊</button>
         </div>
@@ -304,27 +519,39 @@
         let TRAIL_HEIGHT = 0;
         let score = 0;
         let globalHighScoreForPlayer = 0;
-    let rawCrossings = 0;
+        let rawCrossings = 0;
         let lives = 3;
         let gameOver = false;
         let gameStarted = false;
         let paused = false;
         let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [], runners: [] };
-    let collectibles = [];
-    let nextCollectibleSpawnAt = 0;
-    const COLLECTIBLE_SPAWN_INTERVAL = 5000;
-    let combo = 0;
-    let comboMultiplier = 1;
-    let playerHasShield = false;
-    let trafficSlowUntil = 0;
-    let luckActive = false;
-    let nextCrossingBonus = 0;
-    let achievements = {};
-    let notifications = [];
-    let dailySeed = 0;
-    let dailyBest = 0;
-    let muted = false;
-    let audioCtx = null;
+        let collectibles = [];
+        let nextCollectibleSpawnAt = 0;
+        const COLLECTIBLE_SPAWN_INTERVAL = 5000;
+        let combo = 0;
+        let comboMultiplier = 1;
+        let playerHasShield = false;
+        let trafficSlowUntil = 0;
+        let luckActive = false;
+        let nextCrossingBonus = 0;
+        let achievements = {};
+        let notifications = [];
+        let dailySeed = 0;
+        let dailyBest = 0;
+        let muted = false;
+        let audioCtx = null;
+
+        let dailyGoals = [];
+        let goalProgress = {};
+        let comboMilestones = [3, 6, 10, 15, 25];
+        let nextMilestone = 3;
+        let milestoneIndex = 0;
+        let totalFirefliesCollected = 0;
+        let totalShieldsUsed = 0;
+        let totalCrossingsToday = 0;
+        let gameSessionCount = 0;
+        let maxComboToday = 0;
+        let screenShakeActive = false;
         let cleaner;
         let playerName = '';
         let leaderboardEntries = [];
@@ -563,6 +790,9 @@
             gameStarted = true;
             gameStartTime = Date.now();
 
+            gameSessionCount++;
+            updateGoalProgress('sessions', 1);
+
             setTimeout(() => {
                 spawnRunner(2);
                 lastRunnerSpawnTime = performance.now();
@@ -736,8 +966,17 @@
         });
         const pauseBtn = document.getElementById('pauseBtn');
         pauseBtn.addEventListener('click', () => togglePause());
-    const muteBtn = document.getElementById('muteBtn');
-    muteBtn.addEventListener('click', () => toggleMute());
+        const muteBtn = document.getElementById('muteBtn');
+        muteBtn.addEventListener('click', () => toggleMute());
+
+        const goalsToggleBtn = document.getElementById('goalsToggleBtn');
+        goalsToggleBtn.addEventListener('click', () => {
+            const panel = document.getElementById('daily-goals-panel');
+            if (panel) {
+                const isVisible = panel.style.display !== 'none';
+                panel.style.display = isVisible ? 'none' : 'block';
+            }
+        });
 
         canvas.addEventListener('touchstart', e => {
             e.preventDefault();
@@ -989,14 +1228,18 @@
             if (playerHasShield) {
                 // absorb one collision
                 playerHasShield = false;
+                totalShieldsUsed++;
                 addNotification('Shield saved you!');
                 unlockAchievement('shield_save', 'Safety First: Shield absorbed a hit');
                 playSound('shield');
                 hitFlashUntil = gameTime + 120;
+                triggerScreenEffect('success'); // Positive feedback for shield save
                 return; // no death
             }
 
             hitFlashUntil = gameTime + 250;
+
+            triggerScreenEffect('hit');
 
             const newSplat = {
                 x: newt.x + newt.width / 2,
@@ -1015,6 +1258,10 @@
             lives--;
             combo = 0;
             comboMultiplier = 1;
+
+            // Update combo meter after combo break
+            updateComboMeter();
+
             playSound('hit');
 
             if (lives <= 0) {
@@ -1036,16 +1283,28 @@
 
         function handleSuccess() {
             rawCrossings++;
+            totalCrossingsToday++;
             combo++;
             comboMultiplier = 1 + Math.floor(combo / 3) * 0.5; // 1.0,1.0,1.0 -> 1.5 -> 2.0 etc
             const award = 1 * comboMultiplier;
             score = Math.round(score + award);
             playSound('cross');
+
+            // Update daily goals
+            updateGoalProgress('crossings', 1);
+
+            // Update combo meter
+            updateComboMeter();
+
             if (combo === 3) unlockAchievement('combo3', 'Hot Streak: 3 crossings combo');
             if (combo === 6) unlockAchievement('combo6', 'On Fire: 6 crossings combo');
             if (rawCrossings === 1) unlockAchievement('first_cross', 'First Crossing');
             if (rawCrossings === 10) unlockAchievement('ten_cross', 'Ten Crossings');
             if (raining) unlockAchievement('rain_cross', 'Storm Runner: Crossed in rain');
+
+            // Trigger success effect
+            triggerScreenEffect('success');
+
             resetNewt();
 
             gtag('event', 'newt_crossed', {
@@ -1952,6 +2211,13 @@
                 ctx.fillText(`${playerName} Best: ${globalHighScoreForPlayer || score}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.6);
             }
 
+            const completedGoals = dailyGoals.filter(g => g.progress >= g.target).length;
+            if (completedGoals > 0) {
+                ctx.fillStyle = '#ffd700';
+                ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
+                ctx.fillText(`🎯 Daily Goals Completed: ${completedGoals}/${dailyGoals.length}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.0);
+            }
+
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
             ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
             ctx.fillText('Top 5 Scores', canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.8);
@@ -1991,6 +2257,11 @@
 
             update(deltaTime);
             draw();
+
+            if (Math.floor(gameTime / 10000) > Math.floor((gameTime - deltaTime * 1000) / 10000)) {
+                saveDailyProgress();
+            }
+
             requestAnimationFrame(gameLoop);
         }
 
@@ -2014,14 +2285,14 @@
         }
 
         function spawnCollectible(type) {
-            const weighted = ['firefly','firefly','firefly','shield','worm','slug','clover','egg','firefly'];
-            const cType = type || weighted[Math.floor(Math.random()*weighted.length)];
+            const weighted = ['firefly', 'firefly', 'firefly', 'shield', 'worm', 'slug', 'clover', 'egg', 'firefly'];
+            const cType = type || weighted[Math.floor(Math.random() * weighted.length)];
             const y = ROAD_BOTTOM_Y + Math.random() * (canvas.height - ROAD_BOTTOM_Y - TILE_SIZE * 2);
             const x = Math.random() * (canvas.width - TILE_SIZE) + TILE_SIZE / 2;
             collectibles.push({ id: Date.now() + Math.random(), x, y, type: cType, created: gameTime, pulse: Math.random() * Math.PI * 2 });
         }
 
-    function updateCollectibles() {
+        function updateCollectibles() {
             if (gameTime >= nextCollectibleSpawnAt && collectibles.length < 5 && !paused) {
                 spawnCollectible();
                 scheduleNextCollectible(gameTime);
@@ -2061,24 +2332,24 @@
                 } else if (c.type === 'worm') {
                     ctx.fillStyle = '#b87333';
                     ctx.beginPath();
-                    for (let i=0;i<6;i++){ ctx.ellipse(-size*0.6 + i*size*0.25, Math.sin(c.pulse*4+i)*size*0.15, size*0.18, size*0.22, 0, 0, Math.PI*2);} 
+                    for (let i = 0; i < 6; i++) { ctx.ellipse(-size * 0.6 + i * size * 0.25, Math.sin(c.pulse * 4 + i) * size * 0.15, size * 0.18, size * 0.22, 0, 0, Math.PI * 2); }
                     ctx.fill();
                 } else if (c.type === 'slug') {
                     ctx.fillStyle = '#6c9a3a';
                     ctx.beginPath();
-                    ctx.ellipse(0,0,size*0.9,size*0.45,0,0,Math.PI*2);
+                    ctx.ellipse(0, 0, size * 0.9, size * 0.45, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.fillStyle='#88c452';
+                    ctx.fillStyle = '#88c452';
                     ctx.beginPath();
-                    ctx.ellipse(-size*0.2,-size*0.1,size*0.25,size*0.18,0,0,Math.PI*2);
+                    ctx.ellipse(-size * 0.2, -size * 0.1, size * 0.25, size * 0.18, 0, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (c.type === 'clover') {
                     ctx.fillStyle = '#2e8b57';
-                    for (let i=0;i<4;i++){ ctx.beginPath(); ctx.ellipse(Math.cos(i*Math.PI/2)*size*0.35, Math.sin(i*Math.PI/2)*size*0.35, size*0.3, size*0.25, 0,0,Math.PI*2); ctx.fill(); }
+                    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(Math.cos(i * Math.PI / 2) * size * 0.35, Math.sin(i * Math.PI / 2) * size * 0.35, size * 0.3, size * 0.25, 0, 0, Math.PI * 2); ctx.fill(); }
                 } else if (c.type === 'egg') {
                     ctx.fillStyle = '#f2e6c9';
                     ctx.beginPath();
-                    ctx.ellipse(0,0,size*0.4,size*0.55,0,0,Math.PI*2);
+                    ctx.ellipse(0, 0, size * 0.4, size * 0.55, 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
                 ctx.restore();
@@ -2095,34 +2366,42 @@
                     if (c.type === 'firefly') {
                         const add = 2 * comboMultiplier;
                         score = Math.round(score + add);
+                        totalFirefliesCollected++;
+                        updateGoalProgress('fireflies', 1);
                         addNotification(`+${add} firefly`);
                         playSound('collect');
                         unlockAchievement('collect1', 'First Firefly');
+                        triggerScreenEffect('success');
                     } else if (c.type === 'shield') {
                         playerHasShield = true;
                         addNotification('Shield Acquired');
                         unlockAchievement('shield1', 'Protective Slime: Got a shield');
                         playSound('shield');
+                        triggerScreenEffect('success');
                     } else if (c.type === 'worm') {
                         if (lives < 5) { lives++; addNotification('Life +1'); playSound('collect'); }
-                        unlockAchievement('worm1','Found a Worm');
+                        unlockAchievement('worm1', 'Found a Worm');
+                        triggerScreenEffect('success');
                     } else if (c.type === 'slug') {
                         trafficSlowUntil = gameTime + 6000;
                         addNotification('Traffic Slowed');
-                        unlockAchievement('slug1','Slug Slowdown');
+                        unlockAchievement('slug1', 'Slug Slowdown');
                         playSound('collect');
+                        triggerScreenEffect('success');
                     } else if (c.type === 'clover') {
                         luckActive = true;
                         addNotification('Luck Active');
-                        unlockAchievement('clover1','Lucky Clover');
+                        unlockAchievement('clover1', 'Lucky Clover');
                         playSound('collect');
+                        triggerScreenEffect('success');
                     } else if (c.type === 'egg') {
                         const add2 = Math.round(5 * comboMultiplier);
                         score += add2;
                         nextCrossingBonus += 2;
                         addNotification(`Egg +${add2}`);
-                        unlockAchievement('egg1','Newt Egg Bonus');
+                        unlockAchievement('egg1', 'Newt Egg Bonus');
                         playSound('collect');
+                        triggerScreenEffect('success');
                     }
                     return false;
                 }
@@ -2177,6 +2456,143 @@
             const dateStr = new Date().toISOString().slice(0, 10);
             dailySeed = hashString(dateStr) & 0xffffffff;
             try { dailyBest = parseInt(localStorage.getItem('newt_daily_' + dateStr) || '0', 10); } catch (e) { dailyBest = 0; }
+
+            initDailyGoals();
+            loadDailyProgress();
+            updateDailyGoalsDisplay();
+        }
+
+        function initDailyGoals() {
+            const today = new Date().toISOString().slice(0, 10);
+
+            dailyGoals = [
+                {
+                    id: 'crossings',
+                    label: 'Cross the Road',
+                    target: Math.max(5, Math.floor(dailyBest / 3)),
+                    progress: 0,
+                    reward: 'Score +50',
+                    emoji: '🛣️'
+                },
+                {
+                    id: 'fireflies',
+                    label: 'Collect Fireflies',
+                    target: Math.max(3, Math.floor(dailyBest / 5)),
+                    progress: 0,
+                    reward: 'Score +30',
+                    emoji: '🌟'
+                },
+                {
+                    id: 'combo',
+                    label: 'Achieve Combo',
+                    target: Math.max(5, Math.floor(dailyBest / 4)),
+                    progress: 0,
+                    reward: 'Score +40',
+                    emoji: '🔥'
+                },
+                {
+                    id: 'sessions',
+                    label: 'Play Games',
+                    target: 3,
+                    progress: 0,
+                    reward: 'Score +20',
+                    emoji: '🎮'
+                }
+            ];
+        }
+
+        function loadDailyProgress() {
+            const today = new Date().toISOString().slice(0, 10);
+            try {
+                const saved = localStorage.getItem('newt_daily_progress_' + today);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    goalProgress = data.progress || {};
+                    totalFirefliesCollected = data.totalFirefliesCollected || 0;
+                    totalShieldsUsed = data.totalShieldsUsed || 0;
+                    totalCrossingsToday = data.totalCrossingsToday || 0;
+                    gameSessionCount = data.gameSessionCount || 0;
+                    maxComboToday = data.maxComboToday || 0;
+
+                    dailyGoals.forEach(goal => {
+                        if (goalProgress[goal.id] !== undefined) {
+                            goal.progress = goalProgress[goal.id];
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('Error loading daily progress:', e);
+            }
+        }
+
+        function saveDailyProgress() {
+            const today = new Date().toISOString().slice(0, 10);
+            const data = {
+                progress: goalProgress,
+                totalFirefliesCollected,
+                totalShieldsUsed,
+                totalCrossingsToday,
+                gameSessionCount,
+                maxComboToday
+            };
+            try {
+                localStorage.setItem('newt_daily_progress_' + today, JSON.stringify(data));
+            } catch (e) {
+                console.warn('Error saving daily progress:', e);
+            }
+        }
+
+        function updateDailyGoalsDisplay() {
+            const goalsList = document.getElementById('daily-goals-list');
+            if (!goalsList) return;
+
+            goalsList.innerHTML = '';
+
+            dailyGoals.forEach(goal => {
+                const isCompleted = goal.progress >= goal.target;
+                const progressPercent = Math.min(100, (goal.progress / goal.target) * 100);
+
+                const goalElement = document.createElement('div');
+                goalElement.className = 'goal-item';
+                goalElement.innerHTML = `
+                    <div class="goal-label">
+                        <span>${goal.emoji} ${goal.label}</span>
+                        <span>${goal.progress}/${goal.target}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${isCompleted ? 'completed' : ''}" 
+                             style="width: ${progressPercent}%"></div>
+                    </div>
+                    <div class="goal-reward">${isCompleted ? '✅' : '🎁'} ${goal.reward}</div>
+                `;
+
+                goalsList.appendChild(goalElement);
+            });
+        }
+
+        function updateGoalProgress(goalId, increment = 1) {
+            if (!goalProgress[goalId]) goalProgress[goalId] = 0;
+
+            const goal = dailyGoals.find(g => g.id === goalId);
+            if (goal && goal.progress < goal.target) {
+                const wasCompleted = goal.progress >= goal.target;
+                goal.progress = Math.min(goal.target, goal.progress + increment);
+                goalProgress[goalId] = goal.progress;
+
+                const isNowCompleted = goal.progress >= goal.target;
+                if (!wasCompleted && isNowCompleted) {
+                    addNotification(`🎉 Daily Goal Complete: ${goal.label}!`, '#ffd700');
+                    playSound('collect');
+                    triggerScreenEffect('success');
+
+                    const bonusPoints = parseInt(goal.reward.match(/\d+/)[0]);
+                    score += bonusPoints;
+                    addNotification(`+${bonusPoints} Bonus Points!`, '#50e3c2');
+                }
+
+                updateDailyGoalsDisplay();
+                saveDailyProgress();
+            }
         }
         function updateDailyBest() {
             const dateStr = new Date().toISOString().slice(0, 10);
@@ -2184,6 +2600,86 @@
                 dailyBest = score;
                 try { localStorage.setItem('newt_daily_' + dateStr, String(dailyBest)); } catch (e) { }
                 addNotification('New Daily Best!');
+            }
+        }
+
+        function updateComboMeter() {
+            const comboMeter = document.getElementById('combo-meter');
+            const comboText = document.getElementById('combo-text');
+            const comboFill = document.getElementById('combo-fill');
+            const comboMilestoneText = document.getElementById('combo-milestone');
+
+            if (!comboMeter) return;
+
+            if (combo > 0) {
+                comboMeter.style.display = 'block';
+                comboText.textContent = `Combo: ${combo}`;
+
+                if (combo > maxComboToday) {
+                    maxComboToday = combo;
+                    updateGoalProgress('combo', combo - (maxComboToday - 1));
+                }
+
+                const progressToNext = (combo / nextMilestone) * 100;
+                const clampedProgress = Math.min(100, progressToNext);
+                comboFill.style.width = `${clampedProgress}%`;
+
+                if (combo >= nextMilestone) {
+                    comboMeter.classList.add('milestone');
+                    comboFill.classList.add('milestone');
+                    comboMilestoneText.textContent = `🏆 Milestone Reached!`;
+
+                    addNotification(`🔥 ${nextMilestone} Combo Milestone!`, '#ffd700');
+                    triggerScreenEffect('milestone');
+                    playSound('shield');
+
+                    milestoneIndex++;
+                    if (milestoneIndex < comboMilestones.length) {
+                        nextMilestone = comboMilestones[milestoneIndex];
+                    } else {
+                        nextMilestone = combo + 5;
+                    }
+
+                    setTimeout(() => {
+                        comboMeter.classList.remove('milestone');
+                        comboFill.classList.remove('milestone');
+                    }, 2000);
+                } else {
+                    comboMilestoneText.textContent = `Next: ${nextMilestone}`;
+                }
+            } else {
+                comboMeter.style.display = 'none';
+                milestoneIndex = 0;
+                nextMilestone = comboMilestones[0];
+            }
+        }
+
+        function triggerScreenEffect(type) {
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) return;
+
+            if (type === 'hit') {
+                canvas.classList.add('shake');
+                setTimeout(() => canvas.classList.remove('shake'), 500);
+
+                if (navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+            } else if (type === 'success' || type === 'milestone') {
+                const flash = document.createElement('div');
+                flash.className = 'screen-flash';
+                if (type === 'milestone') {
+                    flash.style.background = 'radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%)';
+                }
+                document.body.appendChild(flash);
+
+                setTimeout(() => {
+                    document.body.removeChild(flash);
+                }, 300);
+
+                if (navigator.vibrate) {
+                    navigator.vibrate(type === 'milestone' ? [50, 25, 50, 25, 50] : [50]);
+                }
             }
         }
         function hashString(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -2243,8 +2739,11 @@
         }
         function toggleMute() { muted = !muted; const btn = document.getElementById('muteBtn'); if (btn) btn.textContent = muted ? '🔇' : '🔊'; if (!muted) ensureAudio(); }
 
-    addNotification('Welcome! Collect items!', '#50e3c2');
+        addNotification('Welcome! Collect items!', '#50e3c2');
         unlockAchievement('session_start', 'Session Started');
+
+        initDaily();
+        updateComboMeter();
 
     </script>
 </body>
