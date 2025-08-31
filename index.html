@@ -2016,11 +2016,7 @@
         function spawnCollectible(type) {
             const weighted = ['firefly','firefly','firefly','shield','worm','slug','clover','egg','firefly'];
             const cType = type || weighted[Math.floor(Math.random()*weighted.length)];
-            const areaTop = ROAD_TOP_Y - TRAIL_HEIGHT * 0.6;
-            const areaBottom = ROAD_BOTTOM_Y + TRAIL_HEIGHT * 0.6;
-            const y = Math.random() < 0.5 ?
-                (Math.random() * (areaTop - TILE_SIZE) + TILE_SIZE) :
-                (ROAD_BOTTOM_Y + Math.random() * (canvas.height - ROAD_BOTTOM_Y - TILE_SIZE * 2));
+            const y = ROAD_BOTTOM_Y + Math.random() * (canvas.height - ROAD_BOTTOM_Y - TILE_SIZE * 2);
             const x = Math.random() * (canvas.width - TILE_SIZE) + TILE_SIZE / 2;
             collectibles.push({ id: Date.now() + Math.random(), x, y, type: cType, created: gameTime, pulse: Math.random() * Math.PI * 2 });
         }
