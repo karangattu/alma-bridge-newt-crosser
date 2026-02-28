@@ -1,2751 +1,1073 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Alma Bridge Newt Crosser</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LZ4SSN195H"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'G-LZ4SSN195H');
-    </script>
-
-    <style>
-        :root {
-            --primary-bg: #1a1a2a;
-            --secondary-bg: #2a2a3a;
-            --text-color: #f0f0f0;
-            --accent-color: #50e3c2;
-            --road-color: #6c6c7c;
-            --water-color: #3b6fa5;
-            --forest-color: #2e8b57;
-            --danger-color: #e35050;
-            --trunk-color: #5d4037;
-        }
-
-        body {
-            background: radial-gradient(1200px 600px at 10% 10%, #16202b 0%, var(--primary-bg) 25%, #0f1720 100%), linear-gradient(180deg, rgba(80, 227, 194, 0.03), rgba(0, 0, 0, 0.03));
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            height: 100dvh;
-            margin: 0;
-            padding: 1rem;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-
-        @keyframes auroraMove {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: linear-gradient(120deg, rgba(80, 227, 194, 0.04), rgba(80, 150, 255, 0.03), rgba(255, 200, 120, 0.02));
-            background-size: 300% 300%;
-            animation: auroraMove 18s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        #game-container {
-            width: 100%;
-            max-width: 800px;
-            aspect-ratio: 4 / 3;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 1;
-            position: relative;
-        }
-
-        canvas {
-            background-color: var(--secondary-bg);
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        #splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            z-index: 100;
-            padding: 2rem;
-            box-sizing: border-box;
-            transition: opacity 0.5s ease-out;
-        }
-
-        .splash-title {
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            font-weight: 700;
-            color: var(--accent-color);
-            margin-bottom: 1rem;
-            text-shadow: 0 0 15px var(--accent-color);
-        }
-
-        .splash-subtitle {
-            font-size: clamp(1rem, 2.5vw, 1.25rem);
-            max-width: 600px;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-
-        .splash-link {
-            font-size: clamp(0.9rem, 2vw, 1.1rem);
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2.5rem;
-        }
-
-        .splash-link a {
-            color: var(--accent-color);
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .play-button {
-            font-family: 'Poppins', sans-serif;
-            background: var(--accent-color);
-            color: var(--primary-bg);
-            border: none;
-            padding: 1rem 3rem;
-            font-size: clamp(1.2rem, 3vw, 1.5rem);
-            font-weight: 700;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 6px 28px rgba(80, 227, 194, 0.28), 0 2px 6px rgba(0, 0, 0, 0.4) inset;
-        }
-
-        .play-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 36px rgba(80, 227, 194, 0.45), 0 2px 6px rgba(0, 0, 0, 0.45) inset;
-        }
-
-        .play-button:active {
-            transform: scale(0.98);
-        }
-
-        #mobile-controls {
-            display: none;
-            margin-top: 1rem;
-            gap: 0.5rem;
-            flex-shrink: 0;
-        }
-
-        body.touch-enabled #mobile-controls {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            width: 180px;
-            justify-items: center;
-            align-items: center;
-        }
-
-        #mobile-controls button {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.06));
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            color: var(--accent-color);
-            font-size: 1.6rem;
-            border-radius: 14px;
-            font-weight: 700;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-        }
-
-
-        body.touch-enabled #mobile-controls .up {
-            grid-column: 2;
-            grid-row: 1;
-        }
-
-        body.touch-enabled #mobile-controls .left {
-            grid-column: 1;
-            grid-row: 2;
-        }
-
-        body.touch-enabled #mobile-controls .down {
-            grid-column: 2;
-            grid-row: 2;
-        }
-
-        body.touch-enabled #mobile-controls .right {
-            grid-column: 3;
-            grid-row: 2;
-        }
-
-        @media (max-width: 768px) and (orientation: portrait) {
-            body {
-                justify-content: space-between;
-            }
-
-            #game-container {
-                width: 100%;
-                height: 70vh;
-                max-width: none;
-                aspect-ratio: unset;
-            }
-        }
-
-        #hud-buttons {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 8px;
-            z-index: 5;
-        }
-
-        #hud-buttons button {
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            border-radius: 8px;
-            padding: 6px 10px;
-            cursor: pointer;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600;
-        }
-
-        #hud-buttons button:hover {
-            background: rgba(0, 0, 0, 0.6);
-        }
-
-        #daily-goals-panel {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.75);
-            border: 1px solid rgba(80, 227, 194, 0.3);
-            border-radius: 12px;
-            padding: 12px;
-            max-width: 250px;
-            color: white;
-            font-family: 'Poppins', sans-serif;
-            z-index: 10;
-            backdrop-filter: blur(8px);
-            display: none;
-        }
-
-        .goal-item {
-            margin-bottom: 10px;
-            font-size: 0.85rem;
-        }
-
-        .goal-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
-            font-weight: 600;
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #50e3c2, #4dd0b1);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-            position: relative;
-        }
-
-        .progress-fill.completed {
-            background: linear-gradient(90deg, #ffd700, #ffed4a);
-            animation: progressGlow 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes progressGlow {
-            0% {
-                box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-            }
-
-            100% {
-                box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
-            }
-        }
-
-        .goal-reward {
-            font-size: 0.75rem;
-            color: #ffd700;
-            font-weight: 500;
-        }
-
-        #combo-meter {
-            position: absolute;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid #50e3c2;
-            border-radius: 20px;
-            padding: 8px 16px;
-            color: white;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600;
-            min-width: 200px;
-            text-align: center;
-            backdrop-filter: blur(8px);
-            transition: all 0.3s ease;
-        }
-
-        #combo-meter.milestone {
-            border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.1);
-            transform: translateX(-50%) scale(1.1);
-            animation: milestoneAlert 0.6s ease-in-out;
-        }
-
-        @keyframes milestoneAlert {
-
-            0%,
-            100% {
-                transform: translateX(-50%) scale(1.1);
-            }
-
-            50% {
-                transform: translateX(-50%) scale(1.2);
-            }
-        }
-
-        .combo-progress {
-            height: 6px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-            margin: 8px 0 4px 0;
-            overflow: hidden;
-        }
-
-        .combo-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #50e3c2, #4dd0b1);
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        .combo-fill.milestone {
-            background: linear-gradient(90deg, #ffd700, #ffed4a);
-            animation: comboGlow 1s ease-in-out infinite alternate;
-        }
-
-        @keyframes comboGlow {
-            0% {
-                box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-            }
-
-            100% {
-                box-shadow: 0 0 10px rgba(255, 215, 0, 1);
-            }
-        }
-
-        .shake {
-            animation: shake 0.5s ease-in-out;
-        }
-
-        @keyframes shake {
-
-            0%,
-            20%,
-            40%,
-            60%,
-            80%,
-            100% {
-                transform: translateX(0);
-            }
-
-            10%,
-            30%,
-            50%,
-            70%,
-            90% {
-                transform: translateX(-2px);
-            }
-        }
-
-        .screen-flash {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(80, 227, 194, 0.2) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 1000;
-            animation: flash 0.3s ease-out;
-        }
-
-        @keyframes flash {
-            0% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0;
-            }
-        }
-
-        @media (max-width: 768px) {
-            #daily-goals-panel {
-                max-width: 200px;
-                font-size: 0.8rem;
-            }
-
-            #combo-meter {
-                bottom: 80px;
-                min-width: 180px;
-                font-size: 0.9rem;
-            }
-
-            #goalsToggleBtn {
-                background: rgba(80, 227, 194, 0.2);
-                border-color: rgba(80, 227, 194, 0.4);
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newt Crosser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-LZ4SSN195H"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-LZ4SSN195H');</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2a;font-family:'Poppins',sans-serif;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+#game-wrapper{width:100%;height:100%;position:relative;}
+#splash{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1a1a2a 0%,#2a3a4a 100%);transition:opacity .5s;}
+.splash-card{text-align:center;padding:2rem;max-width:340px;width:90%;}
+.splash-card h1{font-size:1.8rem;font-weight:700;color:#50e3c2;margin-bottom:.3rem;}
+.splash-card p{color:#aab;font-size:.85rem;margin-bottom:1.2rem;}
+.splash-card input{width:100%;padding:.7rem 1rem;border:2px solid #50e3c2;border-radius:12px;
+  background:#111;color:#fff;font-family:'Poppins',sans-serif;font-size:1rem;text-align:center;outline:none;}
+.splash-card input::placeholder{color:#556;}
+.splash-card button{width:100%;margin-top:.8rem;padding:.75rem;border:none;border-radius:12px;
+  background:linear-gradient(135deg,#50e3c2,#38b2ac);color:#1a1a2a;font-family:'Poppins',sans-serif;
+  font-size:1.1rem;font-weight:700;cursor:pointer;transition:transform .15s;}
+.splash-card button:active{transform:scale(.96);}
+.lb-title{color:#50e3c2;font-size:.8rem;font-weight:600;margin-top:1rem;}
+.lb-list{list-style:none;margin-top:.3rem;}
+.lb-list li{color:#ccd;font-size:.78rem;padding:.15rem 0;}
+.cause{margin-top:1rem;padding:.6rem .8rem;border-radius:10px;background:rgba(80,227,194,.08);border:1px solid rgba(80,227,194,.2);}
+.cause p{color:#9ab;font-size:.72rem;margin:0 0 .3rem;line-height:1.4;}
+.cause a{color:#50e3c2;font-size:.75rem;font-weight:600;text-decoration:none;}
+.cause a:hover{text-decoration:underline;}
+</style>
 </head>
-
 <body>
 
-    <div id="splash-screen">
-        <h1 class="splash-title">Newt Crosser</h1>
-        <p class="splash-subtitle">Use the Arrow Keys, on-screen controls, or swipe to help the newts safely cross the
-            road. Don't get squished!</p>
-        <div class="splash-link">
-            To learn more about the plight of the newts crossing Alma Bridge Road, visit <a
-                href="http://bioblitz.club/newts" target="_blank">bioblitz.club/newts</a>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:.75rem; max-width:360px; width:100%; align-items:center;">
-            <input id="playerNameInput" maxlength="20" placeholder="Your name" aria-label="Player name"
-                style="width:100%; padding:.75rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font-family:'Poppins',sans-serif; font-size:1rem; outline:none;" />
-            <div id="leaderboardSplash"
-                style="width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:1rem; box-sizing:border-box; text-align:left;">
-                <div style="font-weight:600; margin-bottom:.5rem; color:var(--accent-color);">Top 5 Scores</div>
-                <ol id="leaderboardSplashList"
-                    style="margin:0; padding-left:1.2rem; font-size:.9rem; line-height:1.4; opacity:.8;">
-                    <li>Loading...</li>
-                </ol>
-            </div>
-        </div>
-        <button class="play-button" id="playGameBtn">Play Game</button>
+<!-- ─── SPLASH ─────────────────────────────────────────────── -->
+<div id="splash">
+  <div class="splash-card">
+    <h1>🦎 Newt Crosser</h1>
+    <p>Swipe or tap to cross the road safely</p>
+    <input id="nameIn" type="text" placeholder="Enter your name" maxlength="20" autocomplete="off">
+    <button id="playBtn">Play</button>
+    <div class="lb-title">Top Scores</div>
+    <ul class="lb-list" id="lbList"><li>Loading…</li></ul>
+    <div class="cause">
+      <p>This game is inspired by real newts that risk their lives crossing Alma Bridge Road every year.</p>
+      <a href="http://bioblitz.club/newts" target="_blank" rel="noopener">Learn more at bioblitz.club/newts →</a>
     </div>
+  </div>
+</div>
 
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
+<div id="game-wrapper"></div>
 
-        <div id="daily-goals-panel">
-            <div style="font-weight: 700; margin-bottom: 8px; color: #50e3c2; font-size: 0.9rem;">
-                📅 Daily Goals
-            </div>
-            <div id="daily-goals-list">
-            </div>
-        </div>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   GLOBALS
+   ═══════════════════════════════════════════════════════════════ */
+const SHEET_URL='https://script.google.com/macros/s/AKfycbzPFFLo3mlmKZahdFkPa8-8rdO2GkSYQaLuL_N1zBwLpf6L9LRX4QtS6hYrksmeRNlS5w/exec';
+const CAR_COLORS=['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e'];
+let playerName='', leaderboardEntries=[], globalHigh=0;
+let audioCtx=null, muted=false;
 
-        <!-- Combo Meter -->
-        <div id="combo-meter" style="display: none;">
-            <div id="combo-text">Combo: 0</div>
-            <div class="combo-progress">
-                <div class="combo-fill" id="combo-fill" style="width: 0%;"></div>
-            </div>
-            <div id="combo-milestone" style="font-size: 0.8rem; color: #ffd700;"></div>
-        </div>
+/* ─── leaderboard ─────────────────────────────────────────── */
+async function fetchLB(){
+  try{const r=await fetch(SHEET_URL+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok)return;
+  const d=await r.json(); leaderboardEntries=Array.isArray(d.top)?d.top.slice(0,5):[];
+  if(playerName){const me=(d.all||[]).find(x=>x.name===playerName); if(me)globalHigh=me.score;}
+  updLB();}catch(e){/* silent */}
+}
+async function submitScore(s){if(!playerName||s<=0)return;
+  try{await fetch(SHEET_URL,{method:'POST',body:new URLSearchParams({name:playerName,score:String(s)})});fetchLB();}catch(e){}}
+function updLB(){const el=document.getElementById('lbList');if(!el)return;el.innerHTML='';
+  if(!leaderboardEntries.length){el.innerHTML='<li>No scores yet</li>';return;}
+  leaderboardEntries.forEach(e=>{const li=document.createElement('li');li.textContent=`${e.name}: ${e.score}`;el.appendChild(li);});}
 
-        <div id="hud-buttons" aria-label="Game controls">
-            <button id="goalsToggleBtn" aria-label="Toggle daily goals" title="Daily Goals">🎯</button>
-            <button id="pauseBtn" aria-label="Pause or resume">⏸</button>
-            <button id="muteBtn" aria-label="Mute or unmute" title="Mute / Unmute">🔊</button>
-        </div>
-    </div>
+/* ─── audio ───────────────────────────────────────────────── */
+function ensureAudio(){if(!audioCtx&&!muted)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+function sfx(type){if(muted)return;ensureAudio();if(!audioCtx)return;
+  const n=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.connect(g).connect(audioCtx.destination);
+  if(type==='cross'){o.frequency.value=660;o.type='sine';}
+  else if(type==='hit'){o.frequency.value=90;o.type='sawtooth';}
+  g.gain.setValueAtTime(.001,n);g.gain.exponentialRampToValueAtTime(.15,n+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,n+.25);o.start(n);o.stop(n+.3);}
 
-    <div id="mobile-controls">
-        <button class="up" data-key="ArrowUp">▲</button>
-        <button class="left" data-key="ArrowLeft">◄</button>
-        <button class="down" data-key="ArrowDown">▼</button>
-        <button class="right" data-key="ArrowRight">►</button>
-    </div>
+/* ─── helpers ─────────────────────────────────────────────── */
+function hexNum(h){return parseInt(h.replace('#',''),16);}
+function lighten(h,a){let{r,g,b}=Phaser.Display.Color.HexStringToColor(h);
+  return Phaser.Display.Color.GetColor(Math.min(255,r+255*a|0),Math.min(255,g+255*a|0),Math.min(255,b+255*a|0));}
+function darken(h,a){let{r,g,b}=Phaser.Display.Color.HexStringToColor(h);
+  return Phaser.Display.Color.GetColor(Math.max(0,r*(1-a)|0),Math.max(0,g*(1-a)|0),Math.max(0,b*(1-a)|0));}
 
+/* ─── splash wiring ───────────────────────────────────────── */
+const splash=document.getElementById('splash');
+const nameIn=document.getElementById('nameIn');
+const playBtn=document.getElementById('playBtn');
+fetchLB();
+nameIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();playBtn.click();}});
+nameIn.addEventListener('input',()=>{playerName=nameIn.value.trim();});
+window.addEventListener('load',()=>setTimeout(()=>nameIn.focus(),300));
+playBtn.addEventListener('click',()=>{
+  playerName=nameIn.value.trim()||playerName;
+  splash.style.opacity='0';splash.style.pointerEvents='none';
+  if(window._game) window._game.scene.getScene('Game').scene.restart();
+  else launchGame();
+  gtag('event','start_game',{event_category:'Game'});
+});
 
-    <script>
-        const splashScreen = document.getElementById('splash-screen');
-        const playGameBtn = document.getElementById('playGameBtn');
-        const canvas = document.getElementById("gameCanvas");
-        const mobileControls = document.getElementById('mobile-controls');
-        const ctx = canvas.getContext("2d");
+/* ═══════════════════════════════════════════════════════════════
+   TEXTURE BUILDERS  — richer, fully opaque procedural sprites
+   ═══════════════════════════════════════════════════════════════ */
+function makeNewt(sc,key,w,h){
+  const g=sc.make.graphics({add:false});
+  const cx=w*.5, cy=h*.5;
 
-        let TILE_SIZE = 40;
-        let ROAD_TOP_Y, ROAD_BOTTOM_Y, ROAD_CENTER_Y;
-        let TRAIL_HEIGHT = 0;
-        let score = 0;
-        let globalHighScoreForPlayer = 0;
-        let rawCrossings = 0;
-        let lives = 3;
-        let gameOver = false;
-        let gameStarted = false;
-        let paused = false;
-        let newt, vehicles = [], scenery = { trees: [], waitingNewts: [], splats: [], runners: [] };
-        let collectibles = [];
-        let nextCollectibleSpawnAt = 0;
-        const COLLECTIBLE_SPAWN_INTERVAL = 5000;
-        let combo = 0;
-        let comboMultiplier = 1;
-        let playerHasShield = false;
-        let trafficSlowUntil = 0;
-        let luckActive = false;
-        let nextCrossingBonus = 0;
-        let achievements = {};
-        let notifications = [];
-        let dailySeed = 0;
-        let dailyBest = 0;
-        let muted = false;
-        let audioCtx = null;
+  /* === TAIL — drawn first, behind body === */
+  /* tail base blends into body */
+  g.fillStyle(0xc47f1a);
+  g.fillEllipse(cx,h*.78,w*.22,h*.3);
+  /* tail mid */
+  g.fillStyle(0xb87218);
+  g.fillEllipse(cx,h*.88,w*.15,h*.18);
+  /* tail tip */
+  g.fillStyle(0xa86515);
+  g.fillEllipse(cx,h*.95,w*.08,h*.08);
 
-        let dailyGoals = [];
-        let goalProgress = {};
-        let comboMilestones = [3, 6, 10, 15, 25];
-        let nextMilestone = 3;
-        let milestoneIndex = 0;
-        let totalFirefliesCollected = 0;
-        let totalShieldsUsed = 0;
-        let totalCrossingsToday = 0;
-        let gameSessionCount = 0;
-        let maxComboToday = 0;
-        let screenShakeActive = false;
-        let cleaner;
-        let playerName = '';
-        let leaderboardEntries = [];
-        let lastLeaderboardFetch = 0;
-        let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
-        let gameTime = 0;
-        let hitFlashUntil = 0;
-        let lastFrameTime = 0;
-        let gameStartTime = 0;
-        let lastRunnerSpawnTime = 0;
-        let particles = [];
-        let raining = false;
-        let rainDrops = [];
-        let nextRainStart = 0;
-        let rainEndTime = 0;
-        const RAIN_MIN_INTERVAL = 2500;
-        const RAIN_MAX_INTERVAL = 15000;
-        const RAIN_MIN_DURATION = 2000;
-        const RAIN_MAX_DURATION = 25000;
-        const PARTICLE_COUNT = 40;
+  /* === LEGS — overlapping body edges so they look attached === */
+  g.fillStyle(0xc48a1e);
+  /* front legs — angled outward, rooted in body */
+  g.fillEllipse(w*.22,h*.32,w*.2,h*.1);   // front-left upper
+  g.fillEllipse(w*.78,h*.32,w*.2,h*.1);   // front-right upper
+  g.fillStyle(0xb07a18);
+  g.fillEllipse(w*.14,h*.37,w*.12,h*.08);  // front-left lower
+  g.fillEllipse(w*.86,h*.37,w*.12,h*.08);  // front-right lower
+  /* back legs */
+  g.fillStyle(0xc48a1e);
+  g.fillEllipse(w*.22,h*.62,w*.2,h*.1);
+  g.fillEllipse(w*.78,h*.62,w*.2,h*.1);
+  g.fillStyle(0xb07a18);
+  g.fillEllipse(w*.14,h*.67,w*.12,h*.08);
+  g.fillEllipse(w*.86,h*.67,w*.12,h*.08);
+  /* tiny toes — little round pads */
+  g.fillStyle(0x9a6810);
+  [[w*.08,h*.39],[w*.13,h*.41],[w*.18,h*.4],
+   [w*.82,h*.39],[w*.87,h*.41],[w*.92,h*.4],
+   [w*.08,h*.69],[w*.13,h*.71],[w*.18,h*.7],
+   [w*.82,h*.69],[w*.87,h*.71],[w*.92,h*.7]].forEach(([tx,ty])=>{
+    g.fillCircle(tx,ty,w*.025);
+  });
 
-        const BASE_SPEED_SCALAR = 0.065;
-        const RUNNER_SPAWN_INTERVAL = 8000;
+  /* === BODY — large oval covering leg roots === */
+  g.fillStyle(0xe59f28);
+  g.fillEllipse(cx,cy,w*.6,h*.5);
 
-        const carColors = ["#B71C1C", "#1A237E", "#004D40", "#E65100", "#4A148C", "#37474F", "#C51162", "#d4ac0d"];
-        const vehicleTemplates = {
-            car: { width: 2.8, heightMultiplier: 1.5, speedMultiplier: 1.0, draw: drawCar },
-            truck: { width: 5.2, heightMultiplier: 3.2, speedMultiplier: 0.75, draw: drawTruck },
-            kayakCar: { width: 2.8, heightMultiplier: 1.5, speedMultiplier: 0.9, draw: drawKayakCar },
-            motorcycle: { width: 2.0, heightMultiplier: 1.5, speedMultiplier: 1.5, draw: drawMotorcycle },
-            bicycle: { width: 1.5, heightMultiplier: 1.5, speedMultiplier: 0.6, draw: drawBicycle },
-        };
-        const weightedVehicleTypes = ["car", "car", "car", "truck", "kayakCar", "motorcycle", "bicycle", "truck"];
+  /* body shading — darker bottom edge */
+  g.fillStyle(0xc98820,.6);
+  g.fillEllipse(cx,cy+h*.06,w*.55,h*.25);
 
-        const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzPFFLo3mlmKZahdFkPa8-8rdO2GkSYQaLuL_N1zBwLpf6L9LRX4QtS6hYrksmeRNlS5w/exec';
+  /* belly — lighter centre */
+  g.fillStyle(0xf5d47a);
+  g.fillEllipse(cx,cy-h*.02,w*.38,h*.32);
 
-        async function fetchLeaderboard(force = false) {
-            if (!GOOGLE_SHEET_WEBAPP_URL || GOOGLE_SHEET_WEBAPP_URL.startsWith('PUT_')) return;
-            if (!force && gameTime - lastLeaderboardFetch < 30000) return;
-            try {
-                const res = await fetch(GOOGLE_SHEET_WEBAPP_URL + '?t=' + Date.now(), { cache: 'no-store' });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
-                leaderboardEntries = Array.isArray(data.top) ? data.top.slice(0, 5) : [];
-                if (playerName) {
-                    const me = (data.all || []).find(r => r.name === playerName);
-                    if (me) globalHighScoreForPlayer = me.score;
-                }
-                updateSplashLeaderboard();
-                lastLeaderboardFetch = gameTime;
-            } catch (e) {
-            }
+  /* dorsal ridge — subtle line */
+  g.fillStyle(0xd49225,.5);
+  g.fillEllipse(cx,cy-h*.05,w*.06,h*.3);
+
+  /* spots on back */
+  g.fillStyle(0xd18b20);
+  [[w*.36,h*.4,w*.035],[w*.62,h*.44,w*.03],[w*.44,h*.54,w*.025],
+   [w*.56,h*.38,w*.02],[w*.39,h*.52,w*.022]].forEach(([sx,sy,sr])=>{
+    g.fillCircle(sx,sy,sr);
+  });
+
+  /* === NECK — blend zone between body and head === */
+  g.fillStyle(0xe59f28);
+  g.fillEllipse(cx,h*.28,w*.35,h*.16);
+
+  /* === HEAD — overlapping neck === */
+  g.fillStyle(0xe59f28);
+  g.fillEllipse(cx,h*.19,w*.42,h*.24);
+
+  /* head highlight */
+  g.fillStyle(0xf0b040,.7);
+  g.fillEllipse(cx,h*.16,w*.28,h*.12);
+
+  /* eyes — white sclera + dark pupil + shine */
+  g.fillStyle(0xffffff);
+  g.fillCircle(w*.37,h*.14,w*.065);
+  g.fillCircle(w*.63,h*.14,w*.065);
+  g.fillStyle(0x1a1a1a);
+  g.fillCircle(w*.37,h*.155,w*.042);
+  g.fillCircle(w*.63,h*.155,w*.042);
+  g.fillStyle(0xffffff);
+  g.fillCircle(w*.36,h*.135,w*.018);
+  g.fillCircle(w*.62,h*.135,w*.018);
+
+  /* nostrils */
+  g.fillStyle(0xb37216,.6);
+  g.fillCircle(w*.44,h*.1,w*.012);
+  g.fillCircle(w*.56,h*.1,w*.012);
+
+  /* mouth — gentle smile */
+  g.lineStyle(1.2,0xb37216,.8);
+  g.beginPath(); g.arc(cx,h*.21,w*.08,0.25,Math.PI-0.25); g.strokePath();
+
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+/* ── shared wheel helper ─────────────────────────────────── */
+function drawWheels(g,w,h,x1,x2,y,r){
+  g.fillStyle(0x222222); g.fillCircle(x1,y,r); g.fillCircle(x2,y,r);
+  g.fillStyle(0x555555); g.fillCircle(x1,y,r*.7); g.fillCircle(x2,y,r*.7);
+  g.fillStyle(0x888888); g.fillCircle(x1,y,r*.3); g.fillCircle(x2,y,r*.3);
+}
+
+/* ═══ SEDAN ═══════════════════════════════════════════════════ */
+function makeSedan(sc,key,w,h,col){
+  const g=sc.make.graphics({add:false}),cn=hexNum(col);
+  g.fillStyle(0x000000,.18); g.fillEllipse(w*.5,h*.94,w*.75,h*.12);
+  g.fillStyle(darken(col,.12)); g.fillRoundedRect(w*.03,h*.52,w*.94,h*.36,h*.07);
+  g.fillStyle(cn); g.fillRoundedRect(w*.02,h*.2,w*.96,h*.38,h*.1);
+  g.fillStyle(lighten(col,.18)); g.fillRoundedRect(w*.06,h*.22,w*.88,h*.07,h*.04);
+  g.fillStyle(lighten(col,.07)); g.fillRoundedRect(w*.2,h*.12,w*.6,h*.18,h*.07);
+  g.fillStyle(0xb8daf0); g.fillRoundedRect(w*.24,h*.14,w*.22,h*.13,h*.03);
+  g.fillStyle(0xa8c8e0); g.fillRoundedRect(w*.54,h*.14,w*.2,h*.13,h*.03);
+  g.fillStyle(0xfff9c4); g.fillCircle(w*.08,h*.4,h*.045); g.fillCircle(w*.92,h*.4,h*.045);
+  g.fillStyle(0xef5350); g.fillRoundedRect(w*.03,h*.55,w*.05,h*.05,2); g.fillRoundedRect(w*.92,h*.55,w*.05,h*.05,2);
+  drawWheels(g,w,h,w*.22,w*.78,h*.88,h*.12);
+  g.fillStyle(0xffffff); g.fillRoundedRect(w*.42,h*.62,w*.16,h*.05,2);
+  g.lineStyle(1,darken(col,.15)); g.lineBetween(w*.48,h*.2,w*.48,h*.52);
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+/* ═══ HATCHBACK ═══════════════════════════════════════════════ */
+function makeHatchback(sc,key,w,h,col){
+  const g=sc.make.graphics({add:false}),cn=hexNum(col);
+  g.fillStyle(0x000000,.18); g.fillEllipse(w*.5,h*.93,w*.7,h*.12);
+  g.fillStyle(darken(col,.1)); g.fillRoundedRect(w*.05,h*.48,w*.9,h*.38,h*.08);
+  g.fillStyle(cn); g.fillRoundedRect(w*.04,h*.22,w*.92,h*.34,h*.12);
+  g.fillStyle(lighten(col,.15)); g.fillRoundedRect(w*.08,h*.24,w*.84,h*.06,h*.03);
+  /* shorter, rounder cabin */
+  g.fillStyle(lighten(col,.06)); g.fillRoundedRect(w*.22,h*.1,w*.56,h*.2,h*.1);
+  g.fillStyle(0xb8daf0); g.fillRoundedRect(w*.26,h*.13,w*.2,h*.13,h*.04);
+  /* hatchback rear — sloped window */
+  g.fillStyle(0xa0c4d8); g.fillRoundedRect(w*.55,h*.12,w*.18,h*.14,h*.03);
+  g.fillStyle(0xfff9c4); g.fillCircle(w*.09,h*.38,h*.04); g.fillCircle(w*.91,h*.38,h*.04);
+  g.fillStyle(0xef5350); g.fillRoundedRect(w*.04,h*.52,w*.05,h*.05,2); g.fillRoundedRect(w*.91,h*.52,w*.05,h*.05,2);
+  drawWheels(g,w,h,w*.2,w*.8,h*.87,h*.11);
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+/* ═══ SUV ═════════════════════════════════════════════════════ */
+function makeSUV(sc,key,w,h,col){
+  const g=sc.make.graphics({add:false}),cn=hexNum(col);
+  g.fillStyle(0x000000,.2); g.fillEllipse(w*.5,h*.95,w*.78,h*.1);
+  /* higher ground clearance */
+  g.fillStyle(darken(col,.12)); g.fillRoundedRect(w*.03,h*.5,w*.94,h*.38,h*.06);
+  /* boxy body */
+  g.fillStyle(cn); g.fillRoundedRect(w*.02,h*.16,w*.96,h*.4,h*.08);
+  g.fillStyle(lighten(col,.12)); g.fillRoundedRect(w*.06,h*.18,w*.88,h*.06,h*.03);
+  /* tall cabin */
+  g.fillStyle(lighten(col,.05)); g.fillRoundedRect(w*.15,h*.06,w*.7,h*.22,h*.06);
+  g.fillStyle(0xb8daf0); g.fillRoundedRect(w*.19,h*.09,w*.2,h*.16,h*.03);
+  g.fillStyle(0xb0d0e8); g.fillRoundedRect(w*.42,h*.09,w*.12,h*.16,h*.02);
+  g.fillStyle(0xa8c8e0); g.fillRoundedRect(w*.58,h*.09,w*.2,h*.16,h*.03);
+  /* roof rack */
+  g.fillStyle(0x666666); g.fillRect(w*.18,h*.04,w*.64,h*.03);
+  g.fillStyle(0x888888); g.fillRect(w*.25,h*.02,w*.06,h*.04); g.fillRect(w*.69,h*.02,w*.06,h*.04);
+  g.fillStyle(0xfff9c4); g.fillCircle(w*.08,h*.38,h*.05); g.fillCircle(w*.92,h*.38,h*.05);
+  g.fillStyle(0xef5350); g.fillRoundedRect(w*.03,h*.54,w*.06,h*.06,2); g.fillRoundedRect(w*.91,h*.54,w*.06,h*.06,2);
+  /* bigger wheels */
+  drawWheels(g,w,h,w*.2,w*.8,h*.88,h*.14);
+  g.fillStyle(0xffffff); g.fillRoundedRect(w*.42,h*.6,w*.16,h*.05,2);
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+/* ═══ TRUCK ═══════════════════════════════════════════════════ */
+function makeTruck(sc,key,w,h,col){
+  const g=sc.make.graphics({add:false}),cn=hexNum(col);
+  g.fillStyle(0x000000,.18); g.fillEllipse(w*.5,h*.95,w*.75,h*.1);
+  /* cargo bed — grey/silver */
+  g.fillStyle(0xd0d5da); g.fillRoundedRect(w*.02,h*.18,w*.55,h*.65,h*.04);
+  g.fillStyle(0xbcc2c8); g.fillRect(w*.06,h*.2,w*.48,h*.58);
+  /* ridges on cargo */
+  g.lineStyle(1,0xa8aeb4); for(let i=0;i<4;i++) g.lineBetween(w*.08,h*(.26+i*.14),w*.51,h*(.26+i*.14));
+  /* cab */
+  g.fillStyle(cn); g.fillRoundedRect(w*.58,h*.2,w*.38,h*.6,h*.08);
+  g.fillStyle(lighten(col,.07)); g.fillRoundedRect(w*.6,h*.1,w*.34,h*.22,h*.06);
+  g.fillStyle(0xb8daf0); g.fillRoundedRect(w*.63,h*.14,w*.26,h*.14,h*.03);
+  g.fillStyle(0xfff9c4); g.fillCircle(w*.93,h*.42,h*.05);
+  g.fillStyle(0xef5350); g.fillRoundedRect(w*.03,h*.72,w*.05,h*.06,2);
+  /* 4 wheels */
+  g.fillStyle(0x222222);
+  g.fillCircle(w*.15,h*.9,h*.11); g.fillCircle(w*.35,h*.9,h*.11);
+  g.fillCircle(w*.8,h*.9,h*.12);
+  g.fillStyle(0x555555);
+  g.fillCircle(w*.15,h*.9,h*.07); g.fillCircle(w*.35,h*.9,h*.07);
+  g.fillCircle(w*.8,h*.9,h*.08);
+  g.fillStyle(0x888888);
+  g.fillCircle(w*.15,h*.9,h*.03); g.fillCircle(w*.35,h*.9,h*.03);
+  g.fillCircle(w*.8,h*.9,h*.035);
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+/* ═══ MOTORCYCLE ══════════════════════════════════════════════ */
+function makeMotorcycle(sc,key,w,h,col){
+  const g=sc.make.graphics({add:false}),cn=hexNum(col);
+  g.fillStyle(0x000000,.15); g.fillEllipse(w*.5,h*.93,w*.6,h*.08);
+  /* wheels */
+  g.fillStyle(0x222222); g.fillCircle(w*.18,h*.78,h*.17); g.fillCircle(w*.82,h*.78,h*.17);
+  g.fillStyle(0x444444); g.fillCircle(w*.18,h*.78,h*.12); g.fillCircle(w*.82,h*.78,h*.12);
+  g.fillStyle(0x666666); g.fillCircle(w*.18,h*.78,h*.05); g.fillCircle(w*.82,h*.78,h*.05);
+  /* spokes */
+  g.lineStyle(1,0x888888,.5);
+  for(let a=0;a<6;a++){const r=h*.16,ang=a*Math.PI/3;
+    g.lineBetween(w*.18+Math.cos(ang)*r*.3,h*.78+Math.sin(ang)*r*.3,w*.18+Math.cos(ang)*r,h*.78+Math.sin(ang)*r);
+    g.lineBetween(w*.82+Math.cos(ang)*r*.3,h*.78+Math.sin(ang)*r*.3,w*.82+Math.cos(ang)*r,h*.78+Math.sin(ang)*r);
+  }
+  /* frame */
+  g.fillStyle(cn);
+  g.fillTriangle(w*.18,h*.75,w*.5,h*.42,w*.82,h*.75);
+  /* engine block */
+  g.fillStyle(darken(col,.15)); g.fillRoundedRect(w*.38,h*.6,w*.24,h*.16,3);
+  g.fillStyle(0x444444); g.fillRect(w*.36,h*.65,w*.06,h*.1);
+  /* fuel tank */
+  g.fillStyle(cn); g.fillEllipse(w*.5,h*.42,w*.22,h*.14);
+  g.fillStyle(lighten(col,.2)); g.fillEllipse(w*.5,h*.4,w*.14,h*.06);
+  /* handlebars */
+  g.fillStyle(0x333333); g.fillRect(w*.38,h*.18,w*.24,h*.04);
+  g.fillStyle(0x555555); g.fillCircle(w*.36,h*.2,h*.04); g.fillCircle(w*.64,h*.2,h*.04);
+  /* windshield */
+  g.fillStyle(0xc8e6ff,.5); g.fillRoundedRect(w*.42,h*.22,w*.16,h*.14,h*.03);
+  /* headlight */
+  g.fillStyle(0xfff9c4); g.fillCircle(w*.5,h*.15,h*.04);
+  /* exhaust pipes */
+  g.fillStyle(0x666666); g.fillRect(w*.08,h*.7,w*.12,h*.03);
+  g.fillStyle(0x888888); g.fillCircle(w*.08,h*.715,h*.025);
+  /* rider silhouette */
+  g.fillStyle(0x2c3e50);
+  g.fillEllipse(w*.5,h*.34,w*.14,h*.12);   // torso
+  g.fillCircle(w*.5,h*.22,w*.08);           // helmet
+  g.fillStyle(0x1a252f); g.fillEllipse(w*.5,h*.19,w*.1,h*.05); // visor
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+/* ═══ BICYCLE ═════════════════════════════════════════════════ */
+function makeBicycle(sc,key,w,h,col){
+  const g=sc.make.graphics({add:false}),cn=hexNum(col);
+  g.fillStyle(0x000000,.12); g.fillEllipse(w*.5,h*.93,w*.55,h*.06);
+  /* wheels — thin with spokes */
+  g.lineStyle(2,0x555555); g.strokeCircle(w*.18,h*.76,h*.17); g.strokeCircle(w*.82,h*.76,h*.17);
+  g.fillStyle(0x333333); g.fillCircle(w*.18,h*.76,h*.03); g.fillCircle(w*.82,h*.76,h*.03);
+  g.lineStyle(1,0x999999,.4);
+  for(let a=0;a<8;a++){const r=h*.16,ang=a*Math.PI/4;
+    g.lineBetween(w*.18+Math.cos(ang)*h*.03,h*.76+Math.sin(ang)*h*.03,w*.18+Math.cos(ang)*r,h*.76+Math.sin(ang)*r);
+    g.lineBetween(w*.82+Math.cos(ang)*h*.03,h*.76+Math.sin(ang)*h*.03,w*.82+Math.cos(ang)*r,h*.76+Math.sin(ang)*r);
+  }
+  /* frame */
+  g.lineStyle(3,cn);
+  g.lineBetween(w*.18,h*.76,w*.45,h*.45);  // down tube
+  g.lineBetween(w*.45,h*.45,w*.82,h*.76);  // chain stay
+  g.lineBetween(w*.45,h*.45,w*.55,h*.45);  // top tube
+  g.lineBetween(w*.55,h*.45,w*.82,h*.76);  // seat stay
+  g.lineBetween(w*.55,h*.45,w*.55,h*.35);  // seat post
+  /* seat */
+  g.fillStyle(0x333333); g.fillEllipse(w*.55,h*.33,w*.1,h*.04);
+  /* handlebars */
+  g.fillStyle(0x444444); g.fillRect(w*.4,h*.3,w*.14,h*.03);
+  g.lineStyle(2,0x444444); g.lineBetween(w*.45,h*.45,w*.47,h*.32);
+  /* pedals */
+  g.fillStyle(0x666666); g.fillRect(w*.48,h*.68,w*.08,h*.03);
+  /* cyclist */
+  const skinCol=Phaser.Utils.Array.GetRandom([0xe0a070,0xc68642,0x8d5524,0xf1c27d]);
+  g.fillStyle(skinCol); g.fillCircle(w*.47,h*.2,w*.07);   // head
+  /* helmet */
+  g.fillStyle(cn); g.fillEllipse(w*.47,h*.17,w*.09,h*.05);
+  /* body */
+  const shirtCol=Phaser.Utils.Array.GetRandom([0x2196f3,0x4caf50,0xff9800,0xe91e63,0x9c27b0]);
+  g.fillStyle(shirtCol); g.fillRoundedRect(w*.42,h*.26,w*.12,h*.14,3);
+  /* legs */
+  g.fillStyle(0x2c3e50);
+  g.fillRect(w*.44,h*.4,w*.04,h*.2);
+  g.fillRect(w*.52,h*.4,w*.04,h*.16);
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+function makeCleaner(sc,key,w,h){
+  const g=sc.make.graphics({add:false});
+
+  /* legs + shoes */
+  g.fillStyle(0x2c3e50);
+  g.fillRoundedRect(w*.28,h*.62,w*.16,h*.3,3);
+  g.fillRoundedRect(w*.56,h*.62,w*.16,h*.3,3);
+  g.fillStyle(0x1a252f);
+  g.fillRoundedRect(w*.25,h*.88,w*.2,h*.1,3);
+  g.fillRoundedRect(w*.55,h*.88,w*.2,h*.1,3);
+
+  /* high-vis vest */
+  g.fillStyle(0xf39c12);
+  g.fillRoundedRect(w*.18,h*.28,w*.64,h*.36,5);
+  /* vest highlights */
+  g.fillStyle(0xf5b041);
+  g.fillRoundedRect(w*.22,h*.3,w*.56,h*.06,3);
+  /* reflective strips */
+  g.fillStyle(0xe0e0e0);
+  g.fillRect(w*.16,h*.5,w*.68,h*.04);
+  g.fillRect(w*.16,h*.42,w*.68,h*.03);
+
+  /* arms */
+  g.fillStyle(0xf39c12);
+  g.fillRoundedRect(w*.08,h*.3,w*.12,h*.25,3);
+  g.fillRoundedRect(w*.8,h*.3,w*.12,h*.25,3);
+
+  /* hands (skin) */
+  g.fillStyle(0xe0a070);
+  g.fillCircle(w*.14,h*.58,w*.06);
+  g.fillCircle(w*.86,h*.58,w*.06);
+
+  /* head — skin */
+  g.fillStyle(0xe0a070);
+  g.fillCircle(w*.5,h*.18,w*.18);
+
+  /* hard hat */
+  g.fillStyle(0xf1c40f);
+  g.fillEllipse(w*.5,h*.1,w*.28,h*.1);
+  g.fillRoundedRect(w*.36,h*.06,w*.28,h*.08,3);
+  /* hat brim */
+  g.fillStyle(0xd4ac0d);
+  g.fillRect(w*.32,h*.12,w*.36,h*.03);
+
+  /* face details */
+  g.fillStyle(0x333333);
+  g.fillCircle(w*.43,h*.17,w*.025);
+  g.fillCircle(w*.57,h*.17,w*.025);
+  g.lineStyle(1,0x996644);
+  g.beginPath(); g.arc(w*.5,h*.2,w*.06,0.3,Math.PI-0.3); g.strokePath();
+
+  /* broom */
+  g.fillStyle(0x8B6914);
+  g.fillRect(w*.84,h*.22,w*.04,h*.65);
+  /* broom head */
+  g.fillStyle(0xd4c49a);
+  g.fillRoundedRect(w*.78,h*.84,w*.16,h*.12,3);
+  g.lineStyle(1,0xaa9966);
+  for(let i=0;i<5;i++) g.lineBetween(w*.8+i*w*.025,h*.85,w*.8+i*w*.025,h*.95);
+
+  g.generateTexture(key,w,h); g.destroy();
+}
+
+function makeSplat(sc,key,r){
+  const s=r*2.5, g=sc.make.graphics({add:false});
+  g.fillStyle(0x6b8e23,.8);
+  g.fillEllipse(s*.5,s*.5,r*1.0,r*.7);
+  g.fillStyle(0x7da32e,.7);
+  g.fillEllipse(s*.55,s*.4,r*.6,r*.8);
+  g.fillStyle(0x5a7a1a,.6);
+  g.fillEllipse(s*.4,s*.6,r*.9,r*.55);
+  /* specks */
+  g.fillStyle(0x4a6a10,.5);
+  g.fillCircle(s*.3,s*.35,r*.15);
+  g.fillCircle(s*.7,s*.55,r*.12);
+  g.fillCircle(s*.55,s*.7,r*.1);
+  g.generateTexture(key,s,s); g.destroy();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GAME SCENE
+   ═══════════════════════════════════════════════════════════════ */
+class GameScene extends Phaser.Scene {
+  constructor(){ super('Game'); }
+
+  create(){
+    const W=this.scale.width, H=this.scale.height;
+    const TS=Math.max(24,H/14);
+    this.TS=TS;
+
+    /* ── layout ──────────────────────────────────────────── */
+    this.SAFE_TOP   = H*.12;
+    this.ROAD_TOP   = H*.3;
+    this.ROAD_BOT   = H*.62;
+    this.ROAD_MID   = (this.ROAD_TOP+this.ROAD_BOT)/2;
+    this.TRAIL_H    = TS*.8;
+    this.WATER_TOP  = this.ROAD_BOT+this.TRAIL_H;
+    this.SPAWN_Y    = H-TS*2;
+
+    /* ── state ───────────────────────────────────────────── */
+    this.score=0; this.lives=3; this.isOver=false;
+    this.newtAlive=true; this.targetAng=0; this.lastStep=0;
+    this.invulnerable=false;   // brief invulnerability after respawn
+
+    /* ── textures (create once) ──────────────────────────── */
+    const nw=Math.round(TS*1.2), nh=Math.round(TS*1.5);
+    if(!this.textures.exists('newt'))    makeNewt(this,'newt',nw,nh);
+    if(!this.textures.exists('cleaner')) makeCleaner(this,'cleaner',Math.round(TS*1.3),Math.round(TS*2.2));
+    if(!this.textures.exists('splat'))   makeSplat(this,'splat',Math.round(TS*.7));
+    /* vehicle textures — multiple types & sizes */
+    this.vehPool=[];   // {key, type, spdMul}
+    const vTypes=[
+      {name:'sedan',    fn:makeSedan,     wm:2.8, hm:1.5, spd:1.0},
+      {name:'hatchback',fn:makeHatchback,  wm:2.4, hm:1.4, spd:1.05},
+      {name:'suv',      fn:makeSUV,        wm:3.2, hm:1.8, spd:0.9},
+      {name:'truck',    fn:makeTruck,      wm:4.5, hm:2.4, spd:0.65},
+      {name:'moto',     fn:makeMotorcycle, wm:2.0, hm:1.6, spd:1.4},
+      {name:'bike',     fn:makeBicycle,    wm:1.6, hm:1.6, spd:0.5}
+    ];
+    vTypes.forEach(vt=>{
+      const vw=Math.round(TS*vt.wm), vh=Math.round(TS*vt.hm);
+      CAR_COLORS.forEach((col,i)=>{
+        const k=vt.name+'_'+i;
+        if(!this.textures.exists(k)) vt.fn(this,k,vw,vh,col);
+        this.vehPool.push({key:k, type:vt.name, spdMul:vt.spd});
+      });
+    });
+
+    /* ── background ──────────────────────────────────────── */
+    const bg=this.add.graphics().setDepth(-10);
+
+    /* grass gradient (top safe zone) */
+    bg.fillStyle(0x1e6b3e); bg.fillRect(0,0,W,this.ROAD_TOP);
+    bg.fillStyle(0x237a45); bg.fillRect(0,0,W,this.ROAD_TOP*.6);
+    bg.fillStyle(0x2a8a50); bg.fillRect(0,0,W,this.ROAD_TOP*.3);
+
+    /* grass texture dots */
+    for(let i=0;i<60;i++){
+      const gx=Math.random()*W, gy=Math.random()*(this.ROAD_TOP-this.TRAIL_H);
+      bg.fillStyle([0x1a5e36,0x206b3c,0x2e8b57,0x34a05c][i%4],.4);
+      bg.fillCircle(gx,gy,1+Math.random()*2);
+    }
+
+    /* trail above road */
+    bg.fillStyle(0x7a4f2b); bg.fillRect(0,this.ROAD_TOP-this.TRAIL_H,W,this.TRAIL_H);
+    bg.fillStyle(0x8a5c32,.4); bg.fillRect(0,this.ROAD_TOP-this.TRAIL_H,W,this.TRAIL_H*.3);
+
+    /* road surface */
+    bg.fillStyle(0x555566); bg.fillRect(0,this.ROAD_TOP,W,this.ROAD_BOT-this.ROAD_TOP);
+    /* road texture — subtle noise */
+    for(let i=0;i<80;i++){
+      const rx=Math.random()*W, ry=this.ROAD_TOP+Math.random()*(this.ROAD_BOT-this.ROAD_TOP);
+      bg.fillStyle(0x4a4a5a,.3); bg.fillCircle(rx,ry,1+Math.random());
+    }
+
+    /* road edges — white lines */
+    bg.fillStyle(0xffffff,.5); bg.fillRect(0,this.ROAD_TOP,W,3);
+    bg.fillStyle(0xffffff,.5); bg.fillRect(0,this.ROAD_BOT-3,W,3);
+
+    /* trail below road */
+    bg.fillStyle(0x7a4f2b); bg.fillRect(0,this.ROAD_BOT,W,this.TRAIL_H);
+    bg.fillStyle(0x6b4222,.4); bg.fillRect(0,this.ROAD_BOT+this.TRAIL_H*.6,W,this.TRAIL_H*.4);
+
+    /* water — gradient + ripple highlights */
+    bg.fillGradientStyle(0x3b6fa5,0x3b6fa5,0x1e4a6e,0x1e4a6e);
+    bg.fillRect(0,this.WATER_TOP,W,H-this.WATER_TOP);
+    for(let i=0;i<30;i++){
+      const wx=Math.random()*W, wy=this.WATER_TOP+10+Math.random()*(H-this.WATER_TOP-20);
+      bg.fillStyle(0x5a9fd4,.15);
+      bg.fillEllipse(wx,wy,8+Math.random()*20,2+Math.random()*3);
+    }
+
+    /* labels */
+    this.add.text(W/2,this.ROAD_MID,'Alma Bridge Road',
+      {fontFamily:'Poppins',fontSize:TS*.6+'px',fontStyle:'bold',color:'#fff'})
+      .setAlpha(.08).setOrigin(.5).setDepth(-5);
+    this.add.text(W/2,this.WATER_TOP+(H-this.WATER_TOP)/2,'Lexington Reservoir',
+      {fontFamily:'Poppins',fontSize:TS*.6+'px',fontStyle:'bold',color:'#fff'})
+      .setAlpha(.12).setOrigin(.5).setDepth(-5);
+
+    /* animated dashed centre line */
+    this.dashGfx=this.add.graphics().setDepth(-4);
+
+    /* goal indicator — faint arrow zone at top */
+    this.add.text(W/2,this.ROAD_TOP-this.TRAIL_H-TS*.6,'▲ SAFE ZONE',
+      {fontFamily:'Poppins',fontSize:TS*.3+'px',fontStyle:'600',color:'#50e3c2'})
+      .setAlpha(.35).setOrigin(.5).setDepth(-5);
+
+    /* ── scenery: trees ──────────────────────────────────── */
+    const tc=Math.max(3,Math.floor(W/(TS*4)));
+    for(let i=0;i<tc;i++){
+      const tx=Phaser.Math.Between(TS,W-TS),
+            ty=Phaser.Math.Between(TS*2,this.ROAD_TOP-this.TRAIL_H-TS*1.5);
+      const sg=this.add.graphics().setDepth(-8);
+      const tw=TS*(.1+Math.random()*.08), th=TS*(.3+Math.random()*.4);
+
+      /* trunk */
+      sg.fillStyle(0x5d4037);
+      sg.fillRoundedRect(tx-tw/2,ty-th,tw,th,2);
+      sg.fillStyle(0x4e342e,.5);
+      sg.fillRect(tx-tw*.15,ty-th,tw*.3,th);
+
+      /* foliage layers */
+      const cr=TS*(.45+Math.random()*.3);
+      sg.fillStyle(0x1b5e34); sg.fillCircle(tx,ty-th,cr);
+      sg.fillStyle(0x237a45); sg.fillCircle(tx-cr*.2,ty-th-cr*.3,cr*.8);
+      sg.fillStyle(0x2e8b57); sg.fillCircle(tx+cr*.15,ty-th-cr*.5,cr*.65);
+      /* leaf highlights */
+      sg.fillStyle(0x43a047,.3);
+      sg.fillCircle(tx-cr*.1,ty-th-cr*.2,cr*.3);
+    }
+
+    /* ── scatter small flowers/pebbles ───────────────────── */
+    for(let i=0;i<12;i++){
+      const fx=Phaser.Math.Between(10,W-10),
+            fy=Phaser.Math.Between(TS,this.ROAD_TOP-this.TRAIL_H-TS*.5);
+      const fg=this.add.graphics().setDepth(-7);
+      if(Math.random()<.5){
+        /* tiny flower */
+        const fc=[0xffeb3b,0xff7043,0xce93d8,0x81d4fa][i%4];
+        fg.fillStyle(fc,.7);
+        for(let p=0;p<5;p++){
+          const a=p*Math.PI*2/5;
+          fg.fillCircle(fx+Math.cos(a)*3,fy+Math.sin(a)*3,2.5);
         }
+        fg.fillStyle(0xfff59d); fg.fillCircle(fx,fy,1.5);
+      } else {
+        /* pebble */
+        fg.fillStyle(0x9e9e9e,.3);
+        fg.fillEllipse(fx,fy,3+Math.random()*4,2+Math.random()*2);
+      }
+    }
 
-        async function submitScore() {
-            if (!playerName || score <= 0) return;
-            if (!GOOGLE_SHEET_WEBAPP_URL || GOOGLE_SHEET_WEBAPP_URL.startsWith('PUT_')) return;
-            try {
-                const form = new URLSearchParams({ name: playerName, score: String(score) });
-                await fetch(GOOGLE_SHEET_WEBAPP_URL, { method: 'POST', body: form });
-                fetchLeaderboard(true);
-            } catch (e) {
-                console.warn('Submit score failed', e);
-            }
-        }
+    /* ── vehicles ────────────────────────────────────────── */
+    this.vehicles=this.physics.add.group();
+    this.lanes=[
+      {y:this.ROAD_MID-TS*1.2, dir:-1},
+      {y:this.ROAD_MID+TS*1.2, dir: 1}
+    ];
+    this.spawnCars();
 
-        function updateSplashLeaderboard() {
-            const listEl = document.getElementById('leaderboardSplashList');
-            if (!listEl) return;
-            listEl.innerHTML = '';
-            if (!leaderboardEntries.length) {
-                listEl.innerHTML = '<li>No scores yet</li>';
-                return;
-            }
-            leaderboardEntries.forEach(entry => {
-                const li = document.createElement('li');
-                li.textContent = `${entry.name}: ${entry.score}`;
-                listEl.appendChild(li);
-            });
-        }
+    /* ── rain system ─────────────────────────────────────── */
+    this.rainGfx=this.add.graphics().setDepth(8);
+    this.rainDrops=[];
+    this.raining=false;
+    this.rainNextAt=3000+Math.random()*8000;   // first rain after 3-11s
+    this.rainEndAt=0;
+    this.rainSplashes=[];
 
-        function setCanvasDimensions() {
-            const container = document.getElementById('game-container');
-            const { width, height } = container.getBoundingClientRect();
-            canvas.width = width;
-            canvas.height = height;
+    /* ── splats & cleaner (volunteer) ────────────────────── */
+    this.splats=[];
+    this.cleanerSp=this.physics.add.image(-100,this.ROAD_BOT+this.TRAIL_H,'cleaner').setDepth(3).setVisible(false);
+    this.cleanerSp.body.setAllowGravity(false);
+    this.clState='idle'; this.clTarget=null; this.clCleanT=0;
 
-            TILE_SIZE = canvas.height / 18;
-            ROAD_CENTER_Y = canvas.height / 2;
-            ROAD_TOP_Y = ROAD_CENTER_Y - TILE_SIZE * 3;
-            ROAD_BOTTOM_Y = ROAD_CENTER_Y + TILE_SIZE * 3;
-            TRAIL_HEIGHT = TILE_SIZE * 1.2;
-        }
+    /* ── player newt ─────────────────────────────────────── */
+    this.newt=this.physics.add.image(W/2,this.SPAWN_Y,'newt').setDepth(5);
+    this.newt.body.setAllowGravity(false);
+    this.newt.setCollideWorldBounds(true);
+    this.newt.body.setSize(nw*.55,nh*.55);
+    this.newt.setAlpha(1);   // ensure fully opaque
 
-        function resetNewt() {
-            newt = {
-                width: TILE_SIZE * 0.7,
-                height: TILE_SIZE * 0.9,
-                x: canvas.width / 2 - (TILE_SIZE * 0.7) / 2,
-                y: canvas.height - TILE_SIZE * 2,
-                speed: TILE_SIZE,
-                rotation: 0,
-                targetRotation: 0,
-                walkPhase: 0,
-            };
-        }
+    /* ── HUD ─────────────────────────────────────────────── */
+    const fs=Math.max(14,TS*.45);
+    const hs={fontFamily:'Poppins',fontSize:fs+'px',fontStyle:'600',color:'#fff'};
+    this.add.rectangle(TS*1.6,TS*.5,TS*3,TS*.8,0x000000,.5).setOrigin(.5).setDepth(10).setStrokeStyle(1,0xffffff,.08);
+    this.scoreTxt=this.add.text(TS*.3,TS*.25,'Score: 0',hs).setDepth(10);
+    this.add.rectangle(W-TS*1.3,TS*.5,TS*2.6,TS*.8,0x000000,.5).setOrigin(.5).setDepth(10).setStrokeStyle(1,0xffffff,.08);
+    this.livesTxt=this.add.text(W-TS*2.4,TS*.25,'',hs).setDepth(10);
+    this.updateLives();
 
-        function initCleaner() {
-            cleaner = {
-                x: -TILE_SIZE * 2,
-                y: 0,
-                width: TILE_SIZE * 1.2,
-                height: TILE_SIZE * 2,
-                speed: TILE_SIZE * 0.05,
-                isActive: false,
-                state: 'idle',
-                targetSplat: null,
-                cleaningStartTime: 0,
-                walkPhase: 0,
-                direction: 'right',
-                exitSide: 'left'
-            };
-        }
+    this.muteBt=this.add.text(TS*.5,TS*1.5,muted?'🔇':'🔊',{fontSize:fs+'px'}).setDepth(10).setOrigin(.5).setInteractive();
+    this.muteBt.on('pointerdown',()=>{muted=!muted;this.muteBt.setText(muted?'🔇':'🔊');});
 
-        function init() {
-            setCanvasDimensions();
-            score = 0;
-            rawCrossings = 0;
-            combo = 0;
-            comboMultiplier = 1;
-            playerHasShield = false;
-            lives = 3;
-            gameOver = false;
-            lastFrameTime = 0;
-            resetNewt();
-            initCleaner();
-            createScenery();
-            createVehicles();
-            initParticles();
-            collectibles = [];
-            scheduleNextCollectible(gameTime || performance.now());
-            loadAchievements();
-            initDaily();
-            if (!gameStarted) {
-                draw();
-            }
-            fetchLeaderboard(true);
-        }
+    /* ── game over container ─────────────────────────────── */
+    this.goContainer=this.add.container(0,0).setDepth(30).setVisible(false);
 
-        function initParticles() {
-            particles = [];
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * (ROAD_TOP_Y - 10),
-                    r: 1 + Math.random() * 2,
-                    alpha: 0.07 + Math.random() * 0.18,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: -5 - Math.random() * 10
-                });
-            }
-        }
+    /* ── input ───────────────────────────────────────────── */
+    this.input.keyboard.on('keydown-UP',   ()=>this.step(0,-1));
+    this.input.keyboard.on('keydown-DOWN', ()=>this.step(0,1));
+    this.input.keyboard.on('keydown-LEFT', ()=>this.step(-1,0));
+    this.input.keyboard.on('keydown-RIGHT',()=>this.step(1,0));
+    this.input.keyboard.on('keydown-W',    ()=>this.step(0,-1));
+    this.input.keyboard.on('keydown-S',    ()=>this.step(0,1));
+    this.input.keyboard.on('keydown-A',    ()=>this.step(-1,0));
+    this.input.keyboard.on('keydown-D',    ()=>this.step(1,0));
+    this.input.keyboard.on('keydown-ENTER',()=>{if(this.isOver)this.scene.restart();});
 
-        function scheduleNextRain(now) {
-            const ref = (typeof now === 'number') ? now : performance.now();
-            const interval = Math.max(0, RAIN_MIN_INTERVAL + Math.random() * Math.max(0, RAIN_MAX_INTERVAL - RAIN_MIN_INTERVAL));
-            nextRainStart = ref + interval;
-        }
+    let sx=0,sy=0;
+    this.input.on('pointerdown',p=>{
+      if(this.isOver){this.scene.restart();return;}
+      sx=p.x; sy=p.y;
+    });
+    this.input.on('pointerup',p=>{
+      const dx=p.x-sx, dy=p.y-sy;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>20){
+        if(Math.abs(dx)>Math.abs(dy)) this.step(dx>0?1:-1,0);
+        else this.step(0,dy>0?1:-1);
+      } else {
+        if(!this.newtAlive||this.isOver) return;
+        const ndx=p.x-this.newt.x, ndy=p.y-this.newt.y;
+        if(Math.abs(ndx)>Math.abs(ndy)) this.step(ndx>0?1:-1,0);
+        else this.step(0,ndy>0?1:-1);
+      }
+    });
 
-        function startRain(now) {
-            const ref = (typeof now === 'number') ? now : performance.now();
-            raining = true;
-            rainDrops = [];
-            const dropCount = Math.max(8, Math.floor(canvas.width / 6));
-            for (let i = 0; i < dropCount; i++) {
-                rainDrops.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    len: 8 + Math.random() * 12,
-                    speed: 300 + Math.random() * 400,
-                    alpha: 0.35 + Math.random() * 0.5
-                });
-            }
-            const dur = RAIN_MIN_DURATION + Math.random() * Math.max(0, RAIN_MAX_DURATION - RAIN_MIN_DURATION);
-            rainEndTime = ref + dur;
-            try { console.log('rain started', { rainEndTime, drops: rainDrops.length }); } catch (e) { }
-        }
+    const hint=this.add.text(W/2,this.SPAWN_Y+TS*1.1,'Swipe or tap to move ↑',
+      {fontFamily:'Poppins',fontSize:TS*.38+'px',color:'#50e3c2'}).setOrigin(.5).setDepth(10).setAlpha(.8);
+    this.tweens.add({targets:hint,alpha:0,delay:3000,duration:1000,onComplete:()=>hint.destroy()});
 
-        function stopRain() {
-            raining = false;
-            rainDrops = [];
-            scheduleNextRain(performance.now());
-            try { console.log('rain stopped'); } catch (e) { }
-        }
+    /* ── difficulty timer ────────────────────────────────── */
+    this.diff=1;
+    this.time.addEvent({delay:30000,loop:true,callback:()=>{
+      if(!this.isOver) this.diff=Math.min(2.5,this.diff+.15);
+    }});
+  }
 
-        function updateRain(deltaTime) {
-            if (!raining) {
-                if (gameTime >= nextRainStart) startRain(gameTime);
-                return;
-            }
-            for (const d of rainDrops) {
-                d.y += d.speed * deltaTime;
-                d.x += (d.speed * 0.05) * deltaTime * (Math.random() - 0.5);
-                if (d.y > canvas.height + d.len) {
-                    d.y = -d.len - Math.random() * 50;
-                    d.x = Math.random() * canvas.width;
-                }
-            }
-            if (gameTime >= rainEndTime) stopRain();
-        }
+  /* ── movement ──────────────────────────────────────────── */
+  step(dx,dy){
+    if(!this.newtAlive||this.isOver) return;
+    const now=this.time.now;
+    if(now-this.lastStep<100) return;
+    this.lastStep=now;
+    const TS=this.TS, W=this.scale.width, H=this.scale.height;
+    let nx=this.newt.x+dx*TS;
+    let ny=this.newt.y+dy*TS;
+    nx=Phaser.Math.Clamp(nx,TS*.6,W-TS*.6);
+    ny=Phaser.Math.Clamp(ny,TS,H-TS);
+    if(dy>0&&ny>this.SPAWN_Y+TS*.5) ny=this.newt.y;
+    if(dy<0) this.targetAng=0;
+    else if(dy>0) this.targetAng=180;
+    else if(dx<0) this.targetAng=-90;
+    else if(dx>0) this.targetAng=90;
+    this.tweens.add({targets:this.newt,x:nx,y:ny,duration:90,ease:'Power2'});
+  }
 
-        function drawRain() {
-            if (!raining || !rainDrops.length) return;
-            ctx.save();
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = 'rgba(20,30,40,0.06)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = 'rgba(180,200,230,0.6)';
-            ctx.lineWidth = 1;
-            for (const d of rainDrops) {
-                ctx.globalAlpha = d.alpha;
-                ctx.beginPath();
-                ctx.moveTo(d.x, d.y);
-                ctx.lineTo(d.x - 0.6 * d.len, d.y + d.len);
-                ctx.stroke();
-            }
-            ctx.globalAlpha = 1;
-            ctx.restore();
-        }
-
-        function startGame() {
-            if (gameStarted) return;
-            splashScreen.style.opacity = '0';
-            splashScreen.style.pointerEvents = 'none';
-            init();
-            gameStarted = true;
-            gameStartTime = Date.now();
-
-            gameSessionCount++;
-            updateGoalProgress('sessions', 1);
-
-            setTimeout(() => {
-                spawnRunner(2);
-                lastRunnerSpawnTime = performance.now();
-            }, 2000);
-
-            scheduleNextRain(performance.now());
-
-            requestAnimationFrame(gameLoop);
-
-            gtag('event', 'start_game', {
-                'event_category': 'Game',
-                'event_label': 'Play Button Clicked'
-            });
-        }
-
-        function restartGame() {
-            if (!gameOver) return;
-            init();
-            gameStarted = true;
-            gameStartTime = Date.now();
-            requestAnimationFrame(gameLoop);
-            gtag('event', 'restart_game', {
-                'event_category': 'Game',
-                'event_label': 'Game Restarted'
-            });
-        }
-
-        function createScenery() {
-            scenery.trees = [];
-            scenery.waitingNewts = [];
-            scenery.splats = [];
-            scenery.runners = [];
-
-            const numWaitingNewts = Math.floor(Math.random() * 5) + 5;
-            for (let i = 0; i < numWaitingNewts; i++) {
-                scenery.waitingNewts.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * (ROAD_TOP_Y - TILE_SIZE) + TILE_SIZE / 2,
-                    size: (Math.random() * 0.3 + 0.4) * TILE_SIZE
-                });
-            }
-
-            for (let i = 0; i < canvas.width / (TILE_SIZE * 4); i++) {
-                scenery.trees.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * (ROAD_TOP_Y - TILE_SIZE * 2.5) + TILE_SIZE * 2,
-                    trunkWidth: (Math.random() * 0.2 + 0.15) * TILE_SIZE,
-                    trunkHeight: (Math.random() * 0.6 + 0.4) * TILE_SIZE,
-                    canopyLayers: [
-                        { dy: 0, radius: (Math.random() * 0.4 + 0.8) * TILE_SIZE, color: '#1e5b3a' },
-                        { dy: -TILE_SIZE * 0.3, radius: (Math.random() * 0.4 + 0.7) * TILE_SIZE, color: '#277a4d' },
-                        { dy: -TILE_SIZE * 0.5, radius: (Math.random() * 0.3 + 0.6) * TILE_SIZE, color: '#2e8b57' },
-                    ]
-                });
-            }
-            scenery.trees.sort((a, b) => a.y - b.y);
-        }
-
-        function createVehicles() {
-            vehicles = [];
-            const lanes = [
-                { y: ROAD_CENTER_Y - TILE_SIZE * 1.8, speed: -2.8 },
-                { y: ROAD_CENTER_Y + TILE_SIZE * 0.3, speed: 2.2 },
-            ];
-
-            const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
-            const timeBasedVehicleAddition = Math.min(2, Math.floor(timePlayed / 45));
-
-            lanes.forEach(lane => {
-                const baseVehicleCount = 2;
-                const numVehicles = Math.floor(Math.random() * 2) + baseVehicleCount + timeBasedVehicleAddition;
-                const laneVehicles = [];
-                for (let i = 0; i < numVehicles * 4; i++) {
-                    const typeKey = weightedVehicleTypes[Math.floor(Math.random() * weightedVehicleTypes.length)];
-                    const template = vehicleTemplates[typeKey];
-                    const w = TILE_SIZE * template.width;
-                    const speedDir = lane.speed > 0 ? 1 : -1;
-                    const x = Math.random() * canvas.width * 1.2 + i * (canvas.width / numVehicles * 0.9);
-                    const v = {
-                        type: typeKey,
-                        x,
-                        y: lane.y,
-                        width: w,
-                        height: TILE_SIZE * template.heightMultiplier,
-                        baseSpeed: lane.speed,
-                        color: carColors[Math.floor(Math.random() * carColors.length)],
-                        wheelRot: Math.random() * Math.PI * 2
-                    };
-                    const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
-                    const speedReductionFactor = Math.max(0, 0.20 - (score * 0.02) - (timePlayed / 150) * 0.15);
-                    if (speedReductionFactor > 0) {
-                        v.baseSpeed *= (1 - speedReductionFactor);
-                    }
-                    if (v.type === 'bicycle') v.pedalPhase = Math.random() * Math.PI * 2;
-                    laneVehicles.push(v);
-                }
-                laneVehicles.sort((a, b) => a.x - b.x);
-                const spaced = [];
-                const timePlayed = gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0;
-                const baseSpacing = TILE_SIZE * 3.0;
-                const minSpacingReduction = Math.min(1.0, (score / 10) + (timePlayed / 180));
-                const minSpacing = baseSpacing - (baseSpacing - TILE_SIZE * 1.5) * minSpacingReduction;
-                laneVehicles.forEach(v => {
-                    const last = spaced[spaced.length - 1];
-                    if (!last || v.x - (last.x + last.width) > minSpacing) spaced.push(v);
-                });
-                spaced.forEach(v => vehicles.push(v));
-            });
-        }
-
-        const nameInput = document.getElementById('playerNameInput');
-        if (nameInput) {
-            nameInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Tab' ||
-                    e.key === 'Shift' ||
-                    e.key === 'Control' ||
-                    e.key === 'Alt' ||
-                    e.key === 'Meta' ||
-                    e.key === 'CapsLock') {
-                    if (e.key === 'Tab') {
-                        e.preventDefault();
-                    }
-                    return;
-                }
-
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    playGameBtn.click();
-                }
-            });
-
-            nameInput.addEventListener('input', () => {
-                playerName = nameInput.value.trim();
-            });
-        }
-        playGameBtn.addEventListener('click', () => {
-            playerName = (nameInput && nameInput.value.trim()) || playerName;
-            startGame();
+  /* ── spawn vehicles — proper spacing, no overlap ────── */
+  spawnCars(){
+    this.vehicles.clear(true,true);
+    const W=this.scale.width, TS=this.TS;
+    this.lanes.forEach(lane=>{
+      /* pick a uniform base speed for this lane so vehicles travel together */
+      const laneBaseSpd=.8+Math.random()*.35;
+      const count=Phaser.Math.Between(3,5);
+      /* place vehicles with guaranteed minimum gap */
+      const minGap=TS*3.5;       // minimum space between vehicles
+      const vehsInLane=[];
+      let cursor=Phaser.Math.Between(0,Math.round(TS*2)); // start offset
+      for(let i=0;i<count;i++){
+        const entry=Phaser.Utils.Array.GetRandom(this.vehPool);
+        const texW=this.textures.get(entry.key).getSourceImage().width;
+        const x=cursor;
+        const v=this.physics.add.image(x,lane.y,entry.key).setDepth(2);
+        v.body.setAllowGravity(false);
+        v.dir=lane.dir;
+        v.baseSpd=laneBaseSpd*entry.spdMul;     // desired cruise speed
+        v.spd=v.baseSpd;                         // current speed (adjusted by following)
+        v.laneIdx=vehsInLane.length;
+        v.laneDir=lane.dir;
+        this.vehicles.add(v);
+        vehsInLane.push(v);
+        cursor+=texW+minGap+Phaser.Math.Between(0,Math.round(TS*2));
+      }
+      /* spread evenly if total exceeds screen width */
+      if(cursor>W*1.5){
+        const scale=W*1.4/cursor;
+        let acc=0;
+        vehsInLane.forEach(v=>{
+          v.x=acc*scale; acc+=v.width+minGap+TS;
         });
-        document.addEventListener("keydown", e => {
-            if (document.activeElement === nameInput) {
-                return;
-            }
-            handleInput(e.key);
+      }
+    });
+  }
+
+  /* ── update lives ──────────────────────────────────────── */
+  updateLives(){
+    this.livesTxt.setText('❤️'.repeat(Math.max(0,this.lives)));
+  }
+
+  /* ── collision ─────────────────────────────────────────── */
+  onHit(){
+    if(!this.newtAlive||this.invulnerable) return;
+    sfx('hit');
+    this.cameras.main.shake(200,.01);
+    this.cameras.main.flash(200,255,50,50);
+    const sp=this.add.image(this.newt.x,this.newt.y,'splat').setDepth(1);
+    this.splats.push({sprite:sp,t:this.time.now});
+    if(this.clState==='idle'&&this.splats.length) this.activateCleaner(this.splats[0]);
+    this.newtAlive=false;
+    this.newt.setVisible(false);
+    this.lives--;
+    this.updateLives();
+    if(this.lives<=0){
+      this.isOver=true;
+      submitScore(this.score); fetchLB();
+      gtag('event','game_over',{event_category:'Game',value:this.score});
+      this.showGameOver();
+    } else {
+      this.time.delayedCall(500,()=>this.resetNewt());
+    }
+  }
+
+  /* ── crossed successfully ──────────────────────────────── */
+  onCross(){
+    this.score++;
+    sfx('cross');
+    this.cameras.main.flash(120,80,227,194,true);
+    const ft=this.add.text(this.newt.x,this.newt.y,'+1',
+      {fontFamily:'Poppins',fontSize:this.TS*.7+'px',fontStyle:'700',color:'#50e3c2'}).setOrigin(.5).setDepth(15);
+    this.tweens.add({targets:ft,y:ft.y-this.TS*1.5,alpha:0,duration:700,ease:'Power2',onComplete:()=>ft.destroy()});
+    if(this.score%5===0){this.diff=Math.min(2.5,this.diff+.08);this.spawnCars();}
+    this.resetNewt();
+    gtag('event','newt_crossed',{event_category:'Game',value:this.score});
+  }
+
+  /* ── reset newt ────────────────────────────────────────── */
+  resetNewt(){
+    const W=this.scale.width;
+    this.newt.setPosition(W/2,this.SPAWN_Y).setVisible(true).setAlpha(1);
+    this.newt.angle=0; this.targetAng=0; this.newtAlive=true;
+
+    /* brief invulnerability so the newt can't be hit immediately */
+    this.invulnerable=true;
+    /* blink effect: tween from 0.4 to 1.0, ending on 1.0 (no yoyo on last cycle) */
+    this.tweens.add({
+      targets:this.newt, alpha:{from:0.4,to:1}, duration:100, repeat:5, yoyo:true,
+      onComplete:()=>{
+        this.newt.setAlpha(1);         // guarantee fully opaque
+        this.invulnerable=false;
+      }
+    });
+  }
+
+  /* ── volunteer cleaner ─────────────────────────────────── */
+  activateCleaner(sd){
+    this.clState='entering'; this.clTarget=sd;
+    this.cleanerSp.setVisible(true);
+    const left=sd.sprite.x<this.scale.width/2;
+    this.cleanerSp.x=left?-this.TS*2:this.scale.width+this.TS*2;
+    this.cleanerSp.y=this.ROAD_BOT+this.TRAIL_H;
+    this.cleanerSp.setFlipX(!left);
+  }
+
+  updateCleaner(dt,time){
+    if(this.clState==='idle') return;
+    const spd=this.TS*2.5*dt, cs=this.cleanerSp, W=this.scale.width;
+
+    if(this.clState==='entering'||this.clState==='exiting'){
+      let tx,ty;
+      if(this.clState==='entering'&&this.clTarget){
+        tx=this.clTarget.sprite.x; ty=this.clTarget.sprite.y;
+      } else {
+        tx=cs.x<W/2?-this.TS*3:W+this.TS*3; ty=this.ROAD_BOT+this.TRAIL_H;
+      }
+      const dx=tx-cs.x, dy=ty-cs.y, d=Math.sqrt(dx*dx+dy*dy);
+
+      /* ── walking animation: bob up/down + slight lean ── */
+      cs.y+=Math.sin(time*.012)*0.6;                   // vertical bob
+      cs.setScale(1+Math.sin(time*.018)*.02,            // squash
+                  1-Math.sin(time*.018)*.02);            // stretch
+      cs.angle=Math.sin(time*.01)*2.5;                   // body sway
+
+      if(d<spd*2){
+        if(this.clState==='entering'){
+          this.clState='cleaning'; this.clCleanT=time;
+          cs.angle=0; cs.setScale(1);
+          /* vigorous sweeping: side-to-side + rotation + scale pulse */
+          this.tweens.add({
+            targets:cs, x:cs.x-12, duration:200,
+            yoyo:true, repeat:5, ease:'Sine.easeInOut'
+          });
+          this.tweens.add({
+            targets:cs, angle:{from:-8,to:8}, duration:200,
+            yoyo:true, repeat:5, ease:'Sine.easeInOut'
+          });
+          this.tweens.add({
+            targets:cs, scaleX:{from:0.95,to:1.05},
+            scaleY:{from:1.05,to:0.95}, duration:250,
+            yoyo:true, repeat:4, ease:'Sine.easeInOut'
+          });
+        } else {
+          cs.setVisible(false); cs.angle=0; cs.setScale(1);
+          this.clState='idle';
+          if(this.splats.length) this.activateCleaner(this.splats[0]);
+        }
+      } else {
+        let safe=true;
+        if(cs.y>this.ROAD_TOP&&cs.y<this.ROAD_BOT){
+          this.vehicles.children.iterate(v=>{if(!v)return;
+            if(Math.abs(v.x-cs.x)<this.TS*4&&Math.abs(v.y-cs.y)<this.TS*1.5) safe=false;});
+        }
+        if(safe){
+          if(Math.abs(dy)>spd) cs.y+=Math.sign(dy)*spd;
+          else{cs.x+=Math.sign(dx)*spd; cs.setFlipX(dx<0);}
+        }
+      }
+    } else if(this.clState==='cleaning'){
+      /* while cleaning: continuous subtle breathing & arm pump */
+      cs.scaleY=1+Math.sin(time*.015)*.03;
+      if(time-this.clCleanT>2200){
+        if(this.clTarget){this.clTarget.sprite.destroy();this.splats=this.splats.filter(s=>s!==this.clTarget);}
+        this.clTarget=null; this.clState='exiting';
+        cs.angle=0; cs.setScale(1);
+      }
+    }
+  }
+
+  /* ── game over ─────────────────────────────────────────── */
+  showGameOver(){
+    const W=this.scale.width,H=this.scale.height,TS=this.TS,c=this.goContainer;
+    c.removeAll(true);
+    c.add(this.add.rectangle(W/2,H/2,W,H,0x1a1a2a,.85));
+    c.add(this.add.text(W/2,H*.16,'GAME OVER',{fontFamily:'Poppins',fontSize:TS*1.4+'px',fontStyle:'bold',color:'#e35050'}).setOrigin(.5));
+    c.add(this.add.text(W/2,H*.28,`Score: ${this.score}`,{fontFamily:'Poppins',fontSize:TS*1+'px',fontStyle:'700',color:'#50e3c2'}).setOrigin(.5));
+    if(playerName)
+      c.add(this.add.text(W/2,H*.36,`${playerName} Best: ${Math.max(globalHigh,this.score)}`,
+        {fontFamily:'Poppins',fontSize:TS*.45+'px',color:'#ccc'}).setOrigin(.5));
+    c.add(this.add.text(W/2,H*.46,'Top Scores',{fontFamily:'Poppins',fontSize:TS*.6+'px',fontStyle:'600',color:'#50e3c2'}).setOrigin(.5));
+    leaderboardEntries.forEach((e,i)=>{
+      const m=i===0?'🥇 ':i===1?'🥈 ':i===2?'🥉 ':'';
+      c.add(this.add.text(W/2,H*.53+i*TS*.55,`${m}${e.name}: ${e.score}`,
+        {fontFamily:'Poppins',fontSize:TS*.42+'px',color:'#fff'}).setOrigin(.5));
+    });
+    const ry=Math.min(H*.55+leaderboardEntries.length*TS*.55+TS,H*.9);
+
+    /* cause / awareness message */
+    const causeY=Math.min(ry-TS*.6,H*.86);
+    const causeMsg=this.add.text(W/2,causeY,
+      'Real newts cross this road every year. Learn more at bioblitz.club/newts',
+      {fontFamily:'Poppins',fontSize:TS*.32+'px',color:'#50e3c2',
+       wordWrap:{width:W*.8},align:'center'}).setOrigin(.5).setDepth(31).setAlpha(.85);
+    c.add(causeMsg);
+
+    const rt=this.add.text(W/2,ry,'Tap to Restart',{fontFamily:'Poppins',fontSize:TS*.5+'px',color:'#fff'}).setOrigin(.5);
+    this.tweens.add({targets:rt,alpha:{from:1,to:.3},duration:800,yoyo:true,repeat:-1});
+    c.add(rt);
+    c.setVisible(true).setAlpha(0);
+    this.tweens.add({targets:c,alpha:1,duration:400});
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     UPDATE LOOP
+     ───────────────────────────────────────────────────────── */
+  update(time,delta){
+    if(this.isOver) return;
+    const W=this.scale.width, H=this.scale.height, TS=this.TS, dt=delta/1000;
+
+    /* ── newt rotation & gentle bob ──────────────────────── */
+    if(this.newtAlive&&this.newt){
+      let ta=this.targetAng, ca=this.newt.angle, d=ta-ca;
+      if(d>180) d-=360; if(d<-180) d+=360;
+      this.newt.angle+=d*.2;
+      /* Only scale-bob when NOT blinking (invulnerable) to avoid fighting the alpha tween */
+      if(!this.invulnerable) this.newt.setScale(1+Math.sin(time*.007)*.025);
+    }
+
+    /* ── move vehicles — following behaviour ────────────── */
+    const baseSpd=W*.07;
+    const vehs=this.vehicles.children.getArray();
+    /* sort vehicles per-lane by position for following checks */
+    vehs.forEach(v=>{ if(v&&v.active) v.spd=v.baseSpd; }); // reset to cruise
+    vehs.forEach(v=>{
+      if(!v||!v.active) return;
+      const minFollow=this.TS*2.2;   // minimum following distance
+      /* find nearest vehicle AHEAD in the same lane */
+      let nearestDist=Infinity;
+      vehs.forEach(o=>{
+        if(!o||!o.active||o===v) return;
+        if(Math.abs(o.y-v.y)>this.TS) return;          // different lane
+        /* "ahead" depends on lane direction */
+        const gap=v.dir>0?(o.x-v.x):(v.x-o.x);
+        /* wrap-around: if gap is very negative, the other vehicle looped */
+        const gapW=gap<-W*.3?gap+W+o.width+v.width:gap;
+        if(gapW>0 && gapW<nearestDist) nearestDist=gapW;
+      });
+      /* if too close, slow down to match / brake */
+      if(nearestDist<minFollow){
+        const ratio=Math.max(0.15, nearestDist/minFollow);
+        v.spd=v.baseSpd*ratio;
+      }
+      v.x+=v.dir*baseSpd*v.spd*this.diff*dt;
+      if(v.dir>0&&v.x>W+v.width) v.x=-v.width;
+      else if(v.dir<0&&v.x<-v.width) v.x=W+v.width;
+    });
+
+    /* ── dashed centre line ──────────────────────────────── */
+    this.dashGfx.clear();
+    this.dashGfx.lineStyle(4,0xffd700,.6);
+    const dl=TS*.8, gl=TS*.9, td=dl+gl, off=(time*.05)%td;
+    for(let x=-off;x<W;x+=td) this.dashGfx.lineBetween(x,this.ROAD_MID,x+dl,this.ROAD_MID);
+
+    /* ── SUCCESS CHECK FIRST — before collision ──────────── */
+    /* This prevents the newt from being killed on the same
+       frame it crosses the road successfully. */
+    if(this.newtAlive&&this.newt&&this.newt.y<this.ROAD_TOP){
+      this.onCross();
+      return;   // skip collision check this frame
+    }
+
+    /* ── collision check ─────────────────────────────────── */
+    if(this.newtAlive&&this.newt&&!this.invulnerable){
+      const nb=this.newt.getBounds();
+      const m=TS*.22;   // generous inset so near-misses feel fair
+      const nR=new Phaser.Geom.Rectangle(nb.x+m,nb.y+m,nb.width-m*2,nb.height-m*2);
+      let hit=false;
+      this.vehicles.children.iterate(v=>{
+        if(!v||!v.active||hit) return;
+        if(Phaser.Geom.Rectangle.Overlaps(nR,v.getBounds())) hit=true;
+      });
+      if(hit) this.onHit();
+    }
+
+    /* ── volunteer cleaner ───────────────────────────────── */
+    this.updateCleaner(dt,time);
+
+    /* ── rain ─────────────────────────────────────────────── */
+    this.rainGfx.clear();
+    if(!this.raining){
+      if(time>this.rainNextAt){
+        this.raining=true;
+        this.rainDrops=[];
+        const dc=Math.max(30,Math.floor(W/5));
+        for(let i=0;i<dc;i++) this.rainDrops.push({
+          x:Math.random()*W, y:Math.random()*H,
+          len:6+Math.random()*10, spd:300+Math.random()*400,
+          a:.15+Math.random()*.35
         });
-        document.addEventListener('keydown', e => {
-            if (e.key === 'm' || e.key === 'M') toggleMute();
-        });
-        document.addEventListener('keydown', e => {
-            if (e.key === 'r' || e.key === 'R') {
-                if (raining) stopRain(); else startRain(performance.now());
-            }
-        });
-        document.addEventListener('keydown', e => {
-            if (document.activeElement === nameInput) {
-                return;
-            }
-            if (e.key === 'p' || e.key === 'P') {
-                togglePause();
-            }
-        });
-
-        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-            document.body.classList.add('touch-enabled');
+        this.rainEndAt=time+Phaser.Math.Between(4000,18000);
+      }
+    } else {
+      /* draw rain streaks */
+      this.rainDrops.forEach(d=>{
+        d.y+=d.spd*dt; d.x+=d.spd*.04*dt;
+        if(d.y>H+d.len){ d.y=-d.len-Math.random()*30; d.x=Math.random()*W;
+          /* spawn a small splash when raindrop hits bottom */
+          if(Math.random()<.3) this.rainSplashes.push({x:d.x,y:H-2,t:time,r:1+Math.random()*2});
         }
-
-        mobileControls.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                handleInput(e.target.dataset.key);
-            }
-        });
-        const pauseBtn = document.getElementById('pauseBtn');
-        pauseBtn.addEventListener('click', () => togglePause());
-        const muteBtn = document.getElementById('muteBtn');
-        muteBtn.addEventListener('click', () => toggleMute());
-
-        const goalsToggleBtn = document.getElementById('goalsToggleBtn');
-        goalsToggleBtn.addEventListener('click', () => {
-            const panel = document.getElementById('daily-goals-panel');
-            if (panel) {
-                const isVisible = panel.style.display !== 'none';
-                panel.style.display = isVisible ? 'none' : 'block';
-            }
-        });
-
-        canvas.addEventListener('touchstart', e => {
-            e.preventDefault();
-            if (gameOver) {
-                restartGame();
-                return;
-            }
-            touchStartX = e.changedTouches[0].clientX;
-            touchStartY = e.changedTouches[0].clientY;
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', e => {
-            e.preventDefault();
-            touchEndX = e.changedTouches[0].clientX;
-            touchEndY = e.changedTouches[0].clientY;
-            handleSwipe();
-        }, { passive: false });
-
-
-        window.addEventListener('load', () => {
-            if (nameInput) {
-                setTimeout(() => nameInput.focus(), 500);
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            setTimeout(() => {
-                const wasRunning = gameStarted && !gameOver;
-                const wasGameOver = gameOver;
-
-                init();
-
-                if (wasRunning) {
-                    gameStarted = true;
-                    requestAnimationFrame(gameLoop);
-                } else if (wasGameOver) {
-                    gameStarted = true;
-                    gameOver = true;
-                    draw();
-                }
-            }, 250);
-        });
-
-
-        function handleSwipe() {
-            if (gameOver) return;
-            const dx = touchEndX - touchStartX;
-            const dy = touchEndY - touchStartY;
-            const swipeThreshold = 30;
-
-            if (Math.abs(dx) > Math.abs(dy)) {
-                if (Math.abs(dx) > swipeThreshold) {
-                    handleInput(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
-                }
-            } else {
-                if (Math.abs(dy) > swipeThreshold) {
-                    handleInput(dy > 0 ? 'ArrowDown' : 'ArrowUp');
-                }
-            }
-        }
-
-        function handleInput(key) {
-            if (gameOver) {
-                if (key === "Enter") {
-                    restartGame();
-                }
-                return;
-            }
-            if (paused) return;
-
-            if (!newt) return;
-
-            if (!gameStarted) {
-                startGame();
-                return;
-            }
-
-            switch (key) {
-                case "ArrowUp": newt.y -= newt.speed; newt.targetRotation = 0; break;
-                case "ArrowDown": if (newt.y < canvas.height - newt.height * 2) newt.y += newt.speed; newt.targetRotation = Math.PI; break;
-                case "ArrowLeft": if (newt.x > 0) newt.x -= newt.speed; newt.targetRotation = -Math.PI / 2; break;
-                case "ArrowRight": if (newt.x < canvas.width - newt.width) newt.x += newt.speed; newt.targetRotation = Math.PI / 2; break;
-            }
-        }
-
-        function togglePause() {
-            if (!gameStarted || gameOver) return;
-            paused = !paused;
-            const btn = document.getElementById('pauseBtn');
-            if (btn) btn.textContent = paused ? '▶' : '⏸';
-        }
-
-        function update(deltaTime) {
-            if (gameOver) return;
-            if (gameStarted && newt) {
-                newt.walkPhase = (gameTime / 200) % (Math.PI * 2);
-            }
-
-            if (gameStarted && gameTime - lastRunnerSpawnTime > RUNNER_SPAWN_INTERVAL) {
-                spawnRunner(1 + Math.floor(Math.random() * 3));
-                lastRunnerSpawnTime = gameTime;
-            }
-
-            updateRunners(deltaTime);
-            updateParticles(deltaTime);
-            updateRain(deltaTime);
-            updateCollectibles();
-            if (newt) checkCollectibleCollisions();
-            if (newt) {
-                let dy = newt.targetRotation - newt.rotation;
-                if (Math.abs(dy) > Math.PI) dy = dy < 0 ? dy + 2 * Math.PI : dy - 2 * Math.PI;
-                newt.rotation += dy * 0.2;
-            }
-
-            const timePlayed = (Date.now() - gameStartTime) / 1000;
-            const scoreDifficulty = 0.7 + score * 0.05 + Math.pow(score, 1.5) * 0.005;
-            const timeDifficulty = Math.min(1.0, timePlayed / 120) * 0.8;
-            const difficultyFactor = Math.min(3.5, scoreDifficulty + timeDifficulty);
-
-            vehicles.forEach(v => {
-                const speedPxPerSec = v.baseSpeed * BASE_SPEED_SCALAR * canvas.width * difficultyFactor;
-                v.x += speedPxPerSec * deltaTime;
-                if (v.type !== 'bicycle') {
-                    const wheelRadius = v.height * 0.16;
-                    v.wheelRot = (v.wheelRot + (speedPxPerSec * deltaTime) / Math.max(1, wheelRadius)) % (Math.PI * 2);
-                }
-
-                if (v.type === 'bicycle') {
-                    const pedalSpeed = 0.2;
-                    v.pedalPhase = (v.pedalPhase + pedalSpeed) % (Math.PI * 2);
-                }
-                if (v.baseSpeed > 0 && v.x > canvas.width + v.width) v.x = -v.width;
-                else if (v.baseSpeed < 0 && v.x < -v.width * 2) v.x = canvas.width + v.width;
-            });
-
-            vehicles.forEach(v => {
-                if (newt && newt.x < v.x + v.width && newt.x + newt.width > v.x && newt.y < v.y + v.height && newt.y + newt.height > v.y) {
-                    handleCollision();
-                }
-            });
-
-            if (newt && newt.y < ROAD_TOP_Y) {
-                handleSuccess();
-            }
-
-            updateCleaner();
-        }
-
-        function updateParticles(deltaTime) {
-            for (const p of particles) {
-                p.x += p.vx * deltaTime * 0.6;
-                p.y += p.vy * deltaTime * 0.6;
-                if (p.y + p.r < 0 || p.x < -50 || p.x > canvas.width + 50) {
-                    p.x = Math.random() * canvas.width;
-                    p.y = ROAD_TOP_Y - 5 - Math.random() * 30;
-                    p.vx = (Math.random() - 0.5) * 6;
-                    p.vy = -5 - Math.random() * 6;
-                }
-            }
-        }
-
-        function activateCleaner(splat) {
-            cleaner.isActive = true;
-            cleaner.targetSplat = splat;
-            cleaner.state = 'entering';
-
-            const startOnLeft = splat.x < canvas.width / 2;
-            cleaner.x = startOnLeft ? -cleaner.width * 2 : canvas.width + cleaner.width * 2;
-            cleaner.y = ROAD_BOTTOM_Y + TILE_SIZE;
-            cleaner.direction = startOnLeft ? 'right' : 'left';
-        }
-
-        function updateCleaner() {
-            if (!cleaner.isActive) return;
-
-            cleaner.walkPhase = (gameTime / 150) % (Math.PI * 2);
-            const cleaningDuration = 1500;
-
-            const isExiting = cleaner.state === 'exiting';
-            const targetX = isExiting ? (cleaner.exitSide === 'left' ? -cleaner.width * 2 : canvas.width + cleaner.width) : cleaner.targetSplat.x - cleaner.width / 2;
-            const targetY = isExiting ? ROAD_BOTTOM_Y + TILE_SIZE : cleaner.targetSplat.y - cleaner.height / 2;
-
-            const dx = targetX - cleaner.x;
-            const dy = targetY - cleaner.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (cleaner.state === 'cleaning') {
-                if (gameTime - cleaner.cleaningStartTime > cleaningDuration) {
-                    scenery.splats = scenery.splats.filter(s => s.id !== cleaner.targetSplat.id);
-                    cleaner.targetSplat = null;
-                    cleaner.state = 'exiting';
-                    cleaner.exitSide = cleaner.x < canvas.width / 2 ? 'right' : 'left';
-                }
-                return;
-            }
-
-            if (distance < cleaner.speed * 1.5) {
-                if (!isExiting) {
-                    cleaner.state = 'cleaning';
-                    cleaner.cleaningStartTime = gameTime;
-                } else {
-                    cleaner.isActive = false;
-                    cleaner.state = 'idle';
-                    if (scenery.splats.length > 0) {
-                        activateCleaner(scenery.splats[0]);
-                    }
-                }
-                return;
-            }
-
-            let canMove = true;
-            let moveX = 0;
-            let moveY = 0;
-
-            if (Math.abs(dy) > cleaner.speed) {
-                moveY = Math.sign(dy) * cleaner.speed;
-            } else {
-                moveX = Math.sign(dx) * cleaner.speed;
-                cleaner.direction = moveX > 0 ? 'right' : 'left';
-
-                if (cleaner.y > ROAD_TOP_Y && cleaner.y < ROAD_BOTTOM_Y) {
-                    const safetyBuffer = TILE_SIZE * 4;
-                    for (const v of vehicles) {
-                        if (Math.abs(v.y - cleaner.y) < TILE_SIZE * 1.5) {
-                            const cleanerFront = cleaner.x + (cleaner.direction === 'right' ? cleaner.width : 0);
-
-                            if (cleaner.direction === 'right' && v.baseSpeed < 0 && v.x + v.width > cleanerFront && v.x < cleanerFront + safetyBuffer) {
-                                canMove = false;
-                                break;
-                            }
-                            if (cleaner.direction === 'left' && v.baseSpeed > 0 && v.x < cleanerFront && v.x + v.width > cleanerFront - safetyBuffer) {
-                                canMove = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (canMove) {
-                cleaner.x += moveX;
-                cleaner.y += moveY;
-            }
-        }
-
-        function handleCollision() {
-            if (!newt) return;
-
-            if (playerHasShield) {
-                // absorb one collision
-                playerHasShield = false;
-                totalShieldsUsed++;
-                addNotification('Shield saved you!');
-                unlockAchievement('shield_save', 'Safety First: Shield absorbed a hit');
-                playSound('shield');
-                hitFlashUntil = gameTime + 120;
-                triggerScreenEffect('success'); // Positive feedback for shield save
-                return; // no death
-            }
-
-            hitFlashUntil = gameTime + 250;
-
-            triggerScreenEffect('hit');
-
-            const newSplat = {
-                x: newt.x + newt.width / 2,
-                y: newt.y + newt.height / 2,
-                creationTime: gameTime,
-                maxRadius: TILE_SIZE * 0.8,
-                id: Date.now() + Math.random()
-            };
-            scenery.splats.push(newSplat);
-
-            if (!cleaner.isActive) {
-                activateCleaner(newSplat);
-            }
-
-            newt = null;
-            lives--;
-            combo = 0;
-            comboMultiplier = 1;
-
-            // Update combo meter after combo break
-            updateComboMeter();
-
-            playSound('hit');
-
-            if (lives <= 0) {
-                gameOver = true;
-
-                gtag('event', 'game_over', {
-                    'event_category': 'Game',
-                    'event_label': 'Player Lost',
-                    'value': score
-                });
-
-                submitScore();
-                fetchLeaderboard(true);
-                updateDailyBest();
-            } else {
-                setTimeout(resetNewt, 500);
-            }
-        }
-
-        function handleSuccess() {
-            rawCrossings++;
-            totalCrossingsToday++;
-            combo++;
-            comboMultiplier = 1 + Math.floor(combo / 3) * 0.5; // 1.0,1.0,1.0 -> 1.5 -> 2.0 etc
-            const award = 1 * comboMultiplier;
-            score = Math.round(score + award);
-            playSound('cross');
-
-            // Update daily goals
-            updateGoalProgress('crossings', 1);
-
-            // Update combo meter
-            updateComboMeter();
-
-            if (combo === 3) unlockAchievement('combo3', 'Hot Streak: 3 crossings combo');
-            if (combo === 6) unlockAchievement('combo6', 'On Fire: 6 crossings combo');
-            if (rawCrossings === 1) unlockAchievement('first_cross', 'First Crossing');
-            if (rawCrossings === 10) unlockAchievement('ten_cross', 'Ten Crossings');
-            if (raining) unlockAchievement('rain_cross', 'Storm Runner: Crossed in rain');
-
-            // Trigger success effect
-            triggerScreenEffect('success');
-
-            resetNewt();
-
-            gtag('event', 'newt_crossed', {
-                'event_category': 'Game',
-                'event_label': 'Successful Crossing',
-                'value': score
-            });
-        }
-
-        function spawnRunner(count = 1) {
-            for (let i = 0; i < count; i++) {
-                const onTopSide = Math.random() < 0.5;
-                const baseY = onTopSide ? (ROAD_TOP_Y - TRAIL_HEIGHT / 2) : (ROAD_BOTTOM_Y + TRAIL_HEIGHT / 2);
-                const y = baseY + (Math.random() - 0.5) * (TRAIL_HEIGHT * 0.6);
-
-                const movingRight = Math.random() < 0.5;
-                const x = movingRight ? -TILE_SIZE * (1 + Math.random() * 3) : canvas.width + TILE_SIZE * (1 + Math.random() * 3);
-
-                const speed = TILE_SIZE * (1.0 + Math.random() * 0.8) * (0.9 + Math.random() * 0.6);
-                const colors = ["#e53935", "#1e88e5", "#43a047", "#fb8c00", "#8e24aa", "#01579b"];
-                const shirtColor = colors[Math.floor(Math.random() * colors.length)];
-                const shortsColor = colors[Math.floor(Math.random() * colors.length)];
-
-                const skinTones = ['#e0ac69', '#c68642', '#8d5524', '#f1c27d', '#ffdbac'];
-                const hairColors = ['#2c1e0e', '#4a3520', '#5a3825', '#70482b', '#a56b46', '#dbb471', '#090806'];
-                const skinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
-                const hairColor = hairColors[Math.floor(Math.random() * hairColors.length)];
-
-                scenery.runners.push({
-                    x,
-                    y,
-                    movingRight,
-                    onTopSide,
-                    speed: movingRight ? speed : -speed,
-                    runPhase: Math.random() * Math.PI * 2,
-                    runSpeed: 1.0 + Math.random() * 1.2,
-                    skinTone,
-                    hairColor,
-                    outfit: {
-                        shirt: shirtColor,
-                        shorts: shortsColor
-                    }
-                });
-            }
-        }
-
-        function updateRunners(deltaTime) {
-            if (paused) return;
-
-            scenery.runners.forEach(runner => {
-                runner.x += runner.speed * deltaTime;
-                runner.runPhase = (runner.runPhase + deltaTime * runner.runSpeed * 7) % (Math.PI * 2);
-            });
-
-            scenery.runners = scenery.runners.filter(runner => {
-                if (runner.movingRight) {
-                    return runner.x < canvas.width + TILE_SIZE * 2;
-                } else {
-                    return runner.x > -TILE_SIZE * 2;
-                }
-            });
-        }
-
-        function drawRunner(runner) {
-            const x = runner.x;
-            const y = runner.y;
-            const size = TILE_SIZE;
-            const facing = runner.movingRight ? 1 : -1;
-            const bobHeight = Math.sin(runner.runPhase * 2) * (size * 0.08);
-            const skinTone = runner.skinTone || '#e0ac69';
-
-            ctx.save();
-            ctx.translate(x, y + bobHeight);
-            const thighLen = size * 0.28;
-            const shinLen = size * 0.28;
-            const legW = Math.max(2, size * 0.06);
-            const leftOffsetX = -size * 0.12;
-            const rightOffsetX = size * 0.12;
-            const rp = runner.runPhase;
-
-            const drawLeg = (offsetX, phaseOffset) => {
-                const phase = rp + phaseOffset;
-                const hipAngle = Math.sin(phase) * 0.9;
-                const kneeBendFactor = Math.max(0, Math.sin(phase + Math.PI * 0.25));
-                const kneeAngle = -kneeBendFactor * 1.2;
-
-                ctx.save();
-                ctx.translate(offsetX, 0);
-                ctx.rotate(hipAngle);
-                ctx.fillStyle = skinTone;
-                ctx.fillRect(-legW / 2, 0, legW, thighLen);
-                ctx.translate(0, thighLen);
-                ctx.rotate(kneeAngle);
-                ctx.fillRect(-legW / 2, 0, legW, shinLen);
-                ctx.translate(0, shinLen);
-                const footTilt = (Math.sin(phase + Math.PI * 0.5) * 0.6);
-                ctx.rotate(footTilt);
-                ctx.fillRect(-legW * 1.1, 0, legW * 2.2, legW * 0.9);
-                ctx.restore();
-            };
-
-            drawLeg(leftOffsetX, 0);
-            drawLeg(rightOffsetX, Math.PI);
-
-            ctx.fillStyle = runner.outfit.shirt;
-            ctx.fillRect(-size * 0.15, -size * 0.5, size * 0.3, size * 0.3);
-            ctx.fillStyle = runner.outfit.shorts;
-            ctx.fillRect(-size * 0.15, -size * 0.2, size * 0.3, size * 0.2);
-
-            const shoulderY = -size * 0.45;
-            const shoulderOffsetX = size * 0.18;
-            const hipLeft = Math.sin(rp) * 0.9;
-            const hipRight = Math.sin(rp + Math.PI) * 0.9;
-            const armAngleLeft = -hipLeft * 0.8;
-            const armAngleRight = -hipRight * 0.8;
-
-            const upperArmLen = size * 0.18;
-            const forearmLen = size * 0.18;
-            const armW = Math.max(2, size * 0.055);
-
-            ctx.save();
-            ctx.translate(-shoulderOffsetX, shoulderY);
-            ctx.rotate(armAngleLeft);
-            ctx.fillStyle = skinTone;
-            ctx.fillRect(-armW / 2, 0, armW, upperArmLen);
-            ctx.translate(0, upperArmLen);
-            const elbowBend = Math.max(-1, Math.min(1, -Math.sin(rp) * 0.6));
-            ctx.rotate(elbowBend);
-            ctx.fillRect(-armW / 2, 0, armW, forearmLen);
-            ctx.restore();
-
-            ctx.save();
-            ctx.translate(shoulderOffsetX, shoulderY);
-            ctx.rotate(armAngleRight);
-            ctx.fillStyle = skinTone;
-            ctx.fillRect(-armW / 2, 0, armW, upperArmLen);
-            ctx.translate(0, upperArmLen);
-            const elbowBendR = Math.max(-1, Math.min(1, -Math.sin(rp + Math.PI) * 0.6));
-            ctx.rotate(elbowBendR);
-            ctx.fillRect(-armW / 2, 0, armW, forearmLen);
-            ctx.restore();
-
-            ctx.fillStyle = skinTone;
-            ctx.beginPath();
-            ctx.arc(0, -size * 0.6, size * 0.1, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBackground();
-            drawReflections();
-            drawParticles();
-            drawCollectibles();
-
-            scenery.runners.forEach(drawRunner);
-
-            scenery.splats.forEach(drawSplat);
-            drawHumanCleaner();
-
-            vehicles.forEach(v => {
-                const template = vehicleTemplates[v.type];
-                template.draw(v);
-            });
-
-            if (gameStarted && !gameOver && newt) {
-                drawNewt(newt.x, newt.y, newt.width, newt.height);
-            }
-
-            drawRain();
-
-            drawVignette();
-
-            drawUI();
-            drawNotifications();
-
-            if (gameOver) {
-                drawGameOver();
-            }
-        }
-
-        function drawParticles() {
-            if (!particles || !particles.length) return;
-            ctx.save();
-            ctx.globalCompositeOperation = 'lighter';
-            for (const p of particles) {
-                ctx.fillStyle = `rgba(200,230,255,${p.alpha})`;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.restore();
-        }
-
-        function drawNewt(x, y, w, h) {
-            ctx.save();
-            ctx.translate(x + w / 2, y + h / 2);
-            ctx.rotate(newt.rotation);
-
-            const walkCycle = Math.sin(newt.walkPhase);
-            const legShift = walkCycle * (w * 0.08);
-            const legColor = "#af7d1c";
-            const legLength = w * 0.3;
-            const legThickness = h * 0.15;
-            const bodySide = w * 0.35;
-
-            ctx.fillStyle = legColor;
-            ctx.fillRect(-bodySide - legLength + legShift, -h * 0.2, legLength, legThickness);
-            ctx.fillRect(bodySide + legShift, h * 0.2 - legThickness, legLength, legThickness);
-            ctx.fillRect(bodySide - legShift, -h * 0.2, legLength, legThickness);
-            ctx.fillRect(-bodySide - legLength - legShift, h * 0.2 - legThickness, legLength, legThickness);
-
-            ctx.fillStyle = "#cf8e23";
-            ctx.beginPath();
-            ctx.ellipse(0, h * 0.6, w * 0.2, h * 0.5, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#e59f28";
-            ctx.beginPath();
-            ctx.ellipse(0, 0, w * 0.45, h * 0.5, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = "#f5d47a";
-            ctx.beginPath();
-            ctx.ellipse(0, 0, w * 0.35, h * 0.4, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#e59f28";
-            ctx.beginPath();
-            ctx.ellipse(0, -h * 0.4, w * 0.4, h * 0.3, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = "black";
-            ctx.beginPath();
-            ctx.arc(-w * 0.15, -h * 0.45, w * 0.05, 0, Math.PI * 2);
-            ctx.arc(w * 0.15, -h * 0.45, w * 0.05, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        function drawHumanCleaner() {
-            if (!cleaner.isActive) return;
-
-            ctx.save();
-            ctx.translate(cleaner.x, cleaner.y);
-
-            const w = cleaner.width;
-            const h = cleaner.height;
-            const walkCycle = Math.sin(cleaner.walkPhase);
-            const bob = Math.sin(cleaner.walkPhase * 2) * (TILE_SIZE * 0.05);
-
-            ctx.strokeStyle = "#a0522d";
-            ctx.lineWidth = w * 0.1;
-            ctx.beginPath();
-            ctx.moveTo(w * 0.5, h * 0.5 + bob);
-            const mopAngle = cleaner.direction === 'right' ? Math.PI / 4 : (3 * Math.PI) / 4;
-            const mopEndX = w * 0.5 + Math.cos(mopAngle) * w;
-            const mopEndY = h * 0.5 + bob + Math.sin(mopAngle) * w;
-            ctx.lineTo(mopEndX, mopEndY);
-            ctx.stroke();
-
-            if (cleaner.state === 'cleaning') {
-                const cleaningProgress = (gameTime - cleaner.cleaningStartTime) / 1000;
-                const mopHeadX = cleaner.targetSplat.x - cleaner.x + Math.sin(cleaningProgress * Math.PI * 6) * (w * 0.5);
-                const mopHeadY = cleaner.targetSplat.y - cleaner.y;
-                ctx.fillStyle = "#e6e6e6";
-                ctx.beginPath();
-                ctx.ellipse(mopHeadX, mopHeadY, w * 0.4, w * 0.2, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.fillStyle = "#2c3e50";
-            const legShift = walkCycle * (w * 0.2);
-            ctx.fillRect(w * 0.3 - legShift, h * 0.6 + bob, w * 0.2, h * 0.4);
-            ctx.fillRect(w * 0.5 + legShift, h * 0.6 + bob, w * 0.2, h * 0.4);
-
-            ctx.fillStyle = "#f39c12";
-            ctx.fillRect(w * 0.15, h * 0.2 + bob, w * 0.7, h * 0.4);
-            ctx.fillStyle = "#f39c12";
-            ctx.fillRect(w * 0.15, h * 0.2 + bob, w * 0.7, h * 0.4);
-            const vestX = w * 0.15;
-            const vestY = h * 0.2 + bob;
-            const vestW = w * 0.7;
-            const vestH = h * 0.4;
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(vestX, vestY, vestW, vestH);
-            ctx.clip();
-            ctx.translate(vestX + vestW * 0.5, vestY + vestH * 0.5);
-            const scaleX = Math.min(1, (vestW * 0.9) / (TILE_SIZE * 2.6));
-            const scaleY = Math.min(1, (vestH * 0.5) / (TILE_SIZE * 0.6));
-            ctx.transform(scaleX, -0.08, 0, scaleY, 0, 0);
-            ctx.fillStyle = '#2c3e50';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = `700 ${Math.max(6, Math.round(TILE_SIZE * 0.12))}px 'Poppins'`;
-            ctx.fillText('newt patrol', 0, 0);
-            ctx.restore();
-            ctx.fillStyle = "#bdc3c7";
-            ctx.fillRect(w * 0.1, h * 0.4 + bob, w * 0.8, h * 0.08);
-
-            ctx.fillStyle = "#f1c40f";
-            ctx.beginPath();
-            ctx.arc(w * 0.5, h * 0.15 + bob, w * 0.25, Math.PI, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#e67e22";
-            ctx.beginPath();
-            ctx.arc(w * 0.5, h * 0.15 + bob, w * 0.2, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        function drawSplat(splat) {
-            const age = gameTime - splat.creationTime;
-            const maxLife = 3000;
-            const opacity = 1 - (age / maxLife);
-
-            ctx.save();
-            ctx.fillStyle = `rgba(107, 142, 35, 0.7)`;
-            ctx.beginPath();
-            ctx.ellipse(splat.x, splat.y, splat.maxRadius, splat.maxRadius * 0.7, Math.PI / 4, 0, Math.PI * 2);
-            ctx.ellipse(splat.x + 5, splat.y - 5, splat.maxRadius * 0.5, splat.maxRadius * 0.8, Math.PI / 2, 0, Math.PI * 2);
-            ctx.ellipse(splat.x - 5, splat.y + 5, splat.maxRadius * 0.9, splat.maxRadius * 0.6, -Math.PI / 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-
-        function drawWaitingNewt(x, y, size) {
-            ctx.save();
-            ctx.fillStyle = "#d95f26";
-            ctx.globalAlpha = 0.7;
-            ctx.beginPath();
-            ctx.ellipse(x, y, size * 0.4, size * 0.5, 0, 0, Math.PI * 2);
-            ctx.ellipse(x, y - size * 0.4, size * 0.3, size * 0.2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1.0;
-            ctx.restore();
-        }
-
-        function drawBackground() {
-            ctx.fillStyle = "#277a4d";
-            ctx.fillRect(0, 0, canvas.width, ROAD_TOP_Y);
-
-            ctx.fillStyle = '#7a4f2b';
-            ctx.fillRect(0, ROAD_TOP_Y - TRAIL_HEIGHT, canvas.width, TRAIL_HEIGHT);
-
-            scenery.waitingNewts.forEach(n => drawWaitingNewt(n.x, n.y, n.size));
-            scenery.trees.forEach(tree => {
-                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--trunk-color');
-                ctx.fillRect(tree.x - tree.trunkWidth / 2, tree.y - tree.trunkHeight, tree.trunkWidth, tree.trunkHeight);
-                tree.canopyLayers.forEach(layer => {
-                    ctx.fillStyle = layer.color;
-                    ctx.beginPath();
-                    ctx.arc(tree.x, tree.y - tree.trunkHeight + layer.dy, layer.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-            });
-
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--road-color');
-            ctx.fillRect(0, ROAD_TOP_Y, canvas.width, ROAD_BOTTOM_Y - ROAD_TOP_Y);
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(0, ROAD_TOP_Y + 2);
-            ctx.lineTo(canvas.width, ROAD_TOP_Y + 2);
-            ctx.moveTo(0, ROAD_BOTTOM_Y - 2);
-            ctx.lineTo(canvas.width, ROAD_BOTTOM_Y - 2);
-            ctx.stroke();
-
-            ctx.font = `bold ${TILE_SIZE * 0.8}px 'Poppins'`;
-            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("Alma Bridge Road", canvas.width / 2, ROAD_CENTER_Y);
-
-            ctx.strokeStyle = "#ffd700";
-            ctx.lineWidth = 6;
-            ctx.setLineDash([TILE_SIZE * 0.8, TILE_SIZE * 0.9]);
-            const dashOffset = (gameTime / 12) % (TILE_SIZE * 1.7);
-            ctx.lineDashOffset = -dashOffset;
-            ctx.beginPath();
-            ctx.moveTo(0, ROAD_CENTER_Y);
-            ctx.lineTo(canvas.width, ROAD_CENTER_Y);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.lineDashOffset = 0;
-
-            const waterY = ROAD_BOTTOM_Y;
-            const waterHeight = canvas.height - waterY;
-            const grad = ctx.createLinearGradient(0, waterY, 0, canvas.height);
-            grad.addColorStop(0, "#3b6fa5");
-            grad.addColorStop(1, "#2a4d75");
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, waterY, canvas.width, waterHeight);
-
-            ctx.fillStyle = '#7a4f2b';
-            ctx.fillRect(0, ROAD_BOTTOM_Y, canvas.width, TRAIL_HEIGHT);
-
-            ctx.font = `bold ${TILE_SIZE * 0.8}px 'Poppins'`;
-            ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("Lexington Reservoir", canvas.width / 2, waterY + waterHeight / 2);
-        }
-
-        function drawCar(vehicle) {
-            const { x, y, width: w, height: h, color, baseSpeed: speed, wheelRot } = vehicle;
-            ctx.save();
-            ctx.translate(x, y);
-            drawMotionStreak(speed, w, h);
-            ctx.fillStyle = 'rgba(0,0,0,0.18)';
-            ctx.beginPath();
-            ctx.ellipse(w * 0.5, h * 0.95, w * 0.6, h * 0.18, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            const bodyGrad = ctx.createLinearGradient(0, 0, 0, h);
-            bodyGrad.addColorStop(0, lighten(color, 0.28));
-            bodyGrad.addColorStop(0.45, color);
-            bodyGrad.addColorStop(1, darken(color, 0.3));
-            ctx.fillStyle = bodyGrad;
-
-            const radius = Math.min(w, h) * 0.14;
-            ctx.beginPath();
-            ctx.moveTo(radius, h * 0.6);
-            ctx.lineTo(w - radius, h * 0.6);
-            ctx.quadraticCurveTo(w, h * 0.6, w, h * 0.5);
-            ctx.lineTo(w, h * 0.28);
-            ctx.quadraticCurveTo(w, h * 0.18, w - radius, h * 0.18);
-            ctx.lineTo(radius, h * 0.18);
-            ctx.quadraticCurveTo(0, h * 0.18, 0, h * 0.28);
-            ctx.lineTo(0, h * 0.5);
-            ctx.quadraticCurveTo(0, h * 0.6, radius, h * 0.6);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = darken(color, 0.06);
-            ctx.beginPath();
-            ctx.moveTo(radius, h * 0.62);
-            ctx.lineTo(w - radius, h * 0.62);
-            ctx.lineTo(w - radius, h * 0.88);
-            ctx.lineTo(radius, h * 0.88);
-            ctx.closePath();
-            ctx.fill();
-
-            const winH = h * 0.22;
-            const winY = h * 0.22;
-            const windowGrad = ctx.createLinearGradient(0, winY, 0, winY + winH);
-            windowGrad.addColorStop(0, 'rgba(200,230,255,0.95)');
-            windowGrad.addColorStop(1, 'rgba(120,150,190,0.55)');
-            ctx.fillStyle = windowGrad;
-            ctx.beginPath();
-            ctx.moveTo(w * 0.18, winY + 2);
-            ctx.lineTo(w * 0.82, winY + 2);
-            ctx.lineTo(w * 0.72, winY + winH - 2);
-            ctx.lineTo(w * 0.28, winY + winH - 2);
-            ctx.closePath();
-            ctx.fill();
-
-            drawWheel(w * 0.22, h * 0.88, h * 0.18, wheelRot);
-            drawWheel(w * 0.78, h * 0.88, h * 0.18, wheelRot);
-
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
-            const plateW = w * 0.14;
-            ctx.fillRect(w * 0.5 - plateW / 2, h * 0.66, plateW, h * 0.06);
-
-            const frontLightX = speed > 0 ? w - w * 0.08 : w * 0.08;
-            const rearLightX = speed > 0 ? w * 0.08 : w - w * 0.08;
-            drawHeadlight(frontLightX, h * 0.52, h * 0.10);
-            drawTaillight(rearLightX, h * 0.52, h * 0.10);
-
-            ctx.restore();
-        }
-
-        function drawTruck(vehicle) {
-            const { x, y, width: w, height: h, color, baseSpeed: speed, wheelRot } = vehicle;
-            ctx.save();
-            ctx.translate(x, y);
-            drawMotionStreak(speed, w, h);
-
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            ctx.beginPath();
-            ctx.ellipse(w * 0.5, h * 0.94, w * 0.7, h * 0.14, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            const trailerWidth = w * 0.6;
-            const cabWidth = w * 0.28;
-            const trailerX = speed > 0 ? 0 : cabWidth + w * 0.02;
-            const cabX = speed > 0 ? trailerWidth + w * 0.02 : 0;
-
-            const trailerGrad = ctx.createLinearGradient(trailerX, 0, trailerX + trailerWidth, 0);
-            trailerGrad.addColorStop(0, darken('#dfe5e8', 0.0));
-            trailerGrad.addColorStop(0.5, '#d7dde1');
-            trailerGrad.addColorStop(1, darken('#dfe5e8', 0.05));
-            ctx.fillStyle = trailerGrad;
-            ctx.beginPath();
-            ctx.roundRect(trailerX, h * 0.14, trailerWidth, h * 0.72, h * 0.04);
-            ctx.fill();
-
-            ctx.fillStyle = darken(color, 0.06);
-            ctx.beginPath();
-            ctx.roundRect(cabX, h * 0.18, cabWidth, h * 0.64, h * 0.08);
-            ctx.fill();
-
-            const wy = h * 0.92;
-            drawWheel(trailerX + trailerWidth * 0.22, wy, h * 0.14, wheelRot);
-            drawWheel(trailerX + trailerWidth * 0.5, wy, h * 0.14, wheelRot + 0.5);
-            drawWheel(trailerX + trailerWidth * 0.78, wy, h * 0.14, wheelRot + 1.0);
-            drawWheel(cabX + cabWidth * 0.55, wy, h * 0.16, wheelRot);
-
-            const cabWindowGrad = ctx.createLinearGradient(cabX, h * 0.2, cabX, h * 0.5);
-            cabWindowGrad.addColorStop(0, 'rgba(200,230,255,0.95)');
-            cabWindowGrad.addColorStop(1, 'rgba(120,150,190,0.6)');
-            ctx.fillStyle = cabWindowGrad;
-            ctx.beginPath();
-            ctx.moveTo(cabX + cabWidth * 0.12, h * 0.28);
-            ctx.lineTo(cabX + cabWidth * 0.88, h * 0.28);
-            ctx.lineTo(cabX + cabWidth * 0.7, h * 0.48);
-            ctx.lineTo(cabX + cabWidth * 0.3, h * 0.48);
-            ctx.closePath();
-            ctx.fill();
-
-            const trailerBackX = trailerX + trailerWidth;
-            drawHeadlight(cabX + cabWidth * 0.95, h * 0.56, h * 0.16);
-            drawTaillight(trailerBackX - 4, h * 0.56, h * 0.14);
-
-            ctx.restore();
-        }
-
-        function drawHeadlight(x, y, size) {
-            const glowSize = size * 2.5;
-            const lightGradient = ctx.createRadialGradient(x, y, size * 0.2, x, y, glowSize);
-            lightGradient.addColorStop(0, 'rgba(255, 255, 224, 1)');
-            lightGradient.addColorStop(0.3, 'rgba(255, 255, 224, 0.8)');
-            lightGradient.addColorStop(1, 'rgba(255, 255, 224, 0)');
-            ctx.fillStyle = lightGradient;
-            ctx.fillRect(x - glowSize, y - glowSize, glowSize * 2, glowSize * 2);
-        }
-
-        function drawTaillight(x, y, size) {
-            const glowSize = size * 2;
-            const lightGradient = ctx.createRadialGradient(x, y, size * 0.3, x, y, glowSize);
-            lightGradient.addColorStop(0, 'rgba(255, 20, 20, 1)');
-            lightGradient.addColorStop(0.5, 'rgba(200, 0, 0, 0.5)');
-            lightGradient.addColorStop(1, 'rgba(150, 0, 0, 0)');
-            ctx.fillStyle = lightGradient;
-            ctx.fillRect(x - glowSize, y - glowSize, glowSize * 2, glowSize * 2);
-        }
-
-        function drawKayakCar(vehicle) {
-            drawCar(vehicle);
-            const { x, y, width: w, height: h } = vehicle;
-            ctx.fillStyle = "#d95f26";
-            ctx.beginPath();
-            ctx.ellipse(x + w / 2, y + h * 0.05, w * 0.4, h * 0.1, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawMotorcycle(vehicle) {
-            const { x, y, width: w, height: h, color, baseSpeed, wheelRot } = vehicle;
-            ctx.save();
-            ctx.translate(x, y);
-
-            drawMotionStreak(baseSpeed, w, h);
-
-            ctx.fillStyle = 'rgba(0,0,0,0.18)';
-            ctx.beginPath();
-            ctx.ellipse(w / 2, h * 0.88, w / 2, h * 0.12, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            drawWheel(w * 0.15, h * 0.78, h * 0.2, wheelRot);
-            drawWheel(w * 0.85, h * 0.78, h * 0.2, wheelRot);
-
-            const frameGrad = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.8);
-            frameGrad.addColorStop(0, lighten(color, 0.1));
-            frameGrad.addColorStop(1, darken(color, 0.1));
-            ctx.fillStyle = frameGrad;
-            ctx.beginPath();
-            ctx.moveTo(w * 0.15, h * 0.75);
-            ctx.lineTo(w * 0.42, h * 0.4);
-            ctx.lineTo(w * 0.85, h * 0.75);
-            ctx.closePath();
-            ctx.fill();
-
-            const riderCenterX = w * 0.5;
-            const riderBodyY = h * 0.05;
-            ctx.fillStyle = '#2c3e50';
-            ctx.fillRect(riderCenterX - w * 0.1, riderBodyY + h * 0.3, w * 0.2, h * 0.4);
-            ctx.fillStyle = '#B71C1C';
-            ctx.beginPath();
-            ctx.moveTo(riderCenterX - w * 0.2, riderBodyY + h * 0.5);
-            ctx.lineTo(riderCenterX - w * 0.1, riderBodyY);
-            ctx.lineTo(riderCenterX + w * 0.2, riderBodyY);
-            ctx.lineTo(riderCenterX + w * 0.1, riderBodyY + h * 0.5);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.strokeStyle = '#B71C1C';
-            ctx.lineWidth = w * 0.15;
-            ctx.beginPath();
-            const handlebarX = baseSpeed > 0 ? riderCenterX + w * 0.35 : riderCenterX - w * 0.35;
-            ctx.moveTo(riderCenterX, riderBodyY + h * 0.1);
-            ctx.lineTo(handlebarX, h * 0.4);
-            ctx.stroke();
-
-            ctx.fillStyle = '#37474F';
-            ctx.beginPath();
-            ctx.arc(riderCenterX, riderBodyY, h * 0.18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = 'rgba(230, 245, 255, 0.8)';
-            const visorX = baseSpeed > 0 ? riderCenterX + h * 0.05 : riderCenterX - h * 0.15;
-            ctx.fillRect(visorX, riderBodyY - h * 0.08, h * 0.1, h * 0.12);
-
-            const headX = baseSpeed > 0 ? w - 2 : 2;
-            drawHeadlight(headX, h * 0.55, h * 0.13);
-
-            ctx.restore();
-        }
-
-        function drawWheel(cx, cy, r, rot = 0) {
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(rot);
-            ctx.translate(-cx, -cy);
-            ctx.fillStyle = '#222';
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#666';
-            ctx.beginPath();
-            ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#bbb';
-            ctx.beginPath();
-            ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-            ctx.lineWidth = r * 0.1;
-            for (let i = 0; i < 4; i++) {
-                const a = (Math.PI / 2) * i;
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(cx + Math.cos(a) * r * 0.85, cy + Math.sin(a) * r * 0.85);
-                ctx.stroke();
-            }
-            ctx.restore();
-        }
-
-        function drawMotionStreak(speed, w, h) {
-            const strength = Math.min(1, Math.abs(speed) * 0.6);
-            if (strength <= 0.01) return;
-            ctx.save();
-            const streakW = w * 0.6 * strength;
-            const grad = ctx.createLinearGradient(0, 0, streakW, 0);
-            if (speed > 0) {
-                grad.addColorStop(0, 'rgba(255,255,255,0.0)');
-                grad.addColorStop(1, 'rgba(255,255,255,0.08)');
-                ctx.fillStyle = grad;
-                ctx.fillRect(-streakW, h * 0.35, streakW, h * 0.4);
-            } else {
-                grad.addColorStop(0, 'rgba(255,255,255,0.08)');
-                grad.addColorStop(1, 'rgba(255,255,255,0.0)');
-                ctx.fillStyle = grad;
-                ctx.fillRect(w, h * 0.35, streakW, h * 0.4);
-            }
-            ctx.restore();
-        }
-
-        function lighten(hex, amt) {
-            const { r, g, b } = hexToRgb(hex);
-            return rgbToHex(
-                Math.min(255, Math.round(r + 255 * amt)),
-                Math.min(255, Math.round(g + 255 * amt)),
-                Math.min(255, Math.round(b + 255 * amt))
-            );
-        }
-        function darken(hex, amt) {
-            const { r, g, b } = hexToRgb(hex);
-            return rgbToHex(
-                Math.max(0, Math.round(r * (1 - amt))),
-                Math.max(0, Math.round(g * (1 - amt))),
-                Math.max(0, Math.round(b * (1 - amt)))
-            );
-        }
-        function hexToRgb(hex) {
-            const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            if (!m) return { r: 200, g: 200, b: 200 };
-            return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
-        }
-        function rgbToHex(r, g, b) {
-            return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-        }
-
-        if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
-            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-                if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
-                else r = Object.assign({ tl: 0, tr: 0, br: 0, bl: 0 }, r);
-                this.beginPath();
-                this.moveTo(x + r.tl, y);
-                this.lineTo(x + w - r.tr, y);
-                this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
-                this.lineTo(x + w, y + h - r.br);
-                this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
-                this.lineTo(x + r.bl, y + h);
-                this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
-                this.lineTo(x, y + r.tl);
-                this.quadraticCurveTo(x, y, x + r.tl, y);
-                this.closePath();
-            };
-        }
-
-        function drawBicycle(vehicle) {
-            const { x, y, width: w, height: h, color, baseSpeed, pedalPhase } = vehicle;
-            ctx.save();
-            ctx.translate(x, y);
-
-            ctx.strokeStyle = '#555'; ctx.lineWidth = w * 0.08;
-            ctx.beginPath();
-            ctx.arc(w * 0.15, h * 0.8, h * 0.18, 0, Math.PI * 2);
-            ctx.arc(w * 0.85, h * 0.8, h * 0.18, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.strokeStyle = color; ctx.lineWidth = w * 0.06;
-            ctx.beginPath();
-            ctx.moveTo(w * 0.15, h * 0.8);
-            ctx.lineTo(w * 0.5, h * 0.4);
-            ctx.lineTo(w * 0.85, h * 0.8);
-            ctx.stroke();
-
-            const bodyBob = Math.sin(pedalPhase * 2) * (h * 0.05);
-            const riderX = w * 0.5;
-            const riderY = h * 0.15 + bodyBob;
-
-            ctx.fillStyle = '#2c3e50';
-            ctx.fillRect(riderX - w * 0.15, riderY, w * 0.3, h * 0.4);
-
-            ctx.fillStyle = '#f1c40f';
-            ctx.beginPath();
-            ctx.arc(riderX, riderY, h * 0.15, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#e0aA77';
-            ctx.lineWidth = w * 0.08;
-            ctx.beginPath();
-            const handlebarX = baseSpeed > 0 ? riderX + w * 0.25 : riderX - w * 0.25;
-            ctx.moveTo(riderX, riderY + h * 0.2);
-            ctx.lineTo(handlebarX, h * 0.5);
-            ctx.stroke();
-
-            const hipY = riderY + h * 0.4;
-            const crankX = w * 0.5;
-            const crankY = h * 0.8;
-            const pedalRadius = h * 0.18;
-
-            const pedal1X = crankX + pedalRadius * Math.cos(pedalPhase);
-            const pedal1Y = crankY + pedalRadius * Math.sin(pedalPhase);
-            ctx.beginPath();
-            ctx.moveTo(riderX, hipY);
-            ctx.lineTo(pedal1X, pedal1Y);
-            ctx.stroke();
-
-            const pedal2X = crankX + pedalRadius * Math.cos(pedalPhase + Math.PI);
-            const pedal2Y = crankY + pedalRadius * Math.sin(pedalPhase + Math.PI);
-            ctx.beginPath();
-            ctx.moveTo(riderX, hipY);
-            ctx.lineTo(pedal2X, pedal2Y);
-            ctx.stroke();
-
-
-            ctx.restore();
-        }
-
-
-        function drawUI() {
-            ctx.save();
-            ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
-
-            ctx.textAlign = "left";
-            ctx.fillStyle = "rgba(0,0,0,0.62)";
-            ctx.roundRect(15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
-            ctx.fill();
-            ctx.fillStyle = "white";
-            ctx.fillText(`Score: ${score}`, 25, 15 + TILE_SIZE * 0.65);
-
-            // combo & multiplier (bottom-left overlay of score box)
-            ctx.font = `400 ${TILE_SIZE * 0.35}px 'Poppins'`;
-            ctx.fillStyle = combo > 1 ? (combo >= 6 ? '#ffbf00' : '#50e3c2') : 'rgba(255,255,255,0.6)';
-            ctx.fillText(`x${comboMultiplier.toFixed(1)} Combo:${combo}`, 25, 15 + TILE_SIZE * 1.0);
-            ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
-
-            ctx.textAlign = "right";
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.roundRect(canvas.width - TILE_SIZE * 3.5 - 15, 15, TILE_SIZE * 3.5, TILE_SIZE * 1, 10);
-            ctx.fill();
-            ctx.fillStyle = "white";
-            ctx.fillText(`Lives: ${lives}`, canvas.width - 25, 15 + TILE_SIZE * 0.65);
-
-            ctx.textAlign = "center";
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.roundRect(canvas.width / 2 - TILE_SIZE * 4, 15, TILE_SIZE * 8, TILE_SIZE * 1, 10);
-            ctx.fill();
-            ctx.fillStyle = "white";
-            const topGlobal = leaderboardEntries.length ? leaderboardEntries[0].score : 0;
-            const centerText = playerName ? `${playerName} Best: ${globalHighScoreForPlayer || 0}  |  Top Score: ${topGlobal}` : `Top Score: ${topGlobal}`;
-            ctx.fillText(centerText, canvas.width / 2, 15 + TILE_SIZE * 0.65);
-
-            // daily best small label
-            ctx.font = `400 ${TILE_SIZE * 0.3}px 'Poppins'`;
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.fillText(`Daily Best: ${dailyBest}`, canvas.width / 2, 15 + TILE_SIZE * 1.05);
-            ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
-
-            // shield indicator top-left corner of lives box
-            if (playerHasShield) {
-                ctx.save();
-                ctx.strokeStyle = '#50e3c2';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.arc(canvas.width - TILE_SIZE * 0.9, 15 + TILE_SIZE * 0.5, TILE_SIZE * 0.3, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.font = `700 ${TILE_SIZE * 0.35}px 'Poppins'`;
-                ctx.fillStyle = '#50e3c2';
-                ctx.fillText('S', canvas.width - TILE_SIZE * 0.9, 15 + TILE_SIZE * 0.6);
-                ctx.restore();
-            }
-
-            ctx.restore();
-
-            if (gameTime < hitFlashUntil) {
-                ctx.save();
-                ctx.fillStyle = 'rgba(255,0,0,0.18)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.restore();
-            }
-
-            if (paused && !gameOver) {
-                drawPauseOverlay();
-            }
-        }
-
-        function drawReflections() {
-            if (!raining) return;
-            const reflectHeight = TILE_SIZE * 1.2;
-            ctx.save();
-            ctx.globalCompositeOperation = 'lighter';
-            ctx.globalAlpha = 0.06;
-            for (let i = 0; i < vehicles.length; i++) {
-                const v = vehicles[i];
-                const rx = v.x + v.width * 0.5;
-                const ry = v.y + v.height * 0.95;
-                const grad = ctx.createLinearGradient(0, ry, 0, ry + reflectHeight);
-                grad.addColorStop(0, 'rgba(200,220,255,0.5)');
-                grad.addColorStop(1, 'rgba(200,220,255,0.0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.ellipse(rx, ry + reflectHeight * 0.2, v.width * 0.6, reflectHeight * 0.6, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            if (newt) {
-                const rx = newt.x + newt.width * 0.5;
-                const ry = newt.y + newt.height * 0.95;
-                const grad = ctx.createLinearGradient(0, ry, 0, ry + reflectHeight);
-                grad.addColorStop(0, 'rgba(255,220,200,0.32)');
-                grad.addColorStop(1, 'rgba(255,220,200,0.0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.ellipse(rx, ry + reflectHeight * 0.2, newt.width * 0.6, reflectHeight * 0.6, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.restore();
-        }
-
-        function drawVignette() {
-            const vAlpha = 0.25;
-            ctx.save();
-            const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.25, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.9);
-            grad.addColorStop(0, `rgba(0,0,0,0)`);
-            grad.addColorStop(1, `rgba(0,0,0,${vAlpha})`);
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.restore();
-        }
-
-        function drawGameOver() {
-            ctx.fillStyle = "rgba(26, 26, 42, 0.85)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--danger-color');
-            ctx.textAlign = "center";
-            ctx.font = `bold ${TILE_SIZE * 1.5}px 'Poppins'`;
-            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - TILE_SIZE * 1.5);
-
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
-            ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
-            ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 - TILE_SIZE * 0.2);
-            ctx.fillStyle = '#fff';
-            ctx.font = `400 ${TILE_SIZE * 0.55}px 'Poppins'`;
-            ctx.fillText(`Raw Crossings: ${rawCrossings}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.4);
-
-            if (playerName) {
-                ctx.fillStyle = "#f0f0f0";
-                ctx.font = `400 ${TILE_SIZE * 0.6}px 'Poppins'`;
-                ctx.fillText(`${playerName} Best: ${globalHighScoreForPlayer || score}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.6);
-            }
-
-            const completedGoals = dailyGoals.filter(g => g.progress >= g.target).length;
-            if (completedGoals > 0) {
-                ctx.fillStyle = '#ffd700';
-                ctx.font = `600 ${TILE_SIZE * 0.5}px 'Poppins'`;
-                ctx.fillText(`🎯 Daily Goals Completed: ${completedGoals}/${dailyGoals.length}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.0);
-            }
-
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
-            ctx.font = `600 ${TILE_SIZE * 0.8}px 'Poppins'`;
-            ctx.fillText('Top 5 Scores', canvas.width / 2, canvas.height / 2 + TILE_SIZE * 1.8);
-            ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
-            leaderboardEntries.forEach((e, i) => {
-                ctx.fillStyle = '#fff';
-                const medal = i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '';
-                ctx.fillText(`${medal}${e.name}: ${e.score}`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * (2.4 + i * 0.6));
-            });
-            ctx.fillStyle = "white";
-            ctx.font = `400 ${TILE_SIZE * 0.5}px 'Poppins'`;
-            ctx.fillText("Tap or Press Enter to Restart", canvas.width / 2, canvas.height / 2 + TILE_SIZE * (2.5 + leaderboardEntries.length * 0.6));
-            // show unlocked summary small
-            const unlockedCount = Object.values(achievements).filter(a => a.unlocked).length;
-            ctx.font = `400 ${TILE_SIZE * 0.4}px 'Poppins'`;
-            ctx.fillText(`${unlockedCount} Achievements Unlocked Today`, canvas.width / 2, canvas.height / 2 + TILE_SIZE * (3.1 + leaderboardEntries.length * 0.6));
-        }
-
-
-        function gameLoop(timestamp) {
-            if (!lastFrameTime) {
-                lastFrameTime = timestamp;
-            }
-            let deltaTime = (timestamp - lastFrameTime) / 1000;
-            lastFrameTime = timestamp;
-            gameTime = timestamp;
-
-            if (gameOver) {
-                draw();
-                return;
-            }
-            if (paused) {
-                draw();
-                requestAnimationFrame(gameLoop);
-                return;
-            }
-
-            update(deltaTime);
-            draw();
-
-            if (Math.floor(gameTime / 10000) > Math.floor((gameTime - deltaTime * 1000) / 10000)) {
-                saveDailyProgress();
-            }
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        function drawPauseOverlay() {
-            ctx.fillStyle = 'rgba(26, 26, 42, 0.6)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
-            ctx.textAlign = 'center';
-            ctx.font = `bold ${TILE_SIZE * 1.3}px 'Poppins'`;
-            ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - TILE_SIZE * 0.5);
-            ctx.fillStyle = '#fff';
-            ctx.font = `400 ${TILE_SIZE * 0.6}px 'Poppins'`;
-            ctx.fillText('Press P or tap ▶ to resume', canvas.width / 2, canvas.height / 2 + TILE_SIZE * 0.6);
-        }
-
-        init();
-
-        function scheduleNextCollectible(now) {
-            const ref = typeof now === 'number' ? now : performance.now();
-            nextCollectibleSpawnAt = ref + (COLLECTIBLE_SPAWN_INTERVAL * (0.6 + Math.random() * 0.8));
-        }
-
-        function spawnCollectible(type) {
-            const weighted = ['firefly', 'firefly', 'firefly', 'shield', 'worm', 'slug', 'clover', 'egg', 'firefly'];
-            const cType = type || weighted[Math.floor(Math.random() * weighted.length)];
-            const y = ROAD_BOTTOM_Y + Math.random() * (canvas.height - ROAD_BOTTOM_Y - TILE_SIZE * 2);
-            const x = Math.random() * (canvas.width - TILE_SIZE) + TILE_SIZE / 2;
-            collectibles.push({ id: Date.now() + Math.random(), x, y, type: cType, created: gameTime, pulse: Math.random() * Math.PI * 2 });
-        }
-
-        function updateCollectibles() {
-            if (gameTime >= nextCollectibleSpawnAt && collectibles.length < 5 && !paused) {
-                spawnCollectible();
-                scheduleNextCollectible(gameTime);
-            }
-            collectibles = collectibles.filter(c => gameTime - c.created < 20000);
-            collectibles.forEach(c => c.pulse += 0.05);
-        }
-
-        function drawCollectibles() {
-            if (!collectibles.length) return;
-            collectibles.forEach(c => {
-                ctx.save();
-                const size = TILE_SIZE * (c.type === 'shield' ? 0.45 : 0.35);
-                const pulseScale = 1 + Math.sin(c.pulse * 3) * 0.15;
-                ctx.translate(c.x, c.y);
-                if (c.type === 'firefly') {
-                    const grad = ctx.createRadialGradient(0, 0, size * 0.1, 0, 0, size * 1.4);
-                    grad.addColorStop(0, 'rgba(255, 240, 120, 0.95)');
-                    grad.addColorStop(0.4, 'rgba(255, 200, 50, 0.6)');
-                    grad.addColorStop(1, 'rgba(255, 160, 0, 0)');
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, size * pulseScale, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (c.type === 'shield') {
-                    ctx.strokeStyle = '#50e3c2';
-                    ctx.lineWidth = 3;
-                    ctx.globalAlpha = 0.85;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, size * pulseScale, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.globalAlpha = 0.25;
-                    ctx.fillStyle = '#50e3c2';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, size * 0.7 * pulseScale, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (c.type === 'worm') {
-                    ctx.fillStyle = '#b87333';
-                    ctx.beginPath();
-                    for (let i = 0; i < 6; i++) { ctx.ellipse(-size * 0.6 + i * size * 0.25, Math.sin(c.pulse * 4 + i) * size * 0.15, size * 0.18, size * 0.22, 0, 0, Math.PI * 2); }
-                    ctx.fill();
-                } else if (c.type === 'slug') {
-                    ctx.fillStyle = '#6c9a3a';
-                    ctx.beginPath();
-                    ctx.ellipse(0, 0, size * 0.9, size * 0.45, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#88c452';
-                    ctx.beginPath();
-                    ctx.ellipse(-size * 0.2, -size * 0.1, size * 0.25, size * 0.18, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (c.type === 'clover') {
-                    ctx.fillStyle = '#2e8b57';
-                    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(Math.cos(i * Math.PI / 2) * size * 0.35, Math.sin(i * Math.PI / 2) * size * 0.35, size * 0.3, size * 0.25, 0, 0, Math.PI * 2); ctx.fill(); }
-                } else if (c.type === 'egg') {
-                    ctx.fillStyle = '#f2e6c9';
-                    ctx.beginPath();
-                    ctx.ellipse(0, 0, size * 0.4, size * 0.55, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.restore();
-            });
-        }
-
-        function checkCollectibleCollisions() {
-            const n = newt;
-            if (!n) return;
-            collectibles = collectibles.filter(c => {
-                const dx = Math.abs(c.x - (n.x + n.width / 2));
-                const dy = Math.abs(c.y - (n.y + n.height / 2));
-                if (dx < n.width * 0.7 && dy < n.height * 0.7) {
-                    if (c.type === 'firefly') {
-                        const add = 2 * comboMultiplier;
-                        score = Math.round(score + add);
-                        totalFirefliesCollected++;
-                        updateGoalProgress('fireflies', 1);
-                        addNotification(`+${add} firefly`);
-                        playSound('collect');
-                        unlockAchievement('collect1', 'First Firefly');
-                        triggerScreenEffect('success');
-                    } else if (c.type === 'shield') {
-                        playerHasShield = true;
-                        addNotification('Shield Acquired');
-                        unlockAchievement('shield1', 'Protective Slime: Got a shield');
-                        playSound('shield');
-                        triggerScreenEffect('success');
-                    } else if (c.type === 'worm') {
-                        if (lives < 5) { lives++; addNotification('Life +1'); playSound('collect'); }
-                        unlockAchievement('worm1', 'Found a Worm');
-                        triggerScreenEffect('success');
-                    } else if (c.type === 'slug') {
-                        trafficSlowUntil = gameTime + 6000;
-                        addNotification('Traffic Slowed');
-                        unlockAchievement('slug1', 'Slug Slowdown');
-                        playSound('collect');
-                        triggerScreenEffect('success');
-                    } else if (c.type === 'clover') {
-                        luckActive = true;
-                        addNotification('Luck Active');
-                        unlockAchievement('clover1', 'Lucky Clover');
-                        playSound('collect');
-                        triggerScreenEffect('success');
-                    } else if (c.type === 'egg') {
-                        const add2 = Math.round(5 * comboMultiplier);
-                        score += add2;
-                        nextCrossingBonus += 2;
-                        addNotification(`Egg +${add2}`);
-                        unlockAchievement('egg1', 'Newt Egg Bonus');
-                        playSound('collect');
-                        triggerScreenEffect('success');
-                    }
-                    return false;
-                }
-                return true;
-            });
-        }
-
-        /* Achievements */
-        function loadAchievements() {
-            try { achievements = JSON.parse(localStorage.getItem('newt_achievements') || '{}'); } catch (e) { achievements = {}; }
-        }
-        function saveAchievements() {
-            try { localStorage.setItem('newt_achievements', JSON.stringify(achievements)); } catch (e) { }
-        }
-        function unlockAchievement(key, label) {
-            if (!achievements[key]) achievements[key] = { unlocked: false, label };
-            if (!achievements[key].unlocked) {
-                achievements[key].unlocked = true;
-                achievements[key].label = label;
-                addNotification(label, '#50e3c2');
-                saveAchievements();
-            }
-        }
-
-        function addNotification(text, color) {
-            notifications.push({ id: Date.now() + Math.random(), text, color: color || '#ffd760', created: gameTime });
-            if (notifications.length > 5) notifications.shift();
-        }
-        function drawNotifications() {
-            const life = 4000;
-            const baseY = TILE_SIZE * 2.2;
-            notifications = notifications.filter(n => gameTime - n.created < life);
-            notifications.forEach((n, i) => {
-                const age = gameTime - n.created;
-                const alpha = age < 300 ? age / 300 : (age > life - 400 ? (life - age) / 400 : 1);
-                const y = baseY + i * (TILE_SIZE * 0.55);
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, alpha);
-                ctx.font = `600 ${TILE_SIZE * 0.45}px 'Poppins'`;
-                ctx.textAlign = 'center';
-                ctx.fillStyle = 'rgba(0,0,0,0.55)';
-                const w = ctx.measureText(n.text).width + 30;
-                ctx.roundRect(canvas.width / 2 - w / 2, y - TILE_SIZE * 0.45, w, TILE_SIZE * 0.8, 12);
-                ctx.fill();
-                ctx.fillStyle = n.color;
-                ctx.fillText(n.text, canvas.width / 2, y);
-                ctx.restore();
-            });
-        }
-
-        function initDaily() {
-            const dateStr = new Date().toISOString().slice(0, 10);
-            dailySeed = hashString(dateStr) & 0xffffffff;
-            try { dailyBest = parseInt(localStorage.getItem('newt_daily_' + dateStr) || '0', 10); } catch (e) { dailyBest = 0; }
-
-            initDailyGoals();
-            loadDailyProgress();
-            updateDailyGoalsDisplay();
-        }
-
-        function initDailyGoals() {
-            const today = new Date().toISOString().slice(0, 10);
-
-            dailyGoals = [
-                {
-                    id: 'crossings',
-                    label: 'Cross the Road',
-                    target: Math.max(5, Math.floor(dailyBest / 3)),
-                    progress: 0,
-                    reward: 'Score +50',
-                    emoji: '🛣️'
-                },
-                {
-                    id: 'fireflies',
-                    label: 'Collect Fireflies',
-                    target: Math.max(3, Math.floor(dailyBest / 5)),
-                    progress: 0,
-                    reward: 'Score +30',
-                    emoji: '🌟'
-                },
-                {
-                    id: 'combo',
-                    label: 'Achieve Combo',
-                    target: Math.max(5, Math.floor(dailyBest / 4)),
-                    progress: 0,
-                    reward: 'Score +40',
-                    emoji: '🔥'
-                },
-                {
-                    id: 'sessions',
-                    label: 'Play Games',
-                    target: 3,
-                    progress: 0,
-                    reward: 'Score +20',
-                    emoji: '🎮'
-                }
-            ];
-        }
-
-        function loadDailyProgress() {
-            const today = new Date().toISOString().slice(0, 10);
-            try {
-                const saved = localStorage.getItem('newt_daily_progress_' + today);
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    goalProgress = data.progress || {};
-                    totalFirefliesCollected = data.totalFirefliesCollected || 0;
-                    totalShieldsUsed = data.totalShieldsUsed || 0;
-                    totalCrossingsToday = data.totalCrossingsToday || 0;
-                    gameSessionCount = data.gameSessionCount || 0;
-                    maxComboToday = data.maxComboToday || 0;
-
-                    dailyGoals.forEach(goal => {
-                        if (goalProgress[goal.id] !== undefined) {
-                            goal.progress = goalProgress[goal.id];
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn('Error loading daily progress:', e);
-            }
-        }
-
-        function saveDailyProgress() {
-            const today = new Date().toISOString().slice(0, 10);
-            const data = {
-                progress: goalProgress,
-                totalFirefliesCollected,
-                totalShieldsUsed,
-                totalCrossingsToday,
-                gameSessionCount,
-                maxComboToday
-            };
-            try {
-                localStorage.setItem('newt_daily_progress_' + today, JSON.stringify(data));
-            } catch (e) {
-                console.warn('Error saving daily progress:', e);
-            }
-        }
-
-        function updateDailyGoalsDisplay() {
-            const goalsList = document.getElementById('daily-goals-list');
-            if (!goalsList) return;
-
-            goalsList.innerHTML = '';
-
-            dailyGoals.forEach(goal => {
-                const isCompleted = goal.progress >= goal.target;
-                const progressPercent = Math.min(100, (goal.progress / goal.target) * 100);
-
-                const goalElement = document.createElement('div');
-                goalElement.className = 'goal-item';
-                goalElement.innerHTML = `
-                    <div class="goal-label">
-                        <span>${goal.emoji} ${goal.label}</span>
-                        <span>${goal.progress}/${goal.target}</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill ${isCompleted ? 'completed' : ''}" 
-                             style="width: ${progressPercent}%"></div>
-                    </div>
-                    <div class="goal-reward">${isCompleted ? '✅' : '🎁'} ${goal.reward}</div>
-                `;
-
-                goalsList.appendChild(goalElement);
-            });
-        }
-
-        function updateGoalProgress(goalId, increment = 1) {
-            if (!goalProgress[goalId]) goalProgress[goalId] = 0;
-
-            const goal = dailyGoals.find(g => g.id === goalId);
-            if (goal && goal.progress < goal.target) {
-                const wasCompleted = goal.progress >= goal.target;
-                goal.progress = Math.min(goal.target, goal.progress + increment);
-                goalProgress[goalId] = goal.progress;
-
-                const isNowCompleted = goal.progress >= goal.target;
-                if (!wasCompleted && isNowCompleted) {
-                    addNotification(`🎉 Daily Goal Complete: ${goal.label}!`, '#ffd700');
-                    playSound('collect');
-                    triggerScreenEffect('success');
-
-                    const bonusPoints = parseInt(goal.reward.match(/\d+/)[0]);
-                    score += bonusPoints;
-                    addNotification(`+${bonusPoints} Bonus Points!`, '#50e3c2');
-                }
-
-                updateDailyGoalsDisplay();
-                saveDailyProgress();
-            }
-        }
-        function updateDailyBest() {
-            const dateStr = new Date().toISOString().slice(0, 10);
-            if (score > dailyBest) {
-                dailyBest = score;
-                try { localStorage.setItem('newt_daily_' + dateStr, String(dailyBest)); } catch (e) { }
-                addNotification('New Daily Best!');
-            }
-        }
-
-        function updateComboMeter() {
-            const comboMeter = document.getElementById('combo-meter');
-            const comboText = document.getElementById('combo-text');
-            const comboFill = document.getElementById('combo-fill');
-            const comboMilestoneText = document.getElementById('combo-milestone');
-
-            if (!comboMeter) return;
-
-            if (combo > 0) {
-                comboMeter.style.display = 'block';
-                comboText.textContent = `Combo: ${combo}`;
-
-                if (combo > maxComboToday) {
-                    maxComboToday = combo;
-                    updateGoalProgress('combo', combo - (maxComboToday - 1));
-                }
-
-                const progressToNext = (combo / nextMilestone) * 100;
-                const clampedProgress = Math.min(100, progressToNext);
-                comboFill.style.width = `${clampedProgress}%`;
-
-                if (combo >= nextMilestone) {
-                    comboMeter.classList.add('milestone');
-                    comboFill.classList.add('milestone');
-                    comboMilestoneText.textContent = `🏆 Milestone Reached!`;
-
-                    addNotification(`🔥 ${nextMilestone} Combo Milestone!`, '#ffd700');
-                    triggerScreenEffect('milestone');
-                    playSound('shield');
-
-                    milestoneIndex++;
-                    if (milestoneIndex < comboMilestones.length) {
-                        nextMilestone = comboMilestones[milestoneIndex];
-                    } else {
-                        nextMilestone = combo + 5;
-                    }
-
-                    setTimeout(() => {
-                        comboMeter.classList.remove('milestone');
-                        comboFill.classList.remove('milestone');
-                    }, 2000);
-                } else {
-                    comboMilestoneText.textContent = `Next: ${nextMilestone}`;
-                }
-            } else {
-                comboMeter.style.display = 'none';
-                milestoneIndex = 0;
-                nextMilestone = comboMilestones[0];
-            }
-        }
-
-        function triggerScreenEffect(type) {
-            const canvas = document.getElementById('gameCanvas');
-            if (!canvas) return;
-
-            if (type === 'hit') {
-                canvas.classList.add('shake');
-                setTimeout(() => canvas.classList.remove('shake'), 500);
-
-                if (navigator.vibrate) {
-                    navigator.vibrate([100, 50, 100]);
-                }
-            } else if (type === 'success' || type === 'milestone') {
-                const flash = document.createElement('div');
-                flash.className = 'screen-flash';
-                if (type === 'milestone') {
-                    flash.style.background = 'radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%)';
-                }
-                document.body.appendChild(flash);
-
-                setTimeout(() => {
-                    document.body.removeChild(flash);
-                }, 300);
-
-                if (navigator.vibrate) {
-                    navigator.vibrate(type === 'milestone' ? [50, 25, 50, 25, 50] : [50]);
-                }
-            }
-        }
-        function hashString(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-
-        const baseCreateVehicles = createVehicles;
-        createVehicles = function () {
-            vehicles = [];
-            const lanes = [
-                { y: ROAD_CENTER_Y - TILE_SIZE * 1.8, speed: -2.8 },
-                { y: ROAD_CENTER_Y + TILE_SIZE * 0.3, speed: 2.2 },
-            ];
-            if (rawCrossings >= 5 || score >= 20) {
-                lanes.push({ y: ROAD_CENTER_Y - TILE_SIZE * 0.5, speed: 3.3 });
-            }
-            if (rawCrossings >= 12 || score >= 45) {
-                lanes.push({ y: ROAD_CENTER_Y + TILE_SIZE * 1.6, speed: -3.6 });
-            }
-            lanes.forEach(lane => {
-                const baseVehicleCount = 2;
-                const numVehicles = Math.floor(Math.random() * 2) + baseVehicleCount + Math.min(2, Math.floor(rawCrossings / 8));
-                const laneVehicles = [];
-                for (let i = 0; i < numVehicles * 4; i++) {
-                    const typeKey = weightedVehicleTypes[Math.floor(Math.random() * weightedVehicleTypes.length)];
-                    const template = vehicleTemplates[typeKey];
-                    const w = TILE_SIZE * template.width;
-                    const x = Math.random() * canvas.width * 1.2 + i * (canvas.width / numVehicles * 0.9);
-                    const v = { type: typeKey, x, y: lane.y, width: w, height: TILE_SIZE * template.heightMultiplier, baseSpeed: lane.speed, color: carColors[Math.floor(Math.random() * carColors.length)], wheelRot: Math.random() * Math.PI * 2 };
-                    if (v.type === 'bicycle') v.pedalPhase = Math.random() * Math.PI * 2;
-                    laneVehicles.push(v);
-                }
-                laneVehicles.sort((a, b) => a.x - b.x);
-                const spaced = [];
-                const baseSpacing = TILE_SIZE * 3.0;
-                const minSpacingReduction = Math.min(1.0, (score / 10) + (rawCrossings / 12));
-                const minSpacing = baseSpacing - (baseSpacing - TILE_SIZE * 1.5) * minSpacingReduction;
-                laneVehicles.forEach(v => { const last = spaced[spaced.length - 1]; if (!last || v.x - (last.x + last.width) > minSpacing) spaced.push(v); });
-                spaced.forEach(v => vehicles.push(v));
-            });
-        };
-
-        function ensureAudio() { if (!audioCtx && !muted) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } }
-        function playSound(type) {
-            if (muted) return;
-            ensureAudio();
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.connect(g).connect(audioCtx.destination);
-            if (type === 'cross') { o.frequency.value = 660; } else if (type === 'collect') { o.frequency.value = 880; } else if (type === 'hit') { o.frequency.value = 90; } else if (type === 'shield') { o.frequency.value = 400; }
-            o.type = type === 'hit' ? 'sawtooth' : 'sine';
-            g.gain.setValueAtTime(0.001, now);
-            g.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
-            g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-            o.start(now);
-            o.stop(now + 0.4);
-        }
-        function toggleMute() { muted = !muted; const btn = document.getElementById('muteBtn'); if (btn) btn.textContent = muted ? '🔇' : '🔊'; if (!muted) ensureAudio(); }
-
-        addNotification('Welcome! Collect items!', '#50e3c2');
-        unlockAchievement('session_start', 'Session Started');
-
-        initDaily();
-        updateComboMeter();
-
-    </script>
+        this.rainGfx.lineStyle(1,0xaec6e0,d.a);
+        this.rainGfx.lineBetween(d.x,d.y,d.x-d.len*.12,d.y+d.len);
+      });
+      /* draw splashes */
+      this.rainSplashes=this.rainSplashes.filter(s=>{
+        const age=time-s.t;
+        if(age>300) return false;
+        const a=1-age/300;
+        const r=s.r+age*.015;
+        this.rainGfx.lineStyle(1,0xc8ddf0,a*.4);
+        this.rainGfx.strokeCircle(s.x,s.y,r);
+        return true;
+      });
+      /* slight overlay tint for atmosphere */
+      this.rainGfx.fillStyle(0x5577aa,.04);
+      this.rainGfx.fillRect(0,0,W,H);
+      if(time>this.rainEndAt){
+        this.raining=false; this.rainDrops=[]; this.rainSplashes=[];
+        this.rainNextAt=time+Phaser.Math.Between(10000,25000);
+      }
+    }
+
+    /* ── HUD ─────────────────────────────────────────────── */
+    this.scoreTxt.setText('Score: '+this.score);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LAUNCH
+   ═══════════════════════════════════════════════════════════════ */
+function launchGame(){
+  const wr=document.getElementById('game-wrapper').getBoundingClientRect();
+  window._game=new Phaser.Game({
+    type:Phaser.AUTO,
+    parent:'game-wrapper',
+    width:Math.round(wr.width),
+    height:Math.round(wr.height),
+    backgroundColor:'#1a1a2a',
+    physics:{default:'arcade',arcade:{debug:false,gravity:{y:0}}},
+    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
+    scene:[GameScene]
+  });
+}
+</script>
 </body>
-
 </html>
