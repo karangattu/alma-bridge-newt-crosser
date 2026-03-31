@@ -78,13 +78,19 @@ function updLB(){const el=document.getElementById('lbList');if(!el)return;el.inn
 
 /* ─── audio ───────────────────────────────────────────────── */
 function ensureAudio(){if(!audioCtx&&!muted)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+function resumeAudio(){if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});}
 function sfx(type){if(muted)return;ensureAudio();if(!audioCtx)return;
-  const n=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
-  o.connect(g).connect(audioCtx.destination);
-  if(type==='cross'){o.frequency.value=660;o.type='sine';}
-  else if(type==='hit'){o.frequency.value=90;o.type='sawtooth';}
-  g.gain.setValueAtTime(.001,n);g.gain.exponentialRampToValueAtTime(.15,n+.01);
-  g.gain.exponentialRampToValueAtTime(.0001,n+.25);o.start(n);o.stop(n+.3);}
+  resumeAudio();
+  try{
+    const n=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    if(type==='cross'){o.frequency.value=660;o.type='sine';}
+    else if(type==='hit'){o.frequency.value=90;o.type='sawtooth';}
+    g.gain.setValueAtTime(.001,n);g.gain.exponentialRampToValueAtTime(.15,n+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,n+.25);
+    o.start(n);o.stop(n+.3);
+    o.onended=()=>{o.disconnect();g.disconnect();};
+  }catch(e){/* recreation fallback */ audioCtx=null;}}
 
 /* ─── helpers ─────────────────────────────────────────────── */
 function hexNum(h){return parseInt(h.replace('#',''),16);}
@@ -103,6 +109,7 @@ nameIn.addEventListener('input',()=>{playerName=nameIn.value.trim();});
 window.addEventListener('load',()=>setTimeout(()=>nameIn.focus(),300));
 playBtn.addEventListener('click',()=>{
   playerName=nameIn.value.trim()||playerName;
+  ensureAudio();resumeAudio();
   splash.style.opacity='0';splash.style.pointerEvents='none';
   if(window._game) window._game.scene.getScene('Game').scene.restart();
   else launchGame();
@@ -632,8 +639,9 @@ class GameScene extends Phaser.Scene {
     this.rainGfx=this.add.graphics().setDepth(8);
     this.rainDrops=[];
     this.raining=false;
-    this.rainNextAt=3000+Math.random()*8000;   // first rain after 3-11s
+    this.rainNextAt=0;   // will be set properly on first update frame
     this.rainEndAt=0;
+    this._rainInitialized=false;
     this.rainSplashes=[];
 
     /* ── splats & cleaner (volunteer) ────────────────────── */
@@ -777,6 +785,8 @@ class GameScene extends Phaser.Scene {
     this.splats.push({sprite:sp,t:this.time.now});
     if(this.clState==='idle'&&this.splats.length) this.activateCleaner(this.splats[0]);
     this.newtAlive=false;
+    /* kill any active newt tweens so they don't fight the respawn */
+    this.tweens.killTweensOf(this.newt);
     this.newt.setVisible(false);
     this.lives--;
     this.updateLives();
@@ -806,7 +816,10 @@ class GameScene extends Phaser.Scene {
   /* ── reset newt ────────────────────────────────────────── */
   resetNewt(){
     const W=this.scale.width;
+    /* kill any lingering tweens on the newt before resetting */
+    this.tweens.killTweensOf(this.newt);
     this.newt.setPosition(W/2,this.SPAWN_Y).setVisible(true).setAlpha(1);
+    this.newt.setScale(1);
     this.newt.angle=0; this.targetAng=0; this.newtAlive=true;
 
     /* brief invulnerability so the newt can't be hit immediately */
@@ -816,6 +829,7 @@ class GameScene extends Phaser.Scene {
       targets:this.newt, alpha:{from:0.4,to:1}, duration:100, repeat:5, yoyo:true,
       onComplete:()=>{
         this.newt.setAlpha(1);         // guarantee fully opaque
+        this.newt.setScale(1);         // guarantee normal scale
         this.invulnerable=false;
       }
     });
@@ -954,14 +968,15 @@ class GameScene extends Phaser.Scene {
       const minFollow=this.TS*2.2;   // minimum following distance
       /* find nearest vehicle AHEAD in the same lane */
       let nearestDist=Infinity;
+      const wrapW=W+v.width*2;   // total wrap cycle width
       vehs.forEach(o=>{
         if(!o||!o.active||o===v) return;
         if(Math.abs(o.y-v.y)>this.TS) return;          // different lane
         /* "ahead" depends on lane direction */
-        const gap=v.dir>0?(o.x-v.x):(v.x-o.x);
-        /* wrap-around: if gap is very negative, the other vehicle looped */
-        const gapW=gap<-W*.3?gap+W+o.width+v.width:gap;
-        if(gapW>0 && gapW<nearestDist) nearestDist=gapW;
+        let gap=v.dir>0?(o.x-v.x):(v.x-o.x);
+        /* normalize gap into [0, wrapW) to handle wrap-around correctly */
+        gap=((gap%wrapW)+wrapW)%wrapW;
+        if(gap>0 && gap<nearestDist) nearestDist=gap;
       });
       /* if too close, slow down to match / brake */
       if(nearestDist<minFollow){
@@ -1005,6 +1020,8 @@ class GameScene extends Phaser.Scene {
 
     /* ── rain ─────────────────────────────────────────────── */
     this.rainGfx.clear();
+    /* initialize rain timing on first update using actual game time */
+    if(!this._rainInitialized){ this.rainNextAt=time+3000+Math.random()*8000; this._rainInitialized=true; }
     if(!this.raining){
       if(time>this.rainNextAt){
         this.raining=true;
