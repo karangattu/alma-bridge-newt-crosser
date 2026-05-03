@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-LZ4SSN195H"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-LZ4SSN195H');</script>
 <style>
@@ -92,32 +93,57 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 /* ═══════════════════════════════════════════════════════════════
    GLOBALS
    ═══════════════════════════════════════════════════════════════ */
-const SHEET_URL='https://script.google.com/macros/s/AKfycbzPFFLo3mlmKZahdFkPa8-8rdO2GkSYQaLuL_N1zBwLpf6L9LRX4QtS6hYrksmeRNlS5w/exec';
+const _supabase = window.supabase;
+const supabaseUrl = 'https://ovwktjjeoowlktdfbuuu.supabase.co';
+const supabaseKey = 'sb_publishable_B2pz5WTA3UEVUeKACIgmBw_8_r0S3kU';
+const supabaseClient = _supabase.createClient(supabaseUrl, supabaseKey);
+
 let playerName='', leaderboardEntries=[], globalHigh=0, topScore=0, topScoreName='';
 let audioCtx=null, muted=false;
 
 /* ─── leaderboard ─── */
 async function fetchLB(){
   try{
-    const r=await fetch(SHEET_URL+'?t='+Date.now(),{cache:'no-store'});
-    if(!r.ok) return;
-    const d=await r.json();
-    leaderboardEntries=Array.isArray(d.top)?d.top.slice(0,5):[];
+    const { data, error } = await supabaseClient
+      .from('alma_bridge_newt_crosser_scores')
+      .select('name, score')
+      .order('score', { ascending: false })
+      .limit(5);
+      
+    if (error) throw error;
+    
+    leaderboardEntries = data || [];
     if(leaderboardEntries[0]){
       topScore=leaderboardEntries[0].score||0;
       topScoreName=leaderboardEntries[0].name||'';
     }
+    
     if(playerName){
-      const me=(d.all||[]).find(x=>x.name===playerName);
-      if(me) globalHigh=me.score;
+      const { data: myData, error: myError } = await supabaseClient
+        .from('alma_bridge_newt_crosser_scores')
+        .select('score')
+        .eq('name', playerName)
+        .order('score', { ascending: false })
+        .limit(1);
+        
+      if (!myError && myData && myData.length > 0) {
+        globalHigh = myData[0].score;
+      }
     }
     const el=document.getElementById('hiScore');
     if(el) el.textContent=topScore?(topScore+(topScoreName?' · '+topScoreName:'')):'—';
-  }catch(e){}
+  }catch(e){ console.error("Leaderboard fetch error:", e); }
 }
+
 async function submitScore(s){
   if(!playerName||s<=0) return;
-  try{await fetch(SHEET_URL,{method:'POST',body:new URLSearchParams({name:playerName,score:String(s)})}); fetchLB();}catch(e){}
+  try{
+    const { error } = await supabaseClient
+      .from('alma_bridge_newt_crosser_scores')
+      .insert([{ name: playerName, score: s }]);
+    if (error) throw error;
+    fetchLB();
+  }catch(e){ console.error("Score submit error:", e); }
 }
 
 /* ─── audio ─── */
