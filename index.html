@@ -508,6 +508,7 @@ class GameScene extends Phaser.Scene {
     this.load.image('suv_img', 'assets/suv.png');
     this.load.image('truck_img', 'assets/truck.png');
     this.load.image('moto_img', 'assets/moto.png');
+    this.load.image('cyclist_img', 'assets/cyclist.png');
   }
 
   create(){
@@ -540,7 +541,8 @@ class GameScene extends Phaser.Scene {
       {name:'sedan_img', wm:2.5, hm:1.25, spd:1.0,  weight:10},
       {name:'suv_img'  , wm:2.8, hm:1.45, spd:.9 ,  weight:6},
       {name:'truck_img', wm:3.5, hm:1.5 , spd:.75,  weight:4},
-      {name:'moto_img' , wm:1.6, hm:.9, spd:1.45, weight:2}
+      {name:'moto_img' , wm:1.6, hm:.9, spd:1.45, weight:2},
+      {name:'cyclist_img', wm:1.7, hm:.6, spd:.65, weight:3}
     ];
     vTypes.forEach(vt=>{
       for(let n=0;n<vt.weight;n++) this.vehPool.push({key:vt.name, spdMul:vt.spd, wm:vt.wm, hm:vt.hm});
