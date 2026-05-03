@@ -776,7 +776,7 @@ class GameScene extends Phaser.Scene {
   resetNewt(){
     const W=this.scale.width;
     this.tweens.killTweensOf(this.newt);
-    this.newt.setPosition(W/2,this.SPAWN_Y).setVisible(true).setAlpha(1).setScale(1);
+    this.newt.setPosition(W/2,this.SPAWN_Y).setVisible(true).setAlpha(1);
     this.newt.angle=0; this.targetAng=0; this.newtAlive=true;
     this.invulnerable=true;
     this.tweens.add({
