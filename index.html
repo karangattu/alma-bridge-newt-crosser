@@ -22,26 +22,49 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 
 /* ─── splash ─── */
 #splash{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at center,#1a2330 0%,#0a0e14 100%);transition:opacity .4s;padding:1rem;}
-.splash-card{text-align:center;padding:1.5rem;max-width:380px;width:100%;}
-.logo{font-size:2.4rem;font-weight:700;color:#e8a35c;letter-spacing:-.02em;margin-bottom:.2rem;line-height:1;}
-.logo span{color:#5a8a4f;}
-.tag{color:#7a8590;font-size:.82rem;margin-bottom:1.4rem;font-weight:400;}
-.hi-line{color:#e8a35c;font-size:.78rem;font-weight:600;margin-bottom:1.3rem;letter-spacing:.02em;
-  padding:.6rem .8rem;background:rgba(232,163,92,.08);border:1px solid rgba(232,163,92,.18);border-radius:8px;}
+  background: url('assets/poster_bg.png') center/cover no-repeat;
+  transition:opacity .4s;padding:1rem;}
+#splash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(10, 14, 20, 0.2) 0%, rgba(10, 14, 20, 0.8) 100%);
+  z-index: -1;
+}
+.splash-card{
+  text-align:center;
+  padding: 2.5rem;
+  max-width: 420px;
+  width: 100%;
+  background: rgba(15, 20, 25, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+.logo{font-size:3.2rem;font-weight:800;color:#fff;letter-spacing:-.03em;margin-bottom:.4rem;line-height:1.1;text-shadow: 0 4px 12px rgba(0,0,0,0.6);}
+.logo span{color:#e8a35c;}
+.tag{color:#e2e8f0;font-size:1.05rem;margin-bottom:1.8rem;font-weight:500;text-shadow: 0 2px 4px rgba(0,0,0,0.5);}
+.hi-line{color:#e8a35c;font-size:.85rem;font-weight:600;margin-bottom:1.8rem;letter-spacing:.02em;
+  padding:.7rem 1rem;background:rgba(232,163,92,.15);border:1px solid rgba(232,163,92,.3);border-radius:12px;
+  backdrop-filter: blur(4px);}
 .hi-line span{color:#fff;font-weight:700;}
-#nameIn{width:100%;padding:.85rem 1rem;border:1.5px solid #2a3340;border-radius:10px;
-  background:#141a22;color:#fff;font-family:inherit;font-size:1rem;text-align:center;outline:none;transition:border .15s;}
-#nameIn:focus{border-color:#5a8a4f;}
-#nameIn::placeholder{color:#4a5560;}
-#playBtn{width:100%;margin-top:.7rem;padding:.95rem;border:none;border-radius:10px;
-  background:#e8a35c;color:#0f1419;font-family:inherit;font-size:1.05rem;font-weight:700;cursor:pointer;
-  transition:transform .12s,background .15s;letter-spacing:.01em;}
-#playBtn:active{transform:scale(.97);background:#d89348;}
-.cause{margin-top:1.3rem;font-size:.7rem;color:#5a6570;line-height:1.5;}
-.cause a{color:#5a8a4f;text-decoration:none;font-weight:600;}
-.cause a:hover{text-decoration:underline;}
-.controls-hint{margin-top:.9rem;font-size:.68rem;color:#4a5560;}
+#nameIn{width:100%;padding:1rem 1.2rem;border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;
+  background:rgba(0,0,0,0.4);color:#fff;font-family:inherit;font-size:1.1rem;text-align:center;outline:none;transition:all .2s;
+  backdrop-filter: blur(4px);}
+#nameIn:focus{border-color:#e8a35c;background:rgba(0,0,0,0.6);}
+#nameIn::placeholder{color:rgba(255,255,255,0.4);}
+#playBtn{width:100%;margin-top:1rem;padding:1.1rem;border:none;border-radius:12px;
+  background:linear-gradient(135deg, #e8a35c 0%, #d88338 100%);color:#0f1419;font-family:inherit;font-size:1.2rem;font-weight:800;cursor:pointer;
+  transition:transform .15s, box-shadow .15s;letter-spacing:.02em;text-transform:uppercase;
+  box-shadow: 0 8px 16px rgba(232,163,92,0.3);}
+#playBtn:hover{transform:translateY(-2px);box-shadow: 0 12px 20px rgba(232,163,92,0.4);}
+#playBtn:active{transform:scale(.97) translateY(0);box-shadow: 0 4px 8px rgba(232,163,92,0.3);}
+.cause{margin-top:1.8rem;font-size:.75rem;color:rgba(255,255,255,0.6);line-height:1.6;}
+.cause a{color:#e8a35c;text-decoration:none;font-weight:600;}
+.cause a:hover{text-decoration:underline;color:#fff;}
+.controls-hint{margin-top:1.2rem;font-size:.8rem;color:rgba(255,255,255,0.5);font-weight:500;}
 
 /* ─── orientation lock overlay ─── */
 #orient{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
