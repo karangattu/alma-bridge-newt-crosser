@@ -7,11 +7,11 @@ test('loads the splash screen and starts the game', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveTitle('Newt Crosser');
-  await expect(page.getByPlaceholder('Enter your name')).toBeVisible();
+  await expect(page.getByPlaceholder('Your name')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Learn more at bioblitz\.club\/newts/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /bioblitz\.club\/newts/i })).toBeVisible();
 
-  await page.getByPlaceholder('Enter your name').fill('Smoke');
+  await page.getByPlaceholder('Your name').fill('Smoke');
   await page.getByRole('button', { name: 'Play' }).click();
 
   await expect.poll(async () => page.evaluate(() => {
