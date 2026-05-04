@@ -89,9 +89,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 #fsBtn{position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,.4);color:#fff;
   border:none;border-radius:6px;padding:6px 10px;font-size:.7rem;cursor:pointer;display:none;font-family:inherit;}
 #fsBtn.show{display:block;}
+
+/* ─── tutorial ─── */
+#tutorial{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:1rem;}
+.tut-card{background:rgba(15,20,25,0.95);border:1px solid rgba(255,166,77,0.3);border-radius:24px;
+  padding:2.5rem;text-align:center;max-width:400px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.6);}
+.tut-card h2{color:#ffa64d;font-size:2rem;margin-bottom:1rem;font-weight:900;}
+.tut-card p{color:#cbd5e1;font-size:1.1rem;margin-bottom:1.2rem;line-height:1.5;font-weight:500;}
+.tut-card .tut-img{font-size:3rem;margin-bottom:1rem;text-shadow:0 4px 12px rgba(0,0,0,0.5);}
+#tutBtn{width:100%;padding:1.1rem;border-radius:16px;border:none;background:linear-gradient(135deg,#ffa64d 0%,#ff8c1a 100%);
+  color:#0f1419;font-family:inherit;font-size:1.2rem;font-weight:900;cursor:pointer;margin-top:1rem;text-transform:uppercase;box-shadow:0 8px 16px rgba(255,166,77,0.3);}
+
 @media (max-width: 600px) {
-  .logo { font-size: 2.8rem; }
-  .splash-card { padding: 2.5rem 1.5rem; }
+  .logo { font-size: 2.6rem; }
+  .splash-card { padding: 2rem 1.5rem; border-radius: 24px; }
+  .tag { font-size: 1rem; margin-bottom: 1.5rem; }
+  .hi-line { margin-bottom: 1.5rem; font-size: 0.8rem; padding: 0.7rem 1rem; }
+  #nameIn { font-size: 1.05rem; padding: 0.9rem 1.2rem; }
+  #playBtn { font-size: 1.2rem; padding: 1rem; margin-top: 0.8rem; }
+  .cause { margin-top: 1.8rem; font-size: 0.75rem; }
+  .tut-card { padding: 2rem 1.5rem; }
+  .tut-card h2 { font-size: 1.8rem; }
+  .tut-card p { font-size: 1rem; }
 }
 </style>
 </head>
@@ -103,6 +123,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
     <div class="orient-icon">📱</div>
     <h2>Rotate to landscape</h2>
     <p>Please turn your device sideways for the best experience.</p>
+  </div>
+</div>
+
+<!-- ─── tutorial ─── -->
+<div id="tutorial">
+  <div class="tut-card">
+    <div class="tut-img">🐸 ⬅️ ⬆️ ➡️</div>
+    <h2>How to Play</h2>
+    <p>Swipe or use arrow keys to move the newt.</p>
+    <p>Avoid the speeding vehicles and reach the grass on the other side of Alma Bridge Road!</p>
+    <button id="tutBtn">Got It!</button>
   </div>
 </div>
 
@@ -227,22 +258,40 @@ const splash=document.getElementById('splash');
 const nameIn=document.getElementById('nameIn');
 const playBtn=document.getElementById('playBtn');
 const fsBtn=document.getElementById('fsBtn');
+const tutorial=document.getElementById('tutorial');
+const tutBtn=document.getElementById('tutBtn');
 
 fetchLB();
 checkOrient();
 nameIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();playBtn.click();}});
 nameIn.addEventListener('input',()=>{playerName=nameIn.value.trim();});
 
+function startGame() {
+  fsBtn.classList.add('show');
+  if(window._game) window._game.scene.getScene('Game').scene.restart();
+  else launchGame();
+  gtag('event','start_game',{event_category:'Game'});
+}
+
 playBtn.addEventListener('click',()=>{
   playerName=nameIn.value.trim()||playerName||'Anon';
   ensureAudio(); resumeAudio();
   goFullscreen();
   splash.style.opacity='0'; splash.style.pointerEvents='none';
-  fsBtn.classList.add('show');
-  if(window._game) window._game.scene.getScene('Game').scene.restart();
-  else launchGame();
-  gtag('event','start_game',{event_category:'Game'});
+  
+  if(!window.tutorialShown) {
+    tutorial.style.display='flex';
+  } else {
+    startGame();
+  }
 });
+
+tutBtn.addEventListener('click',()=>{
+  window.tutorialShown=true;
+  tutorial.style.display='none';
+  startGame();
+});
+
 fsBtn.addEventListener('click',()=>{ if(isFullscreen()) document.exitFullscreen?.(); else goFullscreen(); });
 
 /* ═══════════════════════════════════════════════════════════════
@@ -771,8 +820,9 @@ class GameScene extends Phaser.Scene {
     const W=this.scale.width, TS=this.TS;
     this.lanes.forEach(lane=>{
       const laneBaseSpd=.7+Math.random()*.4;
-      const count=Phaser.Math.Between(2,4);
-      const minGap=TS*4;
+      const scoreScale=this.score||0;
+      const count=Phaser.Math.Between(2 + Math.floor(scoreScale/5), 4 + Math.floor(scoreScale/3));
+      const minGap=Math.max(TS*1.8, TS*4 - scoreScale*TS*0.15);
       let cursor=Phaser.Math.Between(0,Math.round(TS*2));
       for(let i=0;i<count;i++){
         const entry=Phaser.Utils.Array.GetRandom(this.vehPool);
@@ -829,8 +879,8 @@ class GameScene extends Phaser.Scene {
     this.tweens.add({targets:ft,y:ft.y-this.TS*1.4,alpha:0,duration:600,ease:'Power2',onComplete:()=>ft.destroy()});
 
     /* difficulty scales with score */
-    this.diff=Math.min(3.5,1+this.score*0.07);
-    if(this.score%3===0){ sfx('level'); this.spawnCars(); }
+    this.diff=1+this.score*0.09;
+    if(this.score%2===0){ sfx('level'); this.spawnCars(); }
     this.updateHUD();
     this.resetNewt();
     gtag('event','newt_crossed',{event_category:'Game',value:this.score});
@@ -942,14 +992,20 @@ class GameScene extends Phaser.Scene {
         {fontFamily:'Inter',fontSize:Math.max(11,TS*.34)+'px',color:'#7a8590'}).setOrigin(.5));
     }
 
-    c.add(this.add.text(W/2,H*.38,'TOP SCORES',
-      {fontFamily:'Inter',fontSize:Math.max(11,TS*.34)+'px',fontStyle:'600',color:'#5a8a4f'}).setOrigin(.5));
+    c.add(this.add.text(W/2,H*.36,'TOP SCORES',
+      {fontFamily:'Inter',fontSize:Math.max(14,TS*.45)+'px',fontStyle:'800',color:'#ffa64d',letterSpacing:2}).setOrigin(.5));
+
+    const panelHeight = Math.max(H*.35, TS*4.5);
+    const panelY = H*.42 + (panelHeight/2) - TS*0.4;
+    const panelWidth = Math.min(W*.8, 400);
+    c.add(this.add.rectangle(W/2, panelY, panelWidth, panelHeight, 0x141a22, 0.8).setStrokeStyle(2, 0x33414f, 1).setOrigin(0.5));
 
     if(leaderboardEntries.length){
       leaderboardEntries.forEach((e,i)=>{
-        c.add(this.add.text(W/2,H*.44+i*TS*.55,
-          `${i+1}.  ${e.name}   ${e.score}`,
-          {fontFamily:'Inter',fontSize:Math.max(13,TS*.4)+'px',color:i===0?'#e8a35c':'#ddd'}
+        const padName = e.name.length > 12 ? e.name.substring(0,10)+'..' : e.name.padEnd(12,' ');
+        const entryText = `${i+1}.  ${padName}   ${e.score.toString().padStart(4,' ')}`;
+        c.add(this.add.text(W/2,H*.42+i*TS*.6, entryText,
+          {fontFamily:'monospace',fontSize:Math.max(13,TS*.45)+'px',color:i===0?'#ffa64d':'#cbd5e1', fontStyle:i===0?'700':'400'}
         ).setOrigin(.5));
       });
     } else {
@@ -957,7 +1013,7 @@ class GameScene extends Phaser.Scene {
         {fontFamily:'Inter',fontSize:Math.max(12,TS*.38)+'px',color:'#7a8590'}).setOrigin(.5));
     }
 
-    const ry=Math.min(H*.44+leaderboardEntries.length*TS*.55+TS*1.2,H*.86);
+    const ry=Math.min(H*.42+leaderboardEntries.length*TS*.6+TS*1.5,H*.88);
     const rt=this.add.text(W/2,ry,'TAP TO PLAY AGAIN',
       {fontFamily:'Inter',fontSize:Math.max(13,TS*.42)+'px',fontStyle:'700',color:'#fff'}).setOrigin(.5);
     this.tweens.add({targets:rt,alpha:{from:1,to:.4},duration:700,yoyo:true,repeat:-1});
