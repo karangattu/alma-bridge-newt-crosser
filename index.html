@@ -23,11 +23,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 /* ─── splash ─── */
 #splash{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
   background: url('assets/poster_bg.png') center/cover no-repeat;
-  transition:opacity .6s ease-in-out;padding:1rem;}
+  transition:opacity .6s ease-in-out;padding:clamp(0.5rem,2vw,1.5rem);overflow-y:auto;}
 
 #splash::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: radial-gradient(circle at center, rgba(15, 20, 25, 0.2) 0%, rgba(10, 14, 20, 0.85) 100%);
   z-index: -1;
@@ -35,10 +35,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 
 .splash-card{
   text-align:center;
-  padding: 3.5rem 2.5rem;
+  padding: 3rem 2.5rem;
   max-width: 480px;
   width: 100%;
-  background: rgba(15, 20, 25, 0.5);
+  background: rgba(15, 20, 25, 0.55);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -48,32 +48,35 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 }
 
 @keyframes card-entrance {
-  from { opacity: 0; transform: translateY(40px) scale(0.95); }
+  from { opacity: 0; transform: translateY(30px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.logo{font-size:3.8rem;font-weight:900;color:#fff;letter-spacing:-.04em;margin-bottom:.6rem;line-height:1;text-shadow: 0 8px 24px rgba(0,0,0,0.8);}
+/* ── splash left column (brand) shown in landscape ── */
+.splash-brand { display: none; }
+
+.logo{font-size:3.8rem;font-weight:900;color:#fff;letter-spacing:-.04em;margin-bottom:.5rem;line-height:1;text-shadow: 0 8px 24px rgba(0,0,0,0.8);}
 .logo span{color:#ffa64d; text-shadow: 0 0 30px rgba(255, 166, 77, 0.4);}
-.tag{color:#cbd5e1;font-size:1.15rem;margin-bottom:2.5rem;font-weight:500;text-shadow: 0 2px 8px rgba(0,0,0,0.6); letter-spacing: -0.01em;}
-.hi-line{color:#ffa64d;font-size:.9rem;font-weight:600;margin-bottom:2rem;letter-spacing:.05em;
-  padding:.8rem 1.2rem;background:rgba(255,166,77,.1);border:1px solid rgba(255,166,77,.2);border-radius:16px;
+.tag{color:#cbd5e1;font-size:1.1rem;margin-bottom:2rem;font-weight:500;text-shadow: 0 2px 8px rgba(0,0,0,0.6); letter-spacing: -0.01em;}
+.hi-line{color:#ffa64d;font-size:.85rem;font-weight:600;margin-bottom:1.6rem;letter-spacing:.05em;
+  padding:.7rem 1rem;background:rgba(255,166,77,.1);border:1px solid rgba(255,166,77,.2);border-radius:14px;
   backdrop-filter: blur(8px); text-transform: uppercase;}
 .hi-line span{color:#fff;font-weight:800;}
-#nameIn{width:100%;padding:1.1rem 1.4rem;border:1.5px solid rgba(255,255,255,0.1);border-radius:16px;
-  background:rgba(0,0,0,0.5);color:#fff;font-family:inherit;font-size:1.15rem;text-align:center;outline:none;transition:all .3s ease;
+#nameIn{width:100%;padding:1rem 1.2rem;border:1.5px solid rgba(255,255,255,0.1);border-radius:14px;
+  background:rgba(0,0,0,0.5);color:#fff;font-family:inherit;font-size:1.1rem;text-align:center;outline:none;transition:all .3s ease;
   backdrop-filter: blur(4px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);}
 #nameIn:focus{border-color:#ffa64d;background:rgba(0,0,0,0.7); box-shadow: 0 0 0 4px rgba(255, 166, 77, 0.15);}
 #nameIn::placeholder{color:rgba(255,255,255,0.3);}
-#playBtn{width:100%;margin-top:1.2rem;padding:1.2rem;border:none;border-radius:16px;
-  background:linear-gradient(135deg, #ffa64d 0%, #ff8c1a 100%);color:#0f1419;font-family:inherit;font-size:1.4rem;font-weight:900;cursor:pointer;
+#playBtn{width:100%;margin-top:1rem;padding:1.1rem;border:none;border-radius:14px;
+  background:linear-gradient(135deg, #ffa64d 0%, #ff8c1a 100%);color:#0f1419;font-family:inherit;font-size:1.3rem;font-weight:900;cursor:pointer;
   transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);letter-spacing:.03em;text-transform:uppercase;
-  box-shadow: 0 15px 30px rgba(255, 166, 77, 0.35);}
-#playBtn:hover{transform:translateY(-4px) scale(1.02);box-shadow: 0 20px 40px rgba(255, 166, 77, 0.45);}
+  box-shadow: 0 12px 25px rgba(255, 166, 77, 0.35);}
+#playBtn:hover{transform:translateY(-3px) scale(1.02);box-shadow: 0 18px 35px rgba(255, 166, 77, 0.45);}
 #playBtn:active{transform:scale(.96) translateY(0);box-shadow: 0 5px 15px rgba(255, 166, 77, 0.3);}
-.cause{margin-top:2.5rem;font-size:.8rem;color:rgba(255,255,255,0.5);line-height:1.7;}
+.cause{margin-top:2rem;font-size:.78rem;color:rgba(255,255,255,0.5);line-height:1.7;}
 .cause a{color:#ffa64d;text-decoration:none;font-weight:700; transition: color 0.2s;}
 .cause a:hover{color:#fff; text-decoration: underline;}
-.controls-hint{margin-top:1.5rem;font-size:.85rem;color:rgba(255,255,255,0.4);font-weight:600; letter-spacing: 0.05em; text-transform: uppercase;}
+.controls-hint{margin-top:1.2rem;font-size:.8rem;color:rgba(255,255,255,0.4);font-weight:600; letter-spacing: 0.05em; text-transform: uppercase;}
 
 /* ─── orientation lock overlay ─── */
 #orient{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
@@ -101,17 +104,108 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 #tutBtn{width:100%;padding:1.1rem;border-radius:16px;border:none;background:linear-gradient(135deg,#ffa64d 0%,#ff8c1a 100%);
   color:#0f1419;font-family:inherit;font-size:1.2rem;font-weight:900;cursor:pointer;margin-top:1rem;text-transform:uppercase;box-shadow:0 8px 16px rgba(255,166,77,0.3);}
 
-@media (max-width: 600px) {
-  .logo { font-size: 2.6rem; }
+/* ── portrait mobile ── */
+@media (max-width: 600px) and (orientation: portrait) {
+  .logo { font-size: 2.8rem; }
   .splash-card { padding: 2rem 1.5rem; border-radius: 24px; }
   .tag { font-size: 1rem; margin-bottom: 1.5rem; }
-  .hi-line { margin-bottom: 1.5rem; font-size: 0.8rem; padding: 0.7rem 1rem; }
-  #nameIn { font-size: 1.05rem; padding: 0.9rem 1.2rem; }
-  #playBtn { font-size: 1.2rem; padding: 1rem; margin-top: 0.8rem; }
-  .cause { margin-top: 1.8rem; font-size: 0.75rem; }
+  .hi-line { margin-bottom: 1.4rem; }
+  #nameIn { font-size: 1rem; padding: 0.9rem 1.1rem; }
+  #playBtn { font-size: 1.15rem; padding: 0.95rem; margin-top: 0.8rem; }
+  .cause { margin-top: 1.5rem; font-size: 0.73rem; }
   .tut-card { padding: 2rem 1.5rem; }
   .tut-card h2 { font-size: 1.8rem; }
   .tut-card p { font-size: 1rem; }
+}
+
+/* ── mobile landscape: two-column layout ── */
+@media (max-height: 520px) and (orientation: landscape) {
+  #splash { padding: 0.75rem; }
+
+  .splash-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 860px;
+    padding: 1.5rem 2rem;
+    border-radius: 20px;
+    text-align: left;
+    animation: none;
+  }
+
+  /* left column: brand */
+  .splash-brand {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    width: 220px;
+    min-width: 180px;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  /* hide logo/tag from the right column; they live in .splash-brand now */
+  .splash-card > .logo,
+  .splash-card > .tag {
+    display: none;
+  }
+
+  .splash-brand .logo {
+    display: block;
+    font-size: 2.4rem;
+    margin-bottom: 0.5rem;
+    text-align: left;
+  }
+
+  .splash-brand .tag {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+    text-align: left;
+    color: #a0b0bf;
+  }
+
+  .splash-brand .cause {
+    display: block;
+    font-size: 0.7rem;
+    margin-top: 0.8rem;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.6;
+  }
+
+  /* right column: form */
+  .splash-form {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* hide the original cause block below the form */
+  .splash-card > .cause { display: none; }
+
+  .hi-line { font-size: 0.75rem; padding: 0.5rem 0.9rem; margin-bottom: 0.8rem; border-radius: 10px; }
+  #nameIn { font-size: 0.95rem; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 0; }
+  #playBtn { font-size: 1.1rem; padding: 0.8rem; margin-top: 0.7rem; border-radius: 10px; box-shadow: none; }
+  .controls-hint { margin-top: 0.6rem; font-size: 0.7rem; text-align: center; }
+}
+
+/* tutorial: compact landscape */
+@media (max-height: 520px) and (orientation: landscape) {
+  .tut-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 680px;
+    padding: 1.5rem 2rem;
+    text-align: left;
+  }
+  .tut-card .tut-img { font-size: 2rem; margin-bottom: 0; flex-shrink: 0; }
+  .tut-card h2 { font-size: 1.4rem; margin-bottom: 0.4rem; }
+  .tut-card p { font-size: 0.88rem; margin-bottom: 0.5rem; }
+  #tutBtn { padding: 0.75rem; font-size: 1rem; margin-top: 0.4rem; }
 }
 </style>
 </head>
@@ -140,12 +234,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 <!-- ─── splash ─── -->
 <div id="splash">
   <div class="splash-card">
+    <!-- brand column (visible in landscape as left panel) -->
+    <div class="splash-brand">
+      <div class="logo">Newt<span>·</span>Crosser</div>
+      <div class="tag">Help the newt cross Alma Bridge Road.</div>
+      <div class="cause">
+        Inspired by real newts that<br>risk their lives every winter.<br>
+        <a href="http://bioblitz.club/newts" target="_blank" rel="noopener">bioblitz.club/newts →</a>
+      </div>
+    </div>
+    <!-- portrait-only brand (hidden in landscape) -->
     <div class="logo">Newt<span>·</span>Crosser</div>
     <div class="tag">Help the newt cross Alma Bridge Road.</div>
-    <div class="hi-line">High Score: <span id="hiScore">—</span></div>
-    <input id="nameIn" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
-    <button id="playBtn">Play</button>
-    <div class="controls-hint">Swipe or use arrow keys</div>
+    <!-- form column -->
+    <div class="splash-form">
+      <div class="hi-line">High Score: <span id="hiScore">—</span></div>
+      <input id="nameIn" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
+      <button id="playBtn">Play</button>
+      <div class="controls-hint">Swipe or use arrow keys</div>
+    </div>
     <div class="cause">
       Inspired by real newts that risk their lives crossing this road every winter.<br>
       <a href="http://bioblitz.club/newts" target="_blank" rel="noopener">bioblitz.club/newts →</a>
