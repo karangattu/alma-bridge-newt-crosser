@@ -723,10 +723,19 @@ class GameScene extends Phaser.Scene {
   preload(){
     this.load.image('newt_img', 'assets/newt.png');
     this.load.image('sedan_img', 'assets/sedan.png');
+    this.load.image('sedan_red', 'assets/sedan_red.png');
+    this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
+    this.load.image('coupe_silver', 'assets/coupe_silver.png');
     this.load.image('suv_img', 'assets/suv.png');
+    this.load.image('suv_white', 'assets/suv_white.png');
+    this.load.image('suv_black', 'assets/suv_black.png');
     this.load.image('truck_img', 'assets/truck.png');
+    this.load.image('truck_yellow', 'assets/truck_yellow.png');
+    this.load.image('truck_red', 'assets/truck_red.png');
     this.load.image('moto_img', 'assets/moto.png');
+    this.load.image('moto_orange', 'assets/moto_orange.png');
     this.load.image('cyclist_img', 'assets/cyclist.png');
+    this.load.image('cyclist_green', 'assets/cyclist_green.png');
   }
 
   create(){
@@ -757,20 +766,57 @@ class GameScene extends Phaser.Scene {
     /* vehicle textures */
     this.vehPool=[];
     const vTypes=[
-      {name:'sedan_img', wm:2.5, hm:1.25, spd:1.0,  weight:10, colors:[0xffffff, 0xd63031, 0x0984e3, 0x2d3436, 0x636e72, 0x1e3799, 0xf7b731, 0x8e44ad, 0x27ae60, 0xe84393, 0xfd9644]},
-      {name:'suv_img'  , wm:2.8, hm:1.45, spd:.9 ,  weight:6,  colors:[0xffffff, 0x2d3436, 0x636e72, 0x20bf6b, 0x0984e3, 0x4b4b4b, 0x1e3799, 0x2c3e50]},
-      {name:'truck_img', wm:3.5, hm:1.5 , spd:.75,  weight:4,  colors:[0xffffff, 0xd63031, 0xf7b731, 0x2d3436, 0xe17055, 0x4834d4, 0x22a6b3, 0xeb4d4b]},
-      {name:'moto_img' , wm:1.6, hm:.9, spd:1.45, weight:2,  colors:[0xffffff, 0xd63031, 0x0984e3, 0xf7b731, 0x20bf6b, 0x8e44ad]},
-      {name:'cyclist_img', wm:1.7, hm:.6, spd:.65, weight:3,  colors:[0xd63031, 0x0984e3, 0x20bf6b, 0xf7b731, 0x6c5ce7, 0xfd9644, 0xeb4d4b, 0x1dd1a1]}
+      {
+        variants: [
+          {key:'sedan_img', wm:2.5, hm:1.25},
+          {key:'sedan_red', wm:2.5, hm:1.25},
+          {key:'hatchback_blue', wm:2.3, hm:1.2},
+          {key:'coupe_silver', wm:2.4, hm:1.15}
+        ],
+        spd: 1.0,
+        weight: 10
+      },
+      {
+        variants: [
+          {key:'suv_img', wm:2.8, hm:1.45},
+          {key:'suv_white', wm:2.8, hm:1.45},
+          {key:'suv_black', wm:3.0, hm:1.55}
+        ],
+        spd: 0.9,
+        weight: 6
+      },
+      {
+        variants: [
+          {key:'truck_img', wm:3.5, hm:1.5},
+          {key:'truck_yellow', wm:3.6, hm:1.6},
+          {key:'truck_red', wm:3.8, hm:1.7}
+        ],
+        spd: 0.75,
+        weight: 4
+      },
+      {
+        variants: [
+          {key:'moto_img', wm:1.6, hm:0.9},
+          {key:'moto_orange', wm:1.6, hm:0.9}
+        ],
+        spd: 1.45,
+        weight: 2
+      },
+      {
+        variants: [
+          {key:'cyclist_img', wm:1.7, hm:0.6},
+          {key:'cyclist_green', wm:1.8, hm:0.8}
+        ],
+        spd: 0.65,
+        weight: 3
+      }
     ];
+
     vTypes.forEach(vt=>{
       for(let n=0;n<vt.weight;n++) {
         this.vehPool.push({
-          key:vt.name, 
-          spdMul:vt.spd, 
-          wm:vt.wm, 
-          hm:vt.hm,
-          colors:vt.colors
+          variants: vt.variants,
+          spdMul: vt.spd
         });
       }
     });
@@ -946,20 +992,18 @@ class GameScene extends Phaser.Scene {
       let cursor=Phaser.Math.Between(0,Math.round(TS*2));
       for(let i=0;i<count;i++){
         const entry=Phaser.Utils.Array.GetRandom(this.vehPool);
-        const texW=TS*entry.wm;
-        const v=this.physics.add.image(cursor,lane.y,entry.key).setDepth(2);
-        if(entry.colors && entry.colors.length > 0) {
-          v.setTint(Phaser.Utils.Array.GetRandom(entry.colors));
-        }
+        const variant=Phaser.Utils.Array.GetRandom(entry.variants);
+        const texW=TS*variant.wm;
+        const v=this.physics.add.image(cursor,lane.y,variant.key).setDepth(2);
         const sVar = 1 + (Math.random() * 0.1 - 0.05);
-        v.setDisplaySize(TS*entry.wm*sVar, TS*entry.hm*sVar);
+        v.setDisplaySize(TS*variant.wm*sVar, TS*variant.hm*sVar);
         v.body.setSize(v.width*.9, v.height*.9);
         v.body.setAllowGravity(false);
         v.dir=lane.dir;
         v.baseSpd=laneBaseSpd*entry.spdMul;
         v.spd=v.baseSpd;
-        v.wm=entry.wm;
-        v.hm=entry.hm;
+        v.wm=variant.wm;
+        v.hm=variant.hm;
         /* sprite is drawn pointing left (front on left side); flip if traveling right */
         v.setFlipX(lane.dir>0);
         this.vehicles.add(v);
