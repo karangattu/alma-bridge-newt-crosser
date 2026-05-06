@@ -757,14 +757,22 @@ class GameScene extends Phaser.Scene {
     /* vehicle textures */
     this.vehPool=[];
     const vTypes=[
-      {name:'sedan_img', wm:2.5, hm:1.25, spd:1.0,  weight:10},
-      {name:'suv_img'  , wm:2.8, hm:1.45, spd:.9 ,  weight:6},
-      {name:'truck_img', wm:3.5, hm:1.5 , spd:.75,  weight:4},
-      {name:'moto_img' , wm:1.6, hm:.9, spd:1.45, weight:2},
-      {name:'cyclist_img', wm:1.7, hm:.6, spd:.65, weight:3}
+      {name:'sedan_img', wm:2.5, hm:1.25, spd:1.0,  weight:10, colors:[0xffffff, 0xd63031, 0x0984e3, 0x2d3436, 0x636e72, 0x1e3799, 0xf7b731, 0x8e44ad, 0x27ae60, 0xe84393, 0xfd9644]},
+      {name:'suv_img'  , wm:2.8, hm:1.45, spd:.9 ,  weight:6,  colors:[0xffffff, 0x2d3436, 0x636e72, 0x20bf6b, 0x0984e3, 0x4b4b4b, 0x1e3799, 0x2c3e50]},
+      {name:'truck_img', wm:3.5, hm:1.5 , spd:.75,  weight:4,  colors:[0xffffff, 0xd63031, 0xf7b731, 0x2d3436, 0xe17055, 0x4834d4, 0x22a6b3, 0xeb4d4b]},
+      {name:'moto_img' , wm:1.6, hm:.9, spd:1.45, weight:2,  colors:[0xffffff, 0xd63031, 0x0984e3, 0xf7b731, 0x20bf6b, 0x8e44ad]},
+      {name:'cyclist_img', wm:1.7, hm:.6, spd:.65, weight:3,  colors:[0xd63031, 0x0984e3, 0x20bf6b, 0xf7b731, 0x6c5ce7, 0xfd9644, 0xeb4d4b, 0x1dd1a1]}
     ];
     vTypes.forEach(vt=>{
-      for(let n=0;n<vt.weight;n++) this.vehPool.push({key:vt.name, spdMul:vt.spd, wm:vt.wm, hm:vt.hm});
+      for(let n=0;n<vt.weight;n++) {
+        this.vehPool.push({
+          key:vt.name, 
+          spdMul:vt.spd, 
+          wm:vt.wm, 
+          hm:vt.hm,
+          colors:vt.colors
+        });
+      }
     });
 
     /* ── background — flat minimal bands ── */
@@ -940,7 +948,11 @@ class GameScene extends Phaser.Scene {
         const entry=Phaser.Utils.Array.GetRandom(this.vehPool);
         const texW=TS*entry.wm;
         const v=this.physics.add.image(cursor,lane.y,entry.key).setDepth(2);
-        v.setDisplaySize(TS*entry.wm, TS*entry.hm);
+        if(entry.colors && entry.colors.length > 0) {
+          v.setTint(Phaser.Utils.Array.GetRandom(entry.colors));
+        }
+        const sVar = 1 + (Math.random() * 0.1 - 0.05);
+        v.setDisplaySize(TS*entry.wm*sVar, TS*entry.hm*sVar);
         v.body.setSize(v.width*.9, v.height*.9);
         v.body.setAllowGravity(false);
         v.dir=lane.dir;
