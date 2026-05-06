@@ -721,7 +721,7 @@ class GameScene extends Phaser.Scene {
   constructor(){ super('Game'); }
 
   preload(){
-    this.load.image('newt_img', 'assets/newt.png');
+    this.load.spritesheet('newt_sheet', 'assets/newt_sheet.png', { frameWidth: 512, frameHeight: 512 });
     this.load.image('sedan_img', 'assets/sedan.png');
     this.load.image('sedan_red', 'assets/sedan_red.png');
     this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
@@ -876,11 +876,22 @@ class GameScene extends Phaser.Scene {
     this.spawnCars();
 
     /* player newt */
-    this.newt=this.physics.add.image(W/2,this.SPAWN_Y,'newt_img').setDepth(5);
+    if(!this.anims.exists('crawl')){
+      this.anims.create({
+        key: 'crawl',
+        frames: this.anims.generateFrameNumbers('newt_sheet', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
+
+    this.newt=this.physics.add.sprite(W/2,this.SPAWN_Y,'newt_sheet').setDepth(5);
+    this.newt.play('crawl');
     this.newt.setDisplaySize(nw, nh);
     this.newt.body.setAllowGravity(false);
     this.newt.setCollideWorldBounds(true);
-    this.newt.body.setSize(this.newt.width*.55,this.newt.height*.55);
+    // Body size should be relative to the display size for better accuracy
+    this.newt.body.setSize(this.newt.width*0.4, this.newt.height*0.4);
 
     /* cleanup worker */
     this.splats=[];
@@ -996,7 +1007,9 @@ class GameScene extends Phaser.Scene {
         const texW=TS*variant.wm;
         const v=this.physics.add.image(cursor,lane.y,variant.key).setDepth(2);
         const sVar = 1 + (Math.random() * 0.1 - 0.05);
-        v.setDisplaySize(TS*variant.wm*sVar, TS*variant.hm*sVar);
+        const targetWidth = TS * variant.wm * sVar;
+        const scale = targetWidth / v.width;
+        v.setScale(scale);
         v.body.setSize(v.width*.9, v.height*.9);
         v.body.setAllowGravity(false);
         v.dir=lane.dir;
