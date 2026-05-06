@@ -744,6 +744,7 @@ class GameScene extends Phaser.Scene {
 
     /* state */
     this.score=0; this.lives=3; this.isOver=false;
+    this.gameOverShown=false; this.canReplay=false;
     this.newtAlive=true; this.targetAng=0; this.lastStep=0;
     this.invulnerable=false;
     this.diff=1;
@@ -866,14 +867,14 @@ class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-S',    ()=>this.step(0, 1));
     this.input.keyboard.on('keydown-A',    ()=>this.step(-1,0));
     this.input.keyboard.on('keydown-D',    ()=>this.step( 1,0));
-    this.input.keyboard.on('keydown-ENTER',()=>{if(this.isOver)this.scene.restart();});
+    this.input.keyboard.on('keydown-ENTER',()=>this.replayIfReady());
 
     /* input — touch / pointer */
     let sx=0,sy=0,st=0,muteHit=false;
     this.input.on('pointerdown',p=>{
       /* ignore taps on the mute button area */
       muteHit = p.x<TS*1.0 && p.y<TS*3.2 && p.y>fs*1.9;
-      if(this.isOver){this.scene.restart(); return;}
+      if(this.isOver){this.replayIfReady(); return;}
       sx=p.x; sy=p.y; st=this.time.now;
     });
     this.input.on('pointerup',p=>{
@@ -902,6 +903,10 @@ class GameScene extends Phaser.Scene {
     if(this.scoreTxt) this.scoreTxt.setText('Score  '+this.score);
     if(this.livesTxt) this.livesTxt.setText('♥ '.repeat(Math.max(0,this.lives)).trim());
     if(this.bestTxt)  this.bestTxt.setText(topScore?('Best  '+topScore):'');
+  }
+
+  replayIfReady(){
+    if(this.isOver&&this.gameOverShown&&this.canReplay) this.scene.restart();
   }
 
   /* ── movement ── */
@@ -1086,6 +1091,8 @@ class GameScene extends Phaser.Scene {
   /* ── game over screen with leaderboard ── */
   showGameOver(){
     const W=this.scale.width,H=this.scale.height,TS=this.TS,c=this.goContainer;
+    this.gameOverShown=true;
+    this.canReplay=false;
     c.removeAll(true);
     c.add(this.add.rectangle(W/2,H/2,W,H,0x0a0e14,.92));
 
@@ -1130,7 +1137,7 @@ class GameScene extends Phaser.Scene {
       {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',color:'#5a8a4f'}).setOrigin(.5));
 
     c.setVisible(true).setAlpha(0);
-    this.tweens.add({targets:c,alpha:1,duration:350});
+    this.tweens.add({targets:c,alpha:1,duration:350,onComplete:()=>{this.canReplay=true;}});
   }
 
   /* ─────────────────────────────────────────────────────────
