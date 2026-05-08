@@ -727,7 +727,6 @@ class GameScene extends Phaser.Scene {
     this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
     this.load.image('coupe_silver', 'assets/coupe_silver.png');
     this.load.image('suv_img', 'assets/suv.png');
-    this.load.image('suv_white', 'assets/suv_white.png');
     this.load.image('suv_black', 'assets/suv_black.png');
     this.load.image('truck_img', 'assets/truck.png');
     this.load.image('truck_yellow', 'assets/truck_yellow.png');
@@ -735,7 +734,6 @@ class GameScene extends Phaser.Scene {
     this.load.image('moto_img', 'assets/moto.png');
     this.load.image('moto_orange', 'assets/moto_orange.png');
     this.load.image('cyclist_img', 'assets/cyclist.png');
-    this.load.image('cyclist_green', 'assets/cyclist_green.png');
   }
 
   create(){
@@ -779,7 +777,6 @@ class GameScene extends Phaser.Scene {
       {
         variants: [
           {key:'suv_img', wm:2.8, hm:1.45},
-          {key:'suv_white', wm:2.8, hm:1.45},
           {key:'suv_black', wm:3.0, hm:1.55}
         ],
         spd: 0.9,
@@ -804,8 +801,7 @@ class GameScene extends Phaser.Scene {
       },
       {
         variants: [
-          {key:'cyclist_img', wm:1.7, hm:0.6},
-          {key:'cyclist_green', wm:1.8, hm:0.8}
+          {key:'cyclist_img', wm:1.7, hm:0.6}
         ],
         spd: 0.65,
         weight: 3
