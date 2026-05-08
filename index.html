@@ -721,7 +721,7 @@ class GameScene extends Phaser.Scene {
   constructor(){ super('Game'); }
 
   preload(){
-    this.load.spritesheet('newt_sheet', 'assets/newt_sheet.png', { frameWidth: 512, frameHeight: 512 });
+    this.load.spritesheet('newt_sheet', 'assets/newt_sprite_sheet.png', { frameWidth: 1408, frameHeight: 1536 });
     this.load.image('sedan_img', 'assets/sedan.png');
     this.load.image('sedan_red', 'assets/sedan_red.png');
     this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
@@ -879,7 +879,7 @@ class GameScene extends Phaser.Scene {
     if(!this.anims.exists('crawl')){
       this.anims.create({
         key: 'crawl',
-        frames: this.anims.generateFrameNumbers('newt_sheet', { start: 0, end: 3 }),
+        frames: this.anims.generateFrameNumbers('newt_sheet', { start: 0, end: 7 }),
         frameRate: 8,
         repeat: -1
       });
