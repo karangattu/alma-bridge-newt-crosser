@@ -93,16 +93,139 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
   border:none;border-radius:6px;padding:6px 10px;font-size:.7rem;cursor:pointer;display:none;font-family:inherit;}
 #fsBtn.show{display:block;}
 
+/* ─── video transition ─── */
+#videoContainer {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  background: #0f1419;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease-in-out;
+}
+#videoContainer.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+#introVideo {
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  object-fit: contain;
+}
+#skipVideoBtn {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  padding: 0.8rem 1.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+#skipVideoBtn:hover {
+  background: #ffa64d;
+  color: #0f1419;
+  border-color: #ffa64d;
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 15px 35px rgba(255, 166, 77, 0.4);
+}
+#skipVideoBtn:active {
+  transform: translateY(-1px) scale(0.97);
+  box-shadow: 0 8px 20px rgba(255, 166, 77, 0.3);
+}
+
 /* ─── tutorial ─── */
-#tutorial{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:1rem;}
-.tut-card{background:rgba(15,20,25,0.95);border:1px solid rgba(255,166,77,0.3);border-radius:24px;
-  padding:2.5rem;text-align:center;max-width:400px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.6);}
-.tut-card h2{color:#ffa64d;font-size:2rem;margin-bottom:1rem;font-weight:900;}
-.tut-card p{color:#cbd5e1;font-size:1.1rem;margin-bottom:1.2rem;line-height:1.5;font-weight:500;}
-.tut-card .tut-img{font-size:3rem;margin-bottom:1rem;text-shadow:0 4px 12px rgba(0,0,0,0.5);}
-#tutBtn{width:100%;padding:1.1rem;border-radius:16px;border:none;background:linear-gradient(135deg,#ffa64d 0%,#ff8c1a 100%);
-  color:#0f1419;font-family:inherit;font-size:1.2rem;font-weight:900;cursor:pointer;margin-top:1rem;text-transform:uppercase;box-shadow:0 8px 16px rgba(255,166,77,0.3);}
+#tutorial {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 150;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  max-width: 600px;
+}
+.tut-card {
+  background: rgba(15, 20, 25, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 166, 77, 0.35);
+  border-radius: 24px;
+  padding: 1.4rem 2rem;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  animation: tut-entrance 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes tut-entrance {
+  from { opacity: 0; transform: translateY(-25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tut-card h2 {
+  color: #ffa64d;
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 20px rgba(255, 166, 77, 0.35);
+}
+.tut-card p {
+  color: #cbd5e1;
+  font-size: 1.05rem;
+  margin: 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+.tut-card .tut-img {
+  font-size: 2.2rem;
+  margin: 0;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+#tutBtn {
+  width: auto;
+  padding: 0.65rem 1.6rem;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #ffa64d 0%, #ff8c1a 100%);
+  color: #0f1419;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+  box-shadow: 0 8px 20px rgba(255, 166, 77, 0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#tutBtn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 25px rgba(255, 166, 77, 0.45);
+}
+#tutBtn:active {
+  transform: scale(0.96) translateY(0);
+}
 
 /* ── portrait mobile ── */
 @media (max-width: 600px) and (orientation: portrait) {
@@ -193,19 +316,42 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 
 /* tutorial: compact landscape */
 @media (max-height: 520px) and (orientation: landscape) {
+  #tutorial {
+    top: 12px;
+    max-width: 580px;
+  }
   .tut-card {
-    display: flex;
     flex-direction: row;
-    align-items: center;
-    gap: 1.5rem;
-    max-width: 680px;
-    padding: 1.5rem 2rem;
+    padding: 0.6rem 1.4rem;
+    gap: 1.2rem;
+    border-radius: 16px;
     text-align: left;
   }
-  .tut-card .tut-img { font-size: 2rem; margin-bottom: 0; flex-shrink: 0; }
-  .tut-card h2 { font-size: 1.4rem; margin-bottom: 0.4rem; }
-  .tut-card p { font-size: 0.88rem; margin-bottom: 0.5rem; }
-  #tutBtn { padding: 0.75rem; font-size: 1rem; margin-top: 0.4rem; }
+  .tut-card .tut-img {
+    font-size: 1.8rem;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  .tut-card h2 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  .tut-card p {
+    font-size: 0.85rem;
+    margin: 0;
+  }
+  .tut-card .tut-text-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  #tutBtn {
+    margin-top: 0;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
 }
 </style>
 </head>
@@ -220,13 +366,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
   </div>
 </div>
 
+<!-- ─── video transition ─── -->
+<div id="videoContainer">
+  <video id="introVideo" src="assets/intro_video.mp4" playsinline></video>
+  <button id="skipVideoBtn">Skip →</button>
+</div>
+
 <!-- ─── tutorial ─── -->
 <div id="tutorial">
   <div class="tut-card">
-    <div class="tut-img">🐸 ⬅️ ⬆️ ➡️</div>
-    <h2>How to Play</h2>
-    <p>Swipe or use arrow keys to move the newt.</p>
-    <p>Avoid the speeding vehicles and reach the grass on the other side of Alma Bridge Road!</p>
+    <div class="tut-img" id="tutImg">🐸 ⬅️ ⬆️ ➡️</div>
+    <div class="tut-text-content">
+      <h2 id="tutTitle">How to Play</h2>
+      <p id="tutText">Swipe or use arrow keys to move the newt.</p>
+    </div>
     <button id="tutBtn">Got It!</button>
   </div>
 </div>
@@ -274,6 +427,7 @@ const supabaseClient = _supabase.createClient(supabaseUrl, supabaseKey);
 
 let playerName='', leaderboardEntries=[], globalHigh=0, topScore=0, topScoreName='';
 let audioCtx=null, muted=false;
+window.tutorialShown = localStorage.getItem('tutorialCompleted') === 'true';
 
 /* ─── leaderboard ─── */
 async function fetchLB(){
@@ -375,10 +529,54 @@ nameIn.addEventListener('input',()=>{playerName=nameIn.value.trim();});
 
 function startGame() {
   fsBtn.classList.add('show');
-  if(window._game) window._game.scene.getScene('Game').scene.restart();
-  else launchGame();
+  if(window._game) {
+    const scene = window._game.scene.getScene('Game');
+    scene.isTutorial = false;
+    scene.scene.restart();
+  } else {
+    launchGame();
+  }
   gtag('event','start_game',{event_category:'Game'});
 }
+
+let videoTimeoutId = null;
+
+function startInteractiveTutorial() {
+  fsBtn.classList.add('show');
+  tutorial.style.display = 'flex';
+  if(window._game) {
+    const scene = window._game.scene.getScene('Game');
+    scene.isTutorial = true;
+    scene.scene.restart();
+  } else {
+    launchGame();
+  }
+}
+
+function onVideoEnd() {
+  if (videoTimeoutId) {
+    clearTimeout(videoTimeoutId);
+    videoTimeoutId = null;
+  }
+  const videoContainer = document.getElementById('videoContainer');
+  const introVideo = document.getElementById('introVideo');
+  if (introVideo) introVideo.pause();
+  if (videoContainer) videoContainer.classList.remove('show');
+  
+  if (window.videoTransitionCompleted) return;
+  window.videoTransitionCompleted = true;
+  
+  if(!window.tutorialShown) {
+    startInteractiveTutorial();
+  } else {
+    startGame();
+  }
+}
+
+const introVideo = document.getElementById('introVideo');
+const skipVideoBtn = document.getElementById('skipVideoBtn');
+if (introVideo) introVideo.addEventListener('ended', onVideoEnd);
+if (skipVideoBtn) skipVideoBtn.addEventListener('click', onVideoEnd);
 
 playBtn.addEventListener('click',()=>{
   playerName=nameIn.value.trim()||playerName||'Anon';
@@ -386,15 +584,31 @@ playBtn.addEventListener('click',()=>{
   goFullscreen();
   splash.style.opacity='0'; splash.style.pointerEvents='none';
   
-  if(!window.tutorialShown) {
-    tutorial.style.display='flex';
+  window.videoTransitionCompleted = false;
+  
+  const isTest = navigator.webdriver || window.location.search.includes('test');
+  if (isTest) {
+    onVideoEnd();
   } else {
-    startGame();
+    const videoContainer = document.getElementById('videoContainer');
+    const introVideo = document.getElementById('introVideo');
+    videoContainer.classList.add('show');
+    introVideo.currentTime = 0;
+    
+    videoTimeoutId = setTimeout(() => {
+      onVideoEnd();
+    }, 10000);
+    
+    introVideo.play().catch(err => {
+      console.log("Video autoplay failed, skipping to next step:", err);
+      onVideoEnd();
+    });
   }
 });
 
 tutBtn.addEventListener('click',()=>{
   window.tutorialShown=true;
+  localStorage.setItem('tutorialCompleted', 'true');
   tutorial.style.display='none';
   startGame();
 });
@@ -750,7 +964,9 @@ class GameScene extends Phaser.Scene {
     this.SPAWN_Y    = H-TS*1.0;
 
     /* state */
-    this.score=0; this.lives=3; this.isOver=false;
+    this.score = this.score || 0;
+    this.lives = this.lives !== undefined ? this.lives : 3;
+    this.isOver = this.isOver !== undefined ? this.isOver : false;
     this.gameOverShown=false; this.canReplay=false;
     this.newtAlive=true; this.targetAng=0; this.lastStep=0;
     this.invulnerable=false;
@@ -955,8 +1171,105 @@ class GameScene extends Phaser.Scene {
 
     /* baseline difficulty drift */
     this.time.addEvent({delay:30000,loop:true,callback:()=>{
-      if(!this.isOver) this.diff=Math.min(3.5,this.diff+.08);
+      if(!this.isOver && !this.isTutorial) this.diff=Math.min(3.5,this.diff+.08);
     }});
+
+    this.isTutorial = !window.tutorialShown;
+    if (this.isTutorial) {
+      this.startTutorialMode();
+    }
+    window._game = this.game;
+  }
+
+  startTutorialMode() {
+    this.isTutorial = true;
+    this.tutorialStep = 1;
+
+    document.getElementById('tutTitle').textContent = 'Step 1: Move forward';
+    document.getElementById('tutText').textContent = 'SWIPE UP or press UP/W key to move the newt forward.';
+    document.getElementById('tutImg').textContent = '🐸 ⬆️';
+    document.getElementById('tutBtn').textContent = 'Skip';
+
+    if (this.scoreTxt) this.scoreTxt.setVisible(false);
+    if (this.livesTxt) this.livesTxt.setVisible(false);
+    if (this.bestTxt) this.bestTxt.setVisible(false);
+    if (this.muteBt) this.muteBt.setVisible(false);
+
+    this.vehicles.clear(true, true);
+    this.newt.setPosition(this.scale.width / 2, this.SPAWN_Y);
+  }
+
+  spawnTutorialCar() {
+    this.vehicles.clear(true, true);
+    const lane = this.lanes[Math.floor(this.lanes.length / 2)] || { y: this.scale.height * 0.5, dir: 1 };
+    const x = lane.dir > 0 ? -100 : this.scale.width + 100;
+    const v = this.physics.add.image(x, lane.y, 'sedan_img').setDepth(2);
+    v.setScale((this.TS * 2.5) / v.width);
+    v.body.setSize(v.width * 0.9, v.height * 0.9);
+    v.body.setAllowGravity(false);
+    v.dir = lane.dir;
+    v.baseSpd = 0.38;
+    v.spd = 0.38;
+    v.wm = 2.5;
+    v.hm = 1.25;
+    v.isTutorialCar = true;
+    v.setFlipX(lane.dir > 0);
+    this.vehicles.add(v);
+  }
+
+  onTutorialHit() {
+    if(!this.newtAlive||this.invulnerable) return;
+    sfx('hit'); vibrate([40,30,80]);
+    this.cameras.main.shake(180,.012);
+    this.cameras.main.flash(160,255,60,60);
+    const sp=this.add.image(this.newt.x,this.newt.y,'splat').setDepth(1).setAlpha(.85);
+    this.time.delayedCall(1500, () => sp.destroy());
+    
+    this.newtAlive=false;
+    this.tweens.killTweensOf(this.newt);
+    this.newt.setVisible(false);
+    
+    document.getElementById('tutTitle').textContent = 'Oops! Try again';
+    document.getElementById('tutText').textContent = 'Avoid vehicles! Stand still or move out of the way. Let\'s try dodging again.';
+    
+    this.time.delayedCall(800, () => {
+      this.newt.setPosition(this.scale.width / 2, this.SPAWN_Y).setVisible(true).setAlpha(1);
+      this.newt.angle=0;
+      this.targetAng=0;
+      this.newtAlive=true;
+      this.invulnerable=true;
+      this.tweens.add({
+        targets:this.newt, alpha:{from:.4,to:1}, duration:90, repeat:3, yoyo:true,
+        onComplete:()=>{this.newt.setAlpha(1); this.invulnerable=false;}
+      });
+      this.spawnTutorialCar();
+    });
+  }
+
+  onTutorialCross() {
+    this.isTutorial = false;
+    window.tutorialShown = true;
+    localStorage.setItem('tutorialCompleted', 'true');
+    
+    sfx('level'); vibrate(15);
+    this.cameras.main.flash(80,90,180,90,true);
+    
+    document.getElementById('tutTitle').textContent = 'You did it!';
+    document.getElementById('tutText').textContent = 'Awesome job! You are ready to save the newts of Alma Bridge Road.';
+    document.getElementById('tutImg').textContent = '🐸 🏆';
+    document.getElementById('tutBtn').textContent = 'Start Game';
+    
+    this.newtAlive = false;
+    this.tweens.killTweensOf(this.newt);
+    
+    this.tweens.add({
+      targets: this.newt,
+      scaleX: this.newt.scaleX * 1.3,
+      scaleY: this.newt.scaleY * 1.3,
+      duration: 300,
+      yoyo: true,
+      repeat: 2
+    });
   }
 
   /* ── HUD update ── */
@@ -985,11 +1298,27 @@ class GameScene extends Phaser.Scene {
     else if(dx<0) this.targetAng=-90;
     else if(dx>0) this.targetAng=90;
     this.tweens.add({targets:this.newt,x:nx,y:ny,duration:80,ease:'Power2'});
+
+    if (this.isTutorial) {
+      if (this.tutorialStep === 1 && dy < 0) {
+        this.tutorialStep = 2;
+        document.getElementById('tutTitle').textContent = 'Step 2: Steer left & right';
+        document.getElementById('tutText').textContent = 'Excellent! Now SWIPE or press LEFT/RIGHT (A/D) to steer.';
+        document.getElementById('tutImg').textContent = '🐸 ⬅️ ➡️';
+      } else if (this.tutorialStep === 2 && dx !== 0) {
+        this.tutorialStep = 3;
+        document.getElementById('tutTitle').textContent = 'Step 3: Dodge vehicles';
+        document.getElementById('tutText').textContent = 'Watch out! A speeding car is coming. Stand still or move to dodge it!';
+        document.getElementById('tutImg').textContent = '🚗 ⚠️';
+        this.spawnTutorialCar();
+      }
+    }
   }
 
   /* ── spawn vehicles ── */
   spawnCars(){
     this.vehicles.clear(true,true);
+    if(this.isTutorial) return;
     const W=this.scale.width, TS=this.TS;
     this.lanes.forEach(lane=>{
       const laneBaseSpd=.7+Math.random()*.4;
@@ -1243,8 +1572,21 @@ class GameScene extends Phaser.Scene {
       }
       v.x+=v.dir*baseSpd*v.spd*this.diff*dt;
       const vWidth = TS * v.wm;
-      if(v.dir>0&&v.x>W+vWidth) v.x=-vWidth;
-      else if(v.dir<0&&v.x<-vWidth) v.x=W+vWidth;
+      if (v.isTutorialCar) {
+        const offScreen = (v.dir > 0 && v.x > W + vWidth) || (v.dir < 0 && v.x < -vWidth);
+        if (offScreen) {
+          v.destroy();
+          if (this.isTutorial && this.tutorialStep === 3) {
+            this.tutorialStep = 4;
+            document.getElementById('tutTitle').textContent = 'Step 4: Reach safety';
+            document.getElementById('tutText').textContent = 'Perfect dodge! Now cross the road to the green SAFE zone at the top!';
+            document.getElementById('tutImg').textContent = '🐸 🏁';
+          }
+        }
+      } else {
+        if(v.dir>0&&v.x>W+vWidth) v.x=-vWidth;
+        else if(v.dir<0&&v.x<-vWidth) v.x=W+vWidth;
+      }
     });
 
     /* dashed centre line */
@@ -1258,7 +1600,11 @@ class GameScene extends Phaser.Scene {
 
     /* success check FIRST */
     if(this.newtAlive&&this.newt&&this.newt.y<this.ROAD_TOP-this.SHOULDER_H*.5){
-      this.onCross();
+      if (this.isTutorial) {
+        this.onTutorialCross();
+      } else {
+        this.onCross();
+      }
       return;
     }
 
@@ -1272,7 +1618,13 @@ class GameScene extends Phaser.Scene {
         if(!v||!v.active||hit) return;
         if(Phaser.Geom.Rectangle.Overlaps(nR,v.getBounds())) hit=true;
       });
-      if(hit) this.onHit();
+      if(hit) {
+        if (this.isTutorial) {
+          this.onTutorialHit();
+        } else {
+          this.onHit();
+        }
+      }
     }
 
     this.updateCleaner(time,dt);
@@ -1283,7 +1635,7 @@ class GameScene extends Phaser.Scene {
    LAUNCH
    ═══════════════════════════════════════════════════════════════ */
 function launchGame(){
-  window._game=new Phaser.Game({
+  new Phaser.Game({
     type:Phaser.AUTO,
     parent:'game-wrapper',
     width:window.innerWidth,
