@@ -226,6 +226,58 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 #tutBtn:active {
   transform: scale(0.96) translateY(0);
 }
+.skip-tut-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+.skip-tut-container:hover {
+  color: #ffa64d;
+}
+.skip-tut-container input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: all 0.2s ease;
+}
+.skip-tut-container input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transform-origin: center;
+  background-color: #ffa64d;
+  clip-path: polygon(14% 44%, 0 58%, 38% 96%, 100% 16%, 86% 2%, 38% 68%);
+  transition: transform 0.1s ease-in-out;
+}
+.skip-tut-container input[type="checkbox"]:checked {
+  border-color: #ffa64d;
+  background: rgba(255, 166, 77, 0.15);
+}
+.skip-tut-container input[type="checkbox"]:checked::before {
+  transform: scale(1.15);
+}
+.skip-tut-container input[type="checkbox"]:focus-visible {
+  outline: 2px solid #ffa64d;
+  outline-offset: 2px;
+}
 
 /* ── portrait mobile ── */
 @media (max-width: 600px) and (orientation: portrait) {
@@ -403,6 +455,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
     <div class="splash-form">
       <div class="hi-line">High Score: <span id="hiScore">—</span></div>
       <input id="nameIn" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
+      <label class="skip-tut-container">
+        <input type="checkbox" id="skipTutCheck"> Skip Tutorial
+      </label>
       <button id="playBtn">Play</button>
       <div class="controls-hint">Swipe or use arrow keys</div>
     </div>
@@ -524,6 +579,10 @@ const tutBtn=document.getElementById('tutBtn');
 
 fetchLB();
 checkOrient();
+const skipTutCheck = document.getElementById('skipTutCheck');
+if (skipTutCheck) {
+  skipTutCheck.checked = window.tutorialShown;
+}
 nameIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();playBtn.click();}});
 nameIn.addEventListener('input',()=>{playerName=nameIn.value.trim();});
 
@@ -580,6 +639,15 @@ if (skipVideoBtn) skipVideoBtn.addEventListener('click', onVideoEnd);
 
 playBtn.addEventListener('click',()=>{
   playerName=nameIn.value.trim()||playerName||'Anon';
+  const skipTutCheck = document.getElementById('skipTutCheck');
+  if (skipTutCheck) {
+    window.tutorialShown = skipTutCheck.checked;
+    if (skipTutCheck.checked) {
+      localStorage.setItem('tutorialCompleted', 'true');
+    } else {
+      localStorage.removeItem('tutorialCompleted');
+    }
+  }
   ensureAudio(); resumeAudio();
   goFullscreen();
   splash.style.opacity='0'; splash.style.pointerEvents='none';
@@ -1432,22 +1500,54 @@ class GameScene extends Phaser.Scene {
       const dx=tx-worker.x;
       const dy=ty-worker.y;
       const dist=Math.hypot(dx,dy);
-      worker.y+=Math.sin(time*.02)*0.18;
-      worker.angle=Math.sin(time*.018)*2.5;
+      worker.y+=Math.sin(time*.025)*0.6;
+      worker.angle=Math.sin(time*.025)*4;
+      worker.scaleY=1+Math.sin(time*.05)*0.03;
+      worker.scaleX=1-Math.sin(time*.05)*0.02;
       if(dist<Math.max(speed*3,this.TS*.35)){
         this.cleanerState='cleaning';
-        this.cleanerStopAt=time+1100;
-        worker.angle=0;
-        this.tweens.add({targets:worker,x:worker.x-8,duration:180,yoyo:true,repeat:3,ease:'Sine.easeInOut'});
-        this.tweens.add({targets:worker,angle:{from:-7,to:7},duration:180,yoyo:true,repeat:3,ease:'Sine.easeInOut'});
+        this.cleanerStopAt=time+1300;
+        this.tweens.killTweensOf(worker);
+        this.tweens.add({
+          targets: worker,
+          x: { from: worker.x - 18, to: worker.x + 18 },
+          y: { from: worker.y - 6, to: worker.y + 6 },
+          angle: { from: -22, to: 22 },
+          duration: 200,
+          yoyo: true,
+          repeat: 5,
+          ease: 'Sine.easeInOut'
+        });
+        this.tweens.add({
+          targets: worker,
+          scaleX: { from: 0.9, to: 1.1 },
+          scaleY: { from: 1.1, to: 0.9 },
+          duration: 100,
+          yoyo: true,
+          repeat: 11,
+          ease: 'Quad.easeInOut'
+        });
         return;
       }
       worker.x+=Math.sign(dx)*Math.min(Math.abs(dx),speed);
       worker.y+=Math.sign(dy)*Math.min(Math.abs(dy),speed*.75);
       worker.setFlipX(dx<0);
     } else if(this.cleanerState==='cleaning'){
-      worker.scaleY=1+Math.sin(time*.03)*.02;
-      worker.scaleX=1-Math.sin(time*.03)*.02;
+      if(Math.random()<0.4){
+        const px=worker.x+(Math.random()*40-20);
+        const py=worker.y+this.TS*0.7+(Math.random()*20-10);
+        const color=Phaser.Utils.Array.GetRandom([0xffffff,0xe2ebf0,0xc3d3e2]);
+        const p=this.add.circle(px,py,Phaser.Math.Between(2,5),color,0.75).setDepth(3);
+        this.tweens.add({
+          targets:p,
+          x:px+(Math.random()*40-20),
+          y:py-Phaser.Math.Between(15,30),
+          scale:0.1,
+          alpha:0,
+          duration:Phaser.Math.Between(300,500),
+          onComplete:()=>p.destroy()
+        });
+      }
       if(time>=this.cleanerStopAt){
         if(this.cleanerTarget&&this.cleanerTarget.sprite&&this.cleanerTarget.sprite.active){
           this.cleanerTarget.sprite.destroy();
@@ -1466,8 +1566,10 @@ class GameScene extends Phaser.Scene {
       const dx=tx-worker.x;
       const dy=ty-worker.y;
       const dist=Math.hypot(dx,dy);
-      worker.y+=Math.sin(time*.02)*0.15;
-      worker.angle=Math.sin(time*.018)*2.2;
+      worker.y+=Math.sin(time*.025)*0.6;
+      worker.angle=Math.sin(time*.025)*4;
+      worker.scaleY=1+Math.sin(time*.05)*0.03;
+      worker.scaleX=1-Math.sin(time*.05)*0.02;
       if(dist<Math.max(speed*3,this.TS*.4)){
         worker.setVisible(false);
         worker.angle=0;
