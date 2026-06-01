@@ -13,7 +13,7 @@ test('loads the splash screen and starts the game', async ({ page }) => {
 
   await page.getByPlaceholder('Your name').fill('Smoke');
   await page.getByRole('button', { name: 'Play' }).click();
-  await page.getByRole('button', { name: 'Got It!' }).click();
+  await page.locator('#tutBtn').click();
 
   await expect.poll(async () => page.evaluate(() => {
     const splash = document.getElementById('splash');
