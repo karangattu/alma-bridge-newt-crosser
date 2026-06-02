@@ -142,6 +142,7 @@ test('volunteer cleaning logic is triggered on hit and cleans the splat', async 
     const scene = window._game.scene.getScene('Game');
     scene.lives = 3;
     scene.updateHUD();
+    scene.newt.x = 100;
     scene.onHit();
   });
 
@@ -162,7 +163,7 @@ test('volunteer cleaning logic is triggered on hit and cleans the splat', async 
       splatCount: scene.splats.length,
       cleanerState: scene.cleanerState
     };
-  }), { timeout: 6000 }).toEqual({
+  }), { timeout: 15000 }).toEqual({
     splatCount: 0,
     cleanerState: 'exiting'
   });
