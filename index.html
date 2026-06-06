@@ -1103,8 +1103,15 @@ class GameScene extends Phaser.Scene {
 
     /* ── background — flat minimal bands ── */
     const bg=this.add.graphics().setDepth(-10);
-    /* upper grass (safe zone) */
-    bg.fillStyle(0x3a5a3a); bg.fillRect(0,0,W,this.ROAD_TOP-this.SHOULDER_H);
+    /* upper reservoir (safe zone) */
+    bg.fillGradientStyle(0x133847, 0x133847, 0x1f5c78, 0x1f5c78, 1);
+    bg.fillRect(0,0,W,this.ROAD_TOP-this.SHOULDER_H);
+    /* reservoir reflections/ripples */
+    const waterH = this.ROAD_TOP-this.SHOULDER_H;
+    for (let i = 0; i < 15; i++) {
+      bg.fillStyle(0xffffff, 0.06);
+      bg.fillRect(Math.random()*W, Math.random()*waterH, 15+Math.random()*30, 2);
+    }
     /* dirt shoulder top */
     bg.fillStyle(0x5a4a35); bg.fillRect(0,this.ROAD_TOP-this.SHOULDER_H,W,this.SHOULDER_H);
     /* asphalt */
@@ -1122,12 +1129,10 @@ class GameScene extends Phaser.Scene {
     /* lower grass */
     bg.fillStyle(0x3a5a3a); bg.fillRect(0,this.ROAD_BOT+this.SHOULDER_H,W,H-this.ROAD_BOT-this.SHOULDER_H);
 
-    /* sparse grass tufts */
-    for(let i=0;i<28;i++){
+    /* sparse grass tufts (lower zone only) */
+    for(let i=0;i<20;i++){
       bg.fillStyle(0x2a4a2a,.5);
-      const y=Math.random()<.5
-        ? Math.random()*(this.ROAD_TOP-this.SHOULDER_H)
-        : this.ROAD_BOT+this.SHOULDER_H+Math.random()*(H-this.ROAD_BOT-this.SHOULDER_H);
+      const y=this.ROAD_BOT+this.SHOULDER_H+Math.random()*(H-this.ROAD_BOT-this.SHOULDER_H);
       bg.fillCircle(Math.random()*W,y,1+Math.random()*1.5);
     }
 
@@ -1147,10 +1152,10 @@ class GameScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(-8).setAlpha(0.08);
     });
 
-    /* SAFE label */
-    this.add.text(W/2,this.ROAD_TOP-this.SHOULDER_H-TS*.32,'SAFE',
-      {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',fontStyle:'600',color:'#5a8a4f'})
-      .setOrigin(.5).setDepth(-3).setAlpha(.7);
+    /* LEXINGTON RESERVOIR label */
+    this.add.text(W/2,this.ROAD_TOP-this.SHOULDER_H-TS*.32,'LEXINGTON RESERVOIR',
+      {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',fontStyle:'700',color:'#84cbf0'})
+      .setOrigin(.5).setDepth(-3).setAlpha(.8);
 
     /* ── lanes — adapt to road height ── */
     const roadH=this.ROAD_BOT-this.ROAD_TOP;
@@ -1693,8 +1698,8 @@ class GameScene extends Phaser.Scene {
           v.destroy();
           if (this.isTutorial && this.tutorialStep === 3) {
             this.tutorialStep = 4;
-            document.getElementById('tutTitle').textContent = 'Step 4: Reach safety';
-            document.getElementById('tutText').textContent = 'Perfect dodge! Now cross the road to the green SAFE zone at the top!';
+            document.getElementById('tutTitle').textContent = 'Step 4: Reach the reservoir';
+            document.getElementById('tutText').textContent = 'Perfect dodge! Now cross the road to Lexington Reservoir at the top!';
             document.getElementById('tutImg').textContent = '🐸 🏁';
           }
         }
