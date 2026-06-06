@@ -1134,6 +1134,19 @@ class GameScene extends Phaser.Scene {
     /* dashed centre line */
     this.dashGfx=this.add.graphics().setDepth(-4);
 
+    const upperY = this.ROAD_TOP + (this.ROAD_MID - this.ROAD_TOP) * 0.55;
+    const lowerY = this.ROAD_MID + (this.ROAD_BOT - this.ROAD_MID) * 0.45;
+    const roadLabels = W > 800 ? [W * 0.25, W * 0.75] : [W * 0.5];
+    roadLabels.forEach((x, idx) => {
+      const y = idx % 2 === 0 ? upperY : lowerY;
+      this.add.text(x, y, 'ALMA BRIDGE ROAD', {
+        fontFamily: 'Inter',
+        fontSize: Math.max(14, TS * 0.45) + 'px',
+        fontStyle: '800',
+        color: '#ffffff'
+      }).setOrigin(0.5).setDepth(-8).setAlpha(0.08);
+    });
+
     /* SAFE label */
     this.add.text(W/2,this.ROAD_TOP-this.SHOULDER_H-TS*.32,'SAFE',
       {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',fontStyle:'600',color:'#5a8a4f'})

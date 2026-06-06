@@ -169,5 +169,22 @@ test('volunteer cleaning logic is triggered on hit and cleans the splat', async 
   });
 });
 
+test('renders Alma Bridge Road text markings on the road itself', async ({ page }) => {
+  await page.goto('/');
+  await page.getByPlaceholder('Your name').fill('RoadLabelTest');
+  await page.getByRole('button', { name: 'Play' }).click();
+  await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
+
+  const roadTextExists = await page.evaluate(() => {
+    const scene = window._game.scene.getScene('Game');
+    const texts = scene.children.list
+      .filter(child => child.type === 'Text')
+      .map(child => child.text);
+    return texts.includes('ALMA BRIDGE ROAD');
+  });
+
+  expect(roadTextExists).toBe(true);
+});
+
 
 
