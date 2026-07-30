@@ -1,4 +1,36 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs');
+const path = require('node:path');
+
+async function startGameAtGameOver(page, { name = 'FinalLife', score = 3 } = {}) {
+  await page.route('**/rest/v1/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  }));
+  await page.goto('/');
+  await page.getByPlaceholder('Your name').fill(name);
+  await page.getByRole('button', { name: 'Play' }).click();
+
+  await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
+
+  await page.evaluate((finalScore) => {
+    window.leaderboardEntries = [
+      { name: 'Ada', score: 7 },
+      { name: 'Grace', score: 5 },
+    ];
+    const scene = window._game.scene.getScene('Game');
+    scene.score = finalScore;
+    scene.lives = 1;
+    scene.updateHUD();
+    scene.onHit();
+  }, score);
+
+  await expect.poll(async () => page.evaluate(() => {
+    const scene = window._game.scene.getScene('Game');
+    return scene.goContainer.visible && scene.canReplay;
+  })).toBe(true);
+}
 
 test('loads the splash screen and starts the game', async ({ page }) => {
   const pageErrors = [];
@@ -34,30 +66,8 @@ test('loads the splash screen and starts the game', async ({ page }) => {
   expect(pageErrors).toEqual([]);
 });
 
-test('shows game over and leaderboard before allowing replay after final life', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.tutorialShown = true;
-  });
-
-  await page.goto('/');
-  await page.getByPlaceholder('Your name').fill('FinalLife');
-  await page.getByRole('button', { name: 'Play' }).click();
-
-  await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
-
-  await page.evaluate(() => {
-    window.leaderboardEntries = [
-      { name: 'Ada', score: 7 },
-      { name: 'Grace', score: 5 },
-    ];
-    const scene = window._game.scene.getScene('Game');
-    scene.score = 3;
-    scene.lives = 1;
-    scene.updateHUD();
-    scene.onHit();
-  });
-
-  await page.mouse.click(50, 50);
+test('shows explicit Play Again and Home actions after the final life', async ({ page }) => {
+  await startGameAtGameOver(page);
 
   await expect.poll(async () => page.evaluate(() => {
     const scene = window._game.scene.getScene('Game');
@@ -72,6 +82,8 @@ test('shows game over and leaderboard before allowing replay after final life', 
       gameOverVisible: scene.goContainer.visible,
       hasGameOverTitle: gameOverTexts.includes('GAME OVER'),
       hasLeaderboardTitle: gameOverTexts.includes('TOP SCORES'),
+      hasPlayAgain: gameOverTexts.includes('PLAY AGAIN'),
+      hasHome: gameOverTexts.includes('HOME'),
     };
   })).toEqual({
     isOver: true,
@@ -80,7 +92,72 @@ test('shows game over and leaderboard before allowing replay after final life', 
     gameOverVisible: true,
     hasGameOverTitle: true,
     hasLeaderboardTitle: true,
+    hasPlayAgain: true,
+    hasHome: true,
   });
+});
+
+test('Play Again starts a fresh run from the end screen', async ({ page }) => {
+  await startGameAtGameOver(page, { score: 3 });
+
+  await page.evaluate(() => {
+    const scene = window._game.scene.getScene('Game');
+    scene.playAgainButton.emit('pointerdown', { event: { stopPropagation() {} } });
+  });
+
+  await expect.poll(async () => page.evaluate(() => {
+    const scene = window._game.scene.getScene('Game');
+    return { score: scene.score, lives: scene.lives, isOver: scene.isOver };
+  })).toEqual({ score: 0, lives: 3, isOver: false });
+});
+
+test('Home returns to the splash screen from the end screen', async ({ page }) => {
+  await startGameAtGameOver(page);
+
+  await page.evaluate(() => {
+    const scene = window._game.scene.getScene('Game');
+    scene.homeButton.emit('pointerdown', { event: { stopPropagation() {} } });
+  });
+
+  await expect.poll(async () => page.evaluate(() => {
+    const splash = document.getElementById('splash');
+    return {
+      opacity: getComputedStyle(splash).opacity,
+      pointerEvents: getComputedStyle(splash).pointerEvents,
+    };
+  })).toEqual({ opacity: '1', pointerEvents: 'auto' });
+});
+
+test('score submissions use the atomic personal-best endpoint', async ({ page }) => {
+  const requests = [];
+  await page.route('**/rest/v1/**', async (route) => {
+    const request = route.request();
+    requests.push({ url: request.url(), method: request.method(), body: request.postDataJSON() });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+  });
+
+  await page.goto('/');
+  await page.evaluate(async () => {
+    playerName = 'RepeatPlayer';
+    await submitScore(11);
+  });
+
+  expect(requests).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      url: expect.stringContaining('/rest/v1/rpc/submit_alma_bridge_newt_crosser_score'),
+      method: 'POST',
+      body: { player_name: 'RepeatPlayer', player_score: 11 },
+    }),
+  ]));
+});
+
+test('leaderboard migration keeps one case-insensitive personal best per name', () => {
+  const migrationPath = path.join(__dirname, '..', 'supabase', 'migrations', '20260730_keep_highest_score_per_name.sql');
+  const sql = fs.readFileSync(migrationPath, 'utf8');
+
+  expect(sql).toMatch(/unique index[\s\S]*lower\s*\(\s*btrim\s*\(\s*name\s*\)\s*\)/i);
+  expect(sql).toMatch(/on conflict\s*\(\s*\(\s*lower\s*\(\s*btrim\s*\(\s*name\s*\)\s*\)\s*\)\s*\)/i);
+  expect(sql).toMatch(/greatest\s*\(/i);
 });
 
 test('runs through the interactive tutorial successfully', async ({ page }) => {
@@ -185,6 +262,4 @@ test('renders Alma Bridge Road text markings on the road itself', async ({ page 
 
   expect(roadTextExists).toBe(true);
 });
-
-
 

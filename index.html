@@ -521,11 +521,14 @@ async function fetchLB(){
 async function submitScore(s){
   if(!playerName||s<=0) return;
   try{
-    const { error } = await supabaseClient
-      .from('alma_bridge_newt_crosser_scores')
-      .insert([{ name: playerName, score: s }]);
+    const { data, error } = await supabaseClient
+      .rpc('submit_alma_bridge_newt_crosser_score', {
+        player_name: playerName,
+        player_score: s
+      });
     if (error) throw error;
-    fetchLB();
+    globalHigh = Math.max(globalHigh, Number(data) || s);
+    await fetchLB();
   }catch(e){ console.error("Score submit error:", e); }
 }
 
@@ -1032,9 +1035,9 @@ class GameScene extends Phaser.Scene {
     this.SPAWN_Y    = H-TS*1.0;
 
     /* state */
-    this.score = this.score || 0;
-    this.lives = this.lives !== undefined ? this.lives : 3;
-    this.isOver = this.isOver !== undefined ? this.isOver : false;
+    this.score=0;
+    this.lives=3;
+    this.isOver=false;
     this.gameOverShown=false; this.canReplay=false;
     this.newtAlive=true; this.targetAng=0; this.lastStep=0;
     this.invulnerable=false;
@@ -1237,7 +1240,7 @@ class GameScene extends Phaser.Scene {
     this.input.on('pointerdown',p=>{
       /* ignore taps on the mute button area */
       muteHit = p.x<TS*1.0 && p.y<TS*3.2 && p.y>fs*1.9;
-      if(this.isOver){this.replayIfReady(); return;}
+      if(this.isOver) return;
       sx=p.x; sy=p.y; st=this.time.now;
     });
     this.input.on('pointerup',p=>{
@@ -1367,6 +1370,18 @@ class GameScene extends Phaser.Scene {
 
   replayIfReady(){
     if(this.isOver&&this.gameOverShown&&this.canReplay) this.scene.restart();
+  }
+
+  returnHomeIfReady(){
+    if(!this.isOver||!this.gameOverShown||!this.canReplay) return;
+    this.canReplay=false;
+    this.scene.stop();
+    tutorial.style.display='none';
+    splash.style.opacity='1';
+    splash.style.pointerEvents='auto';
+    fsBtn.classList.remove('show');
+    fetchLB();
+    if(isFullscreen()) document.exitFullscreen?.().catch(()=>{});
   }
 
   /* ── movement ── */
@@ -1641,13 +1656,32 @@ class GameScene extends Phaser.Scene {
         {fontFamily:'Inter',fontSize:Math.max(12,TS*.38)+'px',color:'#7a8590'}).setOrigin(.5));
     }
 
-    const ry=Math.min(H*.42+leaderboardEntries.length*TS*.6+TS*1.5,H*.88);
-    const rt=this.add.text(W/2,ry,'TAP TO PLAY AGAIN',
-      {fontFamily:'Inter',fontSize:Math.max(13,TS*.42)+'px',fontStyle:'700',color:'#fff'}).setOrigin(.5);
-    this.tweens.add({targets:rt,alpha:{from:1,to:.4},duration:700,yoyo:true,repeat:-1});
-    c.add(rt);
+    const actionsY=Math.min(H*.42+Math.max(1,leaderboardEntries.length)*TS*.6+TS*1.5,H*.86);
+    const buttonWidth=Math.min(220,Math.max(130,W*.3));
+    const buttonHeight=Math.max(36,TS*.65);
+    const buttonGap=Math.max(12,TS*.3);
+    const buttonOffset=(buttonWidth+buttonGap)/2;
+    const addActionButton=(x,label,fillColor,textColor,onActivate)=>{
+      const bg=this.add.rectangle(x,actionsY,buttonWidth,buttonHeight,fillColor,1)
+        .setStrokeStyle(2,label==='HOME'?0x66717d:0xffa64d,1)
+        .setInteractive({useHandCursor:true});
+      const labelText=this.add.text(x,actionsY,label,{
+        fontFamily:'Inter',fontSize:Math.max(12,TS*.36)+'px',fontStyle:'700',color:textColor
+      }).setOrigin(.5);
+      bg.on('pointerover',()=>bg.setAlpha(.82));
+      bg.on('pointerout',()=>bg.setAlpha(1));
+      bg.on('pointerdown',pointer=>{
+        pointer?.event?.stopPropagation?.();
+        onActivate();
+      });
+      c.add([bg,labelText]);
+      return bg;
+    };
 
-    c.add(this.add.text(W/2,H*.95,'bioblitz.club/newts',
+    this.playAgainButton=addActionButton(W/2-buttonOffset,'PLAY AGAIN',0xffa64d,'#111820',()=>this.replayIfReady());
+    this.homeButton=addActionButton(W/2+buttonOffset,'HOME',0x1d2630,'#ffffff',()=>this.returnHomeIfReady());
+
+    c.add(this.add.text(W/2,H*.96,'bioblitz.club/newts',
       {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',color:'#5a8a4f'}).setOrigin(.5));
 
     c.setVisible(true).setAlpha(0);

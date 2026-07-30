@@ -6,9 +6,9 @@ Help the newts safely cross Alma Bridge Road!
 
 - Objective: Get the newt from the bottom to the top without getting hit.
 - Controls:
-  - Keyboard: Arrow keys to move. P to pause/resume. Enter to restart after Game Over.
+  - Keyboard: Arrow keys to move. P to pause/resume. Enter selects Play Again after Game Over.
   - Mobile: Swipe to move, or tap the on‑screen arrow buttons. Tap ▶ in the top‑left to pause/resume.
-  - Restart: Tap the screen or press Enter on Game Over.
+  - Game Over: Choose Play Again for a fresh run or Home to return to the start screen.
 
 ## Scoring and Lives
 
