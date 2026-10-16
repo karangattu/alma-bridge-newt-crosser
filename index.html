@@ -766,62 +766,6 @@ function makeSplat(sc,key,r){
   g.generateTexture(key,s,s); g.destroy();
 }
 
-function makeCleaner(sc,key,w,h){
-  const g=sc.make.graphics({add:false});
-
-  /* shadow */
-  g.fillStyle(0x000000,.18);
-  g.fillEllipse(w*.5,h*.92,w*.5,h*.08);
-
-  /* boots */
-  g.fillStyle(0x1f2328);
-  g.fillRoundedRect(w*.28,h*.8,w*.12,h*.12,3);
-  g.fillRoundedRect(w*.6,h*.8,w*.12,h*.12,3);
-
-  /* legs */
-  g.fillStyle(0x33414f);
-  g.fillRoundedRect(w*.29,h*.56,w*.1,h*.26,3);
-  g.fillRoundedRect(w*.61,h*.56,w*.1,h*.26,3);
-
-  /* arms */
-  g.fillStyle(0x3f4c57);
-  g.fillRoundedRect(w*.13,h*.34,w*.12,h*.22,4);
-  g.fillRoundedRect(w*.75,h*.34,w*.12,h*.22,4);
-
-  /* hands */
-  g.fillStyle(0xd9aa78);
-  g.fillCircle(w*.2,h*.58,w*.045);
-  g.fillCircle(w*.8,h*.58,w*.045);
-
-  /* vest */
-  g.fillStyle(0xf3b62d);
-  g.fillRoundedRect(w*.24,h*.28,w*.52,h*.34,5);
-  g.fillStyle(0xd48f10);
-  g.fillRect(w*.48,h*.3,w*.04,h*.3);
-  g.fillStyle(0xe8ecef);
-  g.fillRect(w*.27,h*.39,w*.46,h*.03);
-  g.fillRect(w*.27,h*.5,w*.46,h*.03);
-
-  /* head */
-  g.fillStyle(0xd9aa78);
-  g.fillCircle(w*.5,h*.17,w*.12);
-  g.fillStyle(0x2b231b);
-  g.fillEllipse(w*.5,h*.11,w*.2,h*.08);
-  g.fillStyle(0x111111);
-  g.fillCircle(w*.46,h*.17,w*.012);
-  g.fillCircle(w*.54,h*.17,w*.012);
-
-  /* broom */
-  g.fillStyle(0x8b6a3e);
-  g.fillRect(w*.82,h*.18,w*.03,h*.58);
-  g.fillStyle(0xd2c29b);
-  g.fillRoundedRect(w*.76,h*.72,w*.16,h*.12,3);
-  g.lineStyle(1,0xb3a37d,.6);
-  for(let i=0;i<5;i++) g.lineBetween(w*(.78+i*.028),h*.73,w*(.78+i*.028),h*.82);
-
-  g.generateTexture(key,w,h); g.destroy();
-}
-
 /* ─── color helpers ─── */
 function darken(hex,a){
   const c=Phaser.Display.Color.HexStringToColor(hex);
@@ -1007,6 +951,8 @@ class GameScene extends Phaser.Scene {
 
   preload(){
     this.load.spritesheet('newt_sheet', 'assets/newt_walk.png', { frameWidth: 384, frameHeight: 512 });
+    // The generated 1254px sheet has four equal cells per row.
+    this.load.spritesheet('volunteer_sheet', 'assets/volunteer_sprite_sheet.png', { frameWidth: 313.5, frameHeight: 313.5 });
     this.load.image('sedan_img', 'assets/sedan.png');
     this.load.image('sedan_red', 'assets/sedan_red.png');
     this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
@@ -1046,7 +992,6 @@ class GameScene extends Phaser.Scene {
     /* textures */
     const nw=Math.round(TS*.95), nh=Math.round(TS*1.35);
     if(!this.textures.exists('splat')) makeSplat(this,'splat',Math.round(TS*.55));
-    if(!this.textures.exists('cleaner')) makeCleaner(this,'cleaner',Math.round(TS*1.05),Math.round(TS*1.85));
 
     /* vehicle textures */
     this.vehPool=[];
@@ -1195,13 +1140,25 @@ class GameScene extends Phaser.Scene {
     this.newt.body.setSize(this.newt.width*0.4, this.newt.height*0.4);
 
     /* cleanup worker */
+    if(!this.anims.exists('volunteer_walk')){
+      this.anims.create({
+        key:'volunteer_walk',
+        frames:this.anims.generateFrameNumbers('volunteer_sheet',{start:0,end:7}),
+        frameRate:10, repeat:-1
+      });
+      this.anims.create({
+        key:'volunteer_peel',
+        frames:this.anims.generateFrameNumbers('volunteer_sheet',{start:8,end:15}),
+        frameRate:6, repeat:0
+      });
+    }
     this.splats=[];
-    this.cleanerSp=this.physics.add.image(-TS*2,this.ROAD_BOT+this.SHOULDER_H*.6,'cleaner').setDepth(4).setVisible(false);
+    this.cleanerSp=this.physics.add.sprite(-TS*2,this.ROAD_BOT+this.SHOULDER_H*.6,'volunteer_sheet')
+      .setDisplaySize(TS*2,TS*2).setOrigin(.5,.96).setDepth(4).setVisible(false);
     this.cleanerSp.body.setAllowGravity(false);
     this.cleanerSp.setImmovable(true);
     this.cleanerState='idle';
     this.cleanerTarget=null;
-    this.cleanerStopAt=0;
 
     /* HUD top bar */
     const fs=Math.max(13,TS*.4);
@@ -1512,12 +1469,10 @@ class GameScene extends Phaser.Scene {
     this.cleanerTarget=stain;
     this.cleanerState='entering';
     const fromLeft=stain.sprite.x < this.scale.width/2;
-    this.cleanerSp.setVisible(true);
+    this.cleanerSp.setVisible(true).play('volunteer_walk');
     this.cleanerSp.x=fromLeft ? -this.TS*2 : this.scale.width+this.TS*2;
     this.cleanerSp.y=this.ROAD_BOT+this.SHOULDER_H*.7;
     this.cleanerSp.setFlipX(!fromLeft);
-    this.cleanerSp.angle=0;
-    this.cleanerSp.setScale(1);
   }
 
   updateCleaner(time,dt){
@@ -1529,85 +1484,35 @@ class GameScene extends Phaser.Scene {
         this.cleanerState='exiting';
         return;
       }
-      const tx=this.cleanerTarget.sprite.x;
+      // Stand beside the stain so the scraper reaches it while kneeling.
+      const tx=this.cleanerTarget.sprite.x+(worker.flipX?1:-1)*this.TS*.65;
       const ty=this.cleanerTarget.sprite.y;
-      const dx=tx-worker.x;
-      const dy=ty-worker.y;
-      const dist=Math.hypot(dx,dy);
-      worker.y+=Math.sin(time*.025)*0.6;
-      worker.angle=Math.sin(time*.025)*4;
-      worker.scaleY=1+Math.sin(time*.05)*0.03;
-      worker.scaleX=1-Math.sin(time*.05)*0.02;
-      if(dist<Math.max(speed*3,this.TS*.35)){
+      const dx=tx-worker.x, dy=ty-worker.y;
+      if(Math.hypot(dx,dy)<Math.max(speed*3,this.TS*.35)){
+        worker.setPosition(tx,ty).play('volunteer_peel');
         this.cleanerState='cleaning';
-        this.cleanerStopAt=time+1300;
-        this.tweens.killTweensOf(worker);
-        this.tweens.add({
-          targets: worker,
-          x: { from: worker.x - 18, to: worker.x + 18 },
-          y: { from: worker.y - 6, to: worker.y + 6 },
-          angle: { from: -22, to: 22 },
-          duration: 200,
-          yoyo: true,
-          repeat: 5,
-          ease: 'Sine.easeInOut'
-        });
-        this.tweens.add({
-          targets: worker,
-          scaleX: { from: 0.9, to: 1.1 },
-          scaleY: { from: 1.1, to: 0.9 },
-          duration: 100,
-          yoyo: true,
-          repeat: 11,
-          ease: 'Quad.easeInOut'
-        });
         return;
       }
       worker.x+=Math.sign(dx)*Math.min(Math.abs(dx),speed);
       worker.y+=Math.sign(dy)*Math.min(Math.abs(dy),speed*.75);
-      worker.setFlipX(dx<0);
     } else if(this.cleanerState==='cleaning'){
-      if(Math.random()<0.4){
-        const px=worker.x+(Math.random()*40-20);
-        const py=worker.y+this.TS*0.7+(Math.random()*20-10);
-        const color=Phaser.Utils.Array.GetRandom([0xffffff,0xe2ebf0,0xc3d3e2]);
-        const p=this.add.circle(px,py,Phaser.Math.Between(2,5),color,0.75).setDepth(3);
-        this.tweens.add({
-          targets:p,
-          x:px+(Math.random()*40-20),
-          y:py-Phaser.Math.Between(15,30),
-          scale:0.1,
-          alpha:0,
-          duration:Phaser.Math.Between(300,500),
-          onComplete:()=>p.destroy()
-        });
+      // Remove the road stain as the lifting pose raises the recovered newt.
+      if(worker.frame.name>=13&&this.cleanerTarget?.sprite.active){
+        this.cleanerTarget.sprite.destroy();
+        this.splats=this.splats.filter(item=>item!==this.cleanerTarget&&item.sprite.active);
       }
-      if(time>=this.cleanerStopAt){
-        if(this.cleanerTarget&&this.cleanerTarget.sprite&&this.cleanerTarget.sprite.active){
-          this.cleanerTarget.sprite.destroy();
-        }
-        this.splats=this.splats.filter(item=>item!==this.cleanerTarget&&item.sprite&&item.sprite.active);
+      if(!worker.anims.isPlaying){
         this.cleanerTarget=null;
         this.cleanerState='exiting';
-        worker.scaleX=1;
-        worker.scaleY=1;
-        worker.angle=0;
+        worker.play('volunteer_walk');
       }
     } else if(this.cleanerState==='exiting'){
       const exitLeft=worker.x < this.scale.width/2;
       const tx=exitLeft ? -this.TS*2 : this.scale.width+this.TS*2;
       const ty=this.ROAD_BOT+this.SHOULDER_H*.7;
-      const dx=tx-worker.x;
-      const dy=ty-worker.y;
-      const dist=Math.hypot(dx,dy);
-      worker.y+=Math.sin(time*.025)*0.6;
-      worker.angle=Math.sin(time*.025)*4;
-      worker.scaleY=1+Math.sin(time*.05)*0.03;
-      worker.scaleX=1-Math.sin(time*.05)*0.02;
-      if(dist<Math.max(speed*3,this.TS*.4)){
-        worker.setVisible(false);
-        worker.angle=0;
-        worker.setScale(1);
+      const dx=tx-worker.x, dy=ty-worker.y;
+      if(Math.hypot(dx,dy)<Math.max(speed*3,this.TS*.4)){
+        worker.stop().setFrame(0).setVisible(false);
         this.cleanerState='idle';
         if(this.splats.length) this.activateCleaner(this.splats[0]);
         return;

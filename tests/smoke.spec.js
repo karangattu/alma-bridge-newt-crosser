@@ -236,47 +236,77 @@ test('allows skipping the tutorial from the splash screen checkbox', async ({ pa
   expect(localStorageTutorial).toBe('true');
 });
 
-test('volunteer cleaning logic is triggered on hit and cleans the splat', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.tutorialCompleted = true;
+for (const side of ['left', 'right']) {
+  test(`volunteer walks from the ${side}, peels a splat, then walks away`, async ({ page }) => {
+    await page.addInitScript(() => {
+      window.tutorialCompleted = true;
+    });
+
+    await page.goto('/');
+    await page.getByPlaceholder('Your name').fill('CleanerTest');
+    await page.getByRole('button', { name: 'Play' }).click();
+
+    await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
+
+    expect(await page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return { texture: scene.cleanerSp.texture.key, frames: scene.cleanerSp.texture.getFrameNames().length };
+    })).toEqual({ texture: 'volunteer_sheet', frames: 16 });
+
+    await page.evaluate((side) => {
+      const scene = window._game.scene.getScene('Game');
+      scene.lives = 3;
+      scene.updateHUD();
+      scene.newt.x = side === 'left' ? 100 : scene.scale.width - 100;
+      scene.onHit();
+      window.cleanupFrames = [];
+      scene.cleanerSp.on('animationupdate', (animation, frame) => {
+        if (animation.key === 'volunteer_peel') {
+          window.cleanupFrames.push({ frame: frame.textureFrame, splatActive: scene.cleanerTarget.sprite.active });
+        }
+      });
+    }, side);
+
+    await expect.poll(async () => page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return {
+        splatCount: scene.splats.length,
+        cleanerState: scene.cleanerState,
+        animation: scene.cleanerSp.anims?.currentAnim?.key,
+        walking: scene.cleanerSp.anims?.isPlaying
+      };
+    })).toEqual({
+      splatCount: 1,
+      cleanerState: 'entering',
+      animation: 'volunteer_walk',
+      walking: true
+    });
+    expect(await page.evaluate(() => window._game.scene.getScene('Game').cleanerSp.flipX)).toBe(side === 'right');
+
+    await expect.poll(() => page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return { state: scene.cleanerState, animation: scene.cleanerSp.anims?.currentAnim?.key };
+    })).toEqual({ state: 'cleaning', animation: 'volunteer_peel' });
+
+    await expect.poll(async () => page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return {
+        splatCount: scene.splats.length,
+        cleanerState: scene.cleanerState
+      };
+    }), { timeout: 15000 }).toEqual({
+      splatCount: 0,
+      cleanerState: 'exiting'
+    });
+    expect(await page.evaluate(() => window.cleanupFrames.some(({ frame, splatActive }) => frame === 12 && splatActive))).toBe(true);
+    expect(await page.evaluate(() => window.cleanupFrames.some(({ frame, splatActive }) => frame === 14 && !splatActive))).toBe(true);
+    expect(await page.evaluate(() => window._game.scene.getScene('Game').cleanerSp.anims.currentAnim.key)).toBe('volunteer_walk');
+    await expect.poll(() => page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return { state: scene.cleanerState, visible: scene.cleanerSp.visible, walking: scene.cleanerSp.anims.isPlaying };
+    })).toEqual({ state: 'idle', visible: false, walking: false });
   });
-
-  await page.goto('/');
-  await page.getByPlaceholder('Your name').fill('CleanerTest');
-  await page.getByRole('button', { name: 'Play' }).click();
-
-  await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
-
-  await page.evaluate(() => {
-    const scene = window._game.scene.getScene('Game');
-    scene.lives = 3;
-    scene.updateHUD();
-    scene.newt.x = 100;
-    scene.onHit();
-  });
-
-  await expect.poll(async () => page.evaluate(() => {
-    const scene = window._game.scene.getScene('Game');
-    return {
-      splatCount: scene.splats.length,
-      cleanerState: scene.cleanerState
-    };
-  })).toEqual({
-    splatCount: 1,
-    cleanerState: 'entering'
-  });
-
-  await expect.poll(async () => page.evaluate(() => {
-    const scene = window._game.scene.getScene('Game');
-    return {
-      splatCount: scene.splats.length,
-      cleanerState: scene.cleanerState
-    };
-  }), { timeout: 15000 }).toEqual({
-    splatCount: 0,
-    cleanerState: 'exiting'
-  });
-});
+}
 
 test('renders Alma Bridge Road text markings on the road itself', async ({ page }) => {
   await page.goto('/');
