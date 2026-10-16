@@ -66,6 +66,38 @@ test('loads the splash screen and starts the game', async ({ page }) => {
   expect(pageErrors).toEqual([]);
 });
 
+test('newt walks through its poses only after moving and rests on respawn', async ({ page }) => {
+  await page.route('**/rest/v1/**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: '[]',
+  }));
+  await page.goto('/');
+  await page.getByPlaceholder('Your name').fill('WalkingNewt');
+  await page.locator('#skipTutCheck').check();
+  await page.getByRole('button', { name: 'Play' }).click();
+  await expect.poll(() => page.evaluate(() => Boolean(window._game?.scene.getScene('Game').newt))).toBe(true);
+
+  expect(await page.evaluate(() => window._game.scene.getScene('Game').newt.anims.isPlaying)).toBe(false);
+  const startX = await page.evaluate(() => {
+    const scene = window._game.scene.getScene('Game');
+    window.walkFrames = [];
+    scene.newt.on('animationupdate', (_animation, frame) => window.walkFrames.push(frame.textureFrame));
+    return scene.newt.x;
+  });
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(() => page.evaluate(() => window._game.scene.getScene('Game').newt.x)).toBeGreaterThan(startX);
+  await expect.poll(() => page.evaluate(() => window._game.scene.getScene('Game').newt.anims.isPlaying)).toBe(false);
+  expect(await page.evaluate(() => new Set(window.walkFrames).size)).toBeGreaterThanOrEqual(7);
+  expect(await page.evaluate(() => window._game.scene.getScene('Game').newt.frame.name)).toBe(0);
+
+  await page.keyboard.press('ArrowLeft');
+  expect(await page.evaluate(() => window._game.scene.getScene('Game').newt.anims.isPlaying)).toBe(true);
+  await page.evaluate(() => window._game.scene.getScene('Game').resetNewt());
+  expect(await page.evaluate(() => {
+    const newt = window._game.scene.getScene('Game').newt;
+    return { walking: newt.anims.isPlaying, frame: newt.frame.name, angle: newt.angle };
+  })).toEqual({ walking: false, frame: 0, angle: 0 });
+});
+
 test('shows explicit Play Again and Home actions after the final life', async ({ page }) => {
   await startGameAtGameOver(page);
 

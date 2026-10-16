@@ -1006,7 +1006,7 @@ class GameScene extends Phaser.Scene {
   constructor(){ super('Game'); }
 
   preload(){
-    this.load.spritesheet('newt_sheet', 'assets/newt_sprite_sheet.png', { frameWidth: 1408, frameHeight: 1536 });
+    this.load.spritesheet('newt_sheet', 'assets/newt_walk.png', { frameWidth: 384, frameHeight: 512 });
     this.load.image('sedan_img', 'assets/sedan.png');
     this.load.image('sedan_red', 'assets/sedan_red.png');
     this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
@@ -1181,13 +1181,13 @@ class GameScene extends Phaser.Scene {
       this.anims.create({
         key: 'crawl',
         frames: this.anims.generateFrameNumbers('newt_sheet', { start: 0, end: 7 }),
-        frameRate: 8,
-        repeat: -1
+        frameRate: 20,
+        repeat: 0
       });
     }
 
     this.newt=this.physics.add.sprite(W/2,this.SPAWN_Y,'newt_sheet').setDepth(5);
-    this.newt.play('crawl');
+    this.newt.on('animationcomplete', () => this.newt.setFrame(0));
     this.newt.setDisplaySize(nw, nh);
     this.newt.body.setAllowGravity(false);
     this.newt.setCollideWorldBounds(true);
@@ -1316,7 +1316,7 @@ class GameScene extends Phaser.Scene {
     
     this.newtAlive=false;
     this.tweens.killTweensOf(this.newt);
-    this.newt.setVisible(false);
+    this.newt.stop().setFrame(0).setVisible(false);
     
     document.getElementById('tutTitle').textContent = 'Oops! Try again';
     document.getElementById('tutText').textContent = 'Avoid vehicles! Stand still or move out of the way. Let\'s try dodging again.';
@@ -1398,6 +1398,7 @@ class GameScene extends Phaser.Scene {
     else if(dy>0) this.targetAng=180;
     else if(dx<0) this.targetAng=-90;
     else if(dx>0) this.targetAng=90;
+    if(nx!==this.newt.x||ny!==this.newt.y) this.newt.play('crawl',true);
     this.tweens.add({targets:this.newt,x:nx,y:ny,duration:80,ease:'Power2'});
 
     if (this.isTutorial) {
@@ -1463,7 +1464,7 @@ class GameScene extends Phaser.Scene {
     if(this.cleanerState==='idle') this.activateCleaner(stain);
     this.newtAlive=false;
     this.tweens.killTweensOf(this.newt);
-    this.newt.setVisible(false);
+    this.newt.stop().setFrame(0).setVisible(false);
     this.lives--;
     this.updateHUD();
     if(this.lives<=0){
@@ -1497,7 +1498,7 @@ class GameScene extends Phaser.Scene {
   resetNewt(){
     const W=this.scale.width;
     this.tweens.killTweensOf(this.newt);
-    this.newt.setPosition(W/2,this.SPAWN_Y).setVisible(true).setAlpha(1);
+    this.newt.stop().setFrame(0).setPosition(W/2,this.SPAWN_Y).setVisible(true).setAlpha(1);
     this.newt.angle=0; this.targetAng=0; this.newtAlive=true;
     this.invulnerable=true;
     this.tweens.add({
