@@ -1,0 +1,52 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.karangattu.newtcrosser'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
+
+    defaultConfig {
+        applicationId 'com.karangattu.newtcrosser'
+        minSdk 24
+        targetSdk 36
+        versionCode Integer.parseInt(System.getenv('ANDROID_VERSION_CODE') ?: '1')
+        versionName System.getenv('ANDROID_VERSION_NAME') ?: 'dev'
+    }
+
+    signingConfigs {
+        release {
+            def keystore = System.getenv('ANDROID_KEYSTORE_PATH')
+            if (keystore) {
+                storeFile file(keystore)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release { signingConfig signingConfigs.release }
+    }
+    sourceSets.main.assets.srcDirs = ['../../dist/android-web']
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.register('bundleGame', Exec) {
+    workingDir '../..'
+    commandLine 'npm', 'run', 'android:web'
+}
+tasks.named('preBuild').configure { dependsOn 'bundleGame' }
+
+tasks.register('requireReleaseSigning') {
+    doLast {
+        for (name in ['ANDROID_KEYSTORE_PATH', 'ANDROID_KEYSTORE_PASSWORD', 'ANDROID_KEY_ALIAS', 'ANDROID_KEY_PASSWORD']) {
+            if (!System.getenv(name)) throw new GradleException("Set ${name} before building a release APK")
+        }
+    }
+}
+tasks.matching { it.name == 'validateSigningRelease' }.configureEach { dependsOn 'requireReleaseSigning' }
+
+dependencies { implementation 'androidx.webkit:webkit:1.17.1' }

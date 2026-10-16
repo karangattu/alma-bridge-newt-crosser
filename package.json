@@ -2,10 +2,13 @@
   "name": "newt-crosser",
   "private": true,
   "scripts": {
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "android:web": "node scripts/build-android-web.mjs",
+    "test:e2e": "npm run android:web && playwright test",
+    "test:e2e:headed": "npm run android:web && playwright test --headed"
   },
   "devDependencies": {
-    "@playwright/test": "^1.53.1"
+    "@fontsource/inter": "5.3.0",
+    "@playwright/test": "^1.53.1",
+    "phaser": "3.80.1"
   }
 }

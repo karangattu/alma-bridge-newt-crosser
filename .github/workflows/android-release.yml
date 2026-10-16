@@ -1,0 +1,131 @@
+name: Android APK release
+
+on:
+  push:
+    tags: ['*']
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      ANDROID_VERSION_NAME: ${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+    steps:
+      - name: Check out the tagged game
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform and build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle and validate its wrapper
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install game dependencies
+        run: npm ci
+
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Test the game and offline bundle
+        run: npm run test:e2e
+
+      - name: Restore release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for variable in KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!variable}" ]; then
+              echo "::error::Missing Android signing secret: $variable"
+              exit 1
+            fi
+          done
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/newt-release.p12"
+
+      - name: Build signed APK and run Android lint
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/newt-release.p12
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon assembleRelease lintRelease
+
+      - name: Verify APK signature and create checksum
+        run: |
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/app-release.apk release/newt-crosser-android.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs release/newt-crosser-android.apk
+          cd release
+          sha256sum newt-crosser-android.apk > newt-crosser-android.apk.sha256
+
+      - name: Save APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: newt-crosser-android
+          path: release/*
+          if-no-files-found: error
+
+      - name: Attach APK to the tagged GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            options=()
+            if [[ "$RELEASE_TAG" == *-* ]]; then options+=(--prerelease); fi
+            gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --generate-notes "${options[@]}"
+          fi
+          gh release upload "$RELEASE_TAG" release/* --clobber
+
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/newt-release.p12"
+
+      - name: Save test and Android lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-reports
+          path: |
+            playwright-report/
+            android/app/build/reports/lint-results-release.*
+          if-no-files-found: ignore

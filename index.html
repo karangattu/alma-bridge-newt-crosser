@@ -478,14 +478,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 const _supabase = window.supabase;
 const supabaseUrl = 'https://ovwktjjeoowlktdfbuuu.supabase.co';
 const supabaseKey = 'sb_publishable_B2pz5WTA3UEVUeKACIgmBw_8_r0S3kU';
-const supabaseClient = _supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = _supabase?.createClient(supabaseUrl, supabaseKey);
 
 let playerName='', leaderboardEntries=[], globalHigh=0, topScore=0, topScoreName='';
 let audioCtx=null, muted=false;
 window.tutorialShown = localStorage.getItem('tutorialCompleted') === 'true';
 
 /* ─── leaderboard ─── */
+function readLocalScores(){
+  try{
+    return JSON.parse(localStorage.getItem('newtLocalScores')||'[]')
+      .filter(entry=>entry&&typeof entry.name==='string'&&Number.isSafeInteger(entry.score)&&entry.score>0);
+  }catch{ return []; }
+}
+
 async function fetchLB(){
+  if(!supabaseClient){
+    const scores=readLocalScores();
+    leaderboardEntries=scores.sort((a,b)=>b.score-a.score).slice(0,5);
+    topScore=leaderboardEntries[0]?.score||0;
+    topScoreName=leaderboardEntries[0]?.name||'';
+    globalHigh=scores.find(entry=>entry.name.toLowerCase()===playerName.trim().toLowerCase())?.score||0;
+    document.getElementById('hiScore').textContent=topScore?topScore+' · '+topScoreName:'—';
+    return;
+  }
   try{
     const { data, error } = await supabaseClient
       .from('alma_bridge_newt_crosser_scores')
@@ -520,6 +536,15 @@ async function fetchLB(){
 
 async function submitScore(s){
   if(!playerName||s<=0) return;
+  if(!supabaseClient){
+    const scores=readLocalScores(), name=playerName.trim();
+    const previous=scores.find(entry=>entry.name.toLowerCase()===name.toLowerCase());
+    if(previous) previous.score=Math.max(previous.score,s);
+    else scores.push({name,score:s});
+    localStorage.setItem('newtLocalScores',JSON.stringify(scores));
+    await fetchLB();
+    return;
+  }
   try{
     const { data, error } = await supabaseClient
       .rpc('submit_alma_bridge_newt_crosser_score', {
@@ -953,6 +978,7 @@ class GameScene extends Phaser.Scene {
     this.load.spritesheet('newt_sheet', 'assets/newt_walk.png', { frameWidth: 384, frameHeight: 512 });
     // The generated 1254px sheet has four equal cells per row.
     this.load.spritesheet('volunteer_sheet', 'assets/volunteer_sprite_sheet.png', { frameWidth: 313.5, frameHeight: 313.5 });
+    this.load.spritesheet('volunteer_walk_sheet', 'assets/volunteer_walk.png', { frameWidth: 443.5, frameHeight: 443.5 });
     this.load.image('sedan_img', 'assets/sedan.png');
     this.load.image('sedan_red', 'assets/sedan_red.png');
     this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
@@ -1143,8 +1169,8 @@ class GameScene extends Phaser.Scene {
     if(!this.anims.exists('volunteer_walk')){
       this.anims.create({
         key:'volunteer_walk',
-        frames:this.anims.generateFrameNumbers('volunteer_sheet',{start:0,end:7}),
-        frameRate:10, repeat:-1
+        frames:this.anims.generateFrameNumbers('volunteer_walk_sheet',{start:0,end:7}),
+        frameRate:12, repeat:-1
       });
       this.anims.create({
         key:'volunteer_peel',
@@ -1155,6 +1181,8 @@ class GameScene extends Phaser.Scene {
     this.splats=[];
     this.cleanerSp=this.physics.add.sprite(-TS*2,this.ROAD_BOT+this.SHOULDER_H*.6,'volunteer_sheet')
       .setDisplaySize(TS*2,TS*2).setOrigin(.5,.96).setDepth(4).setVisible(false);
+    // Both sheets use different resolutions but share the same size in the game.
+    this.cleanerSp.on('animationstart',()=>this.cleanerSp.setDisplaySize(TS*2,TS*2));
     this.cleanerSp.body.setAllowGravity(false);
     this.cleanerSp.setImmovable(true);
     this.cleanerState='idle';
@@ -1478,7 +1506,7 @@ class GameScene extends Phaser.Scene {
   updateCleaner(time,dt){
     if(this.cleanerState==='idle') return;
     const worker=this.cleanerSp;
-    const speed=this.TS*3.1*dt;
+    const speed=this.TS*2.4*dt;
     if(this.cleanerState==='entering'){
       if(!this.cleanerTarget||!this.cleanerTarget.sprite||!this.cleanerTarget.sprite.active){
         this.cleanerState='exiting';

@@ -1,3 +1,10 @@
 node_modules/
 playwright-report/
 test-results/
+dist/
+android/.gradle/
+android/**/build/
+android/local.properties
+*.jks
+*.keystore
+*.p12

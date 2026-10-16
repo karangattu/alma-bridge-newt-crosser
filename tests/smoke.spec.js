@@ -253,6 +253,28 @@ for (const side of ['left', 'right']) {
       return { texture: scene.cleanerSp.texture.key, frames: scene.cleanerSp.texture.getFrameNames().length };
     })).toEqual({ texture: 'volunteer_sheet', frames: 16 });
 
+    const bootSpans = await page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 80;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      return scene.anims.get('volunteer_walk').frames.map(pose => {
+        const frame = scene.textures.getFrame(pose.textureKey, pose.textureFrame);
+        context.clearRect(0, 0, 80, 80);
+        context.drawImage(frame.source.image, frame.cutX, frame.cutY, frame.cutWidth, frame.cutHeight, 0, 0, 80, 80);
+        const pixels = context.getImageData(0, 56, 80, 24).data;
+        let left = 80, right = 0;
+        for (let y = 0; y < 24; y++) for (let x = 0; x < 80; x++) {
+          if (pixels[(y * 80 + x) * 4 + 3] >= 128) {
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+          }
+        }
+        return right - left + 1;
+      });
+    });
+    expect(Math.max(...bootSpans) / Math.min(...bootSpans)).toBeGreaterThan(1.6);
+
     await page.evaluate((side) => {
       const scene = window._game.scene.getScene('Game');
       scene.lives = 3;
@@ -260,10 +282,12 @@ for (const side of ['left', 'right']) {
       scene.newt.x = side === 'left' ? 100 : scene.scale.width - 100;
       scene.onHit();
       window.cleanupFrames = [];
+      window.walkFrames = [];
       scene.cleanerSp.on('animationupdate', (animation, frame) => {
         if (animation.key === 'volunteer_peel') {
           window.cleanupFrames.push({ frame: frame.textureFrame, splatActive: scene.cleanerTarget.sprite.active });
         }
+        if (animation.key === 'volunteer_walk') window.walkFrames.push(frame.textureFrame);
       });
     }, side);
 
@@ -287,6 +311,10 @@ for (const side of ['left', 'right']) {
       const scene = window._game.scene.getScene('Game');
       return { state: scene.cleanerState, animation: scene.cleanerSp.anims?.currentAnim?.key };
     })).toEqual({ state: 'cleaning', animation: 'volunteer_peel' });
+    expect(await page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return scene.cleanerSp.displayHeight / scene.TS;
+    })).toBeCloseTo(2);
 
     await expect.poll(async () => page.evaluate(() => {
       const scene = window._game.scene.getScene('Game');
@@ -301,6 +329,11 @@ for (const side of ['left', 'right']) {
     expect(await page.evaluate(() => window.cleanupFrames.some(({ frame, splatActive }) => frame === 12 && splatActive))).toBe(true);
     expect(await page.evaluate(() => window.cleanupFrames.some(({ frame, splatActive }) => frame === 14 && !splatActive))).toBe(true);
     expect(await page.evaluate(() => window._game.scene.getScene('Game').cleanerSp.anims.currentAnim.key)).toBe('volunteer_walk');
+    expect(await page.evaluate(() => new Set(window.walkFrames).size)).toBeGreaterThanOrEqual(7);
+    expect(await page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return scene.cleanerSp.displayHeight / scene.TS;
+    })).toBeCloseTo(2);
     await expect.poll(() => page.evaluate(() => {
       const scene = window._game.scene.getScene('Game');
       return { state: scene.cleanerState, visible: scene.cleanerSp.visible, walking: scene.cleanerSp.anims.isPlaying };
