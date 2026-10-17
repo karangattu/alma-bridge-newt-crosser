@@ -1133,7 +1133,8 @@ class GameScene extends Phaser.Scene {
 
     /* ── lanes — adapt to road height ── */
     const roadH=this.ROAD_BOT-this.ROAD_TOP;
-    const laneCount=Math.max(2,Math.floor(roadH/(TS*1.4)));
+    /* keep lanes tall enough that vehicles in adjacent lanes never overlap vertically */
+    const laneCount=Math.max(2,Math.floor(roadH/(TS*1.8)));
     this.lanes=[];
     const laneH=roadH/laneCount;
     for(let i=0;i<laneCount;i++){
@@ -1411,15 +1412,15 @@ class GameScene extends Phaser.Scene {
       const laneBaseSpd=.7+Math.random()*.4;
       const scoreScale=this.score||0;
       const count=Phaser.Math.Between(2 + Math.floor(scoreScale/5), 4 + Math.floor(scoreScale/3));
-      const minGap=Math.max(TS*1.8, TS*4 - scoreScale*TS*0.15);
+      /* keep enough space between cars (plus a little random) so they never overlap */
+      const minGap=Math.max(TS*2.6, TS*5 - scoreScale*TS*0.12);
       let cursor=Phaser.Math.Between(0,Math.round(TS*2));
       for(let i=0;i<count;i++){
         const entry=Phaser.Utils.Array.GetRandom(this.vehPool);
         const variant=Phaser.Utils.Array.GetRandom(entry.variants);
-        const texW=TS*variant.wm;
-        const v=this.physics.add.image(cursor,lane.y,variant.key).setDepth(2);
         const sVar = 1 + (Math.random() * 0.1 - 0.05);
         const targetWidth = TS * variant.wm * sVar;
+        const v=this.physics.add.image(cursor,lane.y,variant.key).setDepth(2);
         const scale = targetWidth / v.width;
         v.setScale(scale);
         v.body.setSize(v.width*.9, v.height*.9);
@@ -1429,10 +1430,11 @@ class GameScene extends Phaser.Scene {
         v.spd=v.baseSpd;
         v.wm=variant.wm;
         v.hm=variant.hm;
+        v.sVar=sVar;
         /* sprite is drawn pointing left (front on left side); flip if traveling right */
         v.setFlipX(lane.dir>0);
         this.vehicles.add(v);
-        cursor+=texW+minGap+Phaser.Math.Between(0,Math.round(TS*2));
+        cursor += targetWidth + minGap + Phaser.Math.Between(0, Math.round(TS*1.6));
       }
     });
   }
@@ -1645,7 +1647,8 @@ class GameScene extends Phaser.Scene {
     vehs.forEach(v=>{ if(v&&v.active) v.spd=v.baseSpd; });
     vehs.forEach(v=>{
       if(!v||!v.active) return;
-      const minFollow=TS*2.4;
+      /* desired center-to-center gap depends on both vehicles' widths */
+      let minFollow=TS*2.6;
       let nearestDist=Infinity;
       const wrapW=W+v.width*2;
       vehs.forEach(o=>{
@@ -1653,10 +1656,15 @@ class GameScene extends Phaser.Scene {
         if(Math.abs(o.y-v.y)>TS*.6) return;
         let gap=v.dir>0?(o.x-v.x):(v.x-o.x);
         gap=((gap%wrapW)+wrapW)%wrapW;
-        if(gap>0&&gap<nearestDist) nearestDist=gap;
+        const desiredGap=(TS*v.wm+TS*o.wm)/2+TS*1.4;
+        if(gap>0 && gap < desiredGap*1.6 && gap<nearestDist){
+          nearestDist=gap;
+          minFollow=desiredGap;
+        }
       });
       if(nearestDist<minFollow){
-        v.spd=v.baseSpd*Math.max(.18,nearestDist/minFollow);
+        /* slow down (or stop) so the gap can open up again */
+        v.spd=v.baseSpd*Math.max(0, nearestDist/minFollow);
       }
       v.x+=v.dir*baseSpd*v.spd*this.diff*dt;
       const vWidth = TS * v.wm;
@@ -1674,6 +1682,32 @@ class GameScene extends Phaser.Scene {
       } else {
         if(v.dir>0&&v.x>W+vWidth) v.x=-vWidth;
         else if(v.dir<0&&v.x<-vWidth) v.x=W+vWidth;
+      }
+    });
+
+    /* enforce a hard, non-overlapping gap between vehicles in the same lane */
+    const byLane=new Map();
+    vehs.forEach(v=>{
+      if(!v||!v.active||v.isTutorialCar) return;
+      const key=Math.round(v.y/TS);
+      if(!byLane.has(key)) byLane.set(key,[]);
+      byLane.get(key).push(v);
+    });
+    byLane.forEach(list=>{
+      if(list.length<2) return;
+      const dir=list[0].dir;
+      /* sort in travel order: leaders first */
+      list.sort((a,b)=> dir>0 ? b.x-a.x : a.x-b.x);
+      for(let i=1;i<list.length;i++){
+        const lead=list[i-1], follow=list[i];
+        const desired=(TS*lead.wm+TS*follow.wm)/2+TS*1.4;
+        if(dir>0){
+          const limit=lead.x-desired;
+          if(follow.x>limit) follow.x=limit;
+        } else {
+          const limit=lead.x+desired;
+          if(follow.x<limit) follow.x=limit;
+        }
       }
     });
 
