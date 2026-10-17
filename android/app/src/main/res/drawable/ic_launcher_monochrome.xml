@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Keep the newt inside the adaptive icon's central safe area. -->
+    <group android:pivotX="54" android:pivotY="54" android:scaleX="0.72" android:scaleY="0.72">
+        <path android:fillColor="#e8a35c" android:pathData="M54,18C43,18 42,31 47,37C44,43 44,54 47,62C47,74 62,82 52,89C65,87 69,78 59,65C64,55 64,43 60,37C66,30 65,18 54,18Z" />
+        <path android:fillColor="#e8a35c" android:strokeColor="#e8a35c" android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M48,41L36,37L32,30M35,36L29,35M60,41L72,37L76,30M73,36L79,35M48,58L35,64L31,60M35,64L33,70M60,58L73,64L77,60M73,64L75,70" />
+    </group>
+</vector>

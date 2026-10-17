@@ -4,7 +4,7 @@
     <application
         android:allowBackup="false"
         android:appCategory="game"
-        android:icon="@drawable/newt_icon"
+        android:icon="@mipmap/ic_launcher"
         android:label="Newt Crosser"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
