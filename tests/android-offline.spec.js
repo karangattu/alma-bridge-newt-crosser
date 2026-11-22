@@ -12,10 +12,12 @@ test('Android bundle starts without online resources and keeps personal bests af
   });
 
   await page.goto('/dist/android-web/index.html');
-  await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
-  await page.getByPlaceholder('Your name').fill('TabletNewt');
-  await page.locator('#skipTutCheck').check();
-  await page.getByRole('button', { name: 'Play' }).click();
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Newt Crosser', level: 1 })).toBeVisible();
+  await expect.poll(() => page.locator('.cover-art').evaluate(img => img.naturalWidth)).toBeGreaterThan(0);
+  await page.getByText('Set leaderboard name').click();
+  await page.getByLabel('Name on the leaderboard').fill('TabletNewt');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window._game?.scene.getScene('Game')?.newt?.texture.key)).toBe('newt_sheet');
   expect(await page.evaluate(() => window._game.scene.getScene('Game').cleanerSp.texture.getFrameNames().length)).toBe(16);
   const art = await page.evaluate(() => {
@@ -49,9 +51,8 @@ test('Android bundle starts without online resources and keeps personal bests af
   await expect(page.locator('#hiScore')).toHaveText('9 · TabletNewt');
   expect(await page.evaluate(() => leaderboardEntries)).toEqual([{ name: 'TabletNewt', score: 9 }]);
   expect(await page.evaluate(() => document.fonts.check('700 16px Inter'))).toBe(true);
-  await expect.poll(() => page.evaluate(() => document.getElementById('introVideo').readyState)).toBeGreaterThanOrEqual(1);
-  await page.evaluate(() => document.getElementById('introVideo').play());
-  await expect.poll(() => page.evaluate(() => document.getElementById('introVideo').currentTime)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'How to play' }).click();
+  await expect(page.locator('#tutTitle')).toHaveText('Move forward');
   expect(externalRequests).toEqual([]);
   expect(errors).toEqual([]);
 });

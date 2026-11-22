@@ -16,7 +16,6 @@ html = html.slice(0, start) + `
 <script>function gtag(){}</script>
 ` + html.slice(end);
 html = html.replace('</head>', '<style>#fsBtn{display:none!important}</style></head>');
-html = html.replace('assets/intro_video.mp4', 'assets/intro_video_android.mp4');
 
 await rm(output, { recursive: true, force: true });
 await mkdir(path.join(output, 'vendor'), { recursive: true });

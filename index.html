@@ -17,458 +17,204 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:'Inter',system-ui,sans-serif;
-  touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none;}
-#game-wrapper{position:fixed;inset:0;width:100vw;height:100vh;}
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none;}
+#game-wrapper{position:fixed;inset:0;width:100vw;height:100vh;touch-action:none;}
 
-/* ─── splash ─── */
-#splash{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
-  background: url('assets/poster_bg.png') center/cover no-repeat;
-  transition:opacity .6s ease-in-out;padding:clamp(0.5rem,2vw,1.5rem);overflow-y:auto;}
-
+/* ─── title screen ─── */
+#splash {
+  position:fixed; inset:0; z-index:100; isolation:isolate;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:clamp(1.5rem,6vw,7rem);
+  background:#101913; color:#fff4db; overflow-y:auto; touch-action:pan-y;
+  transition:opacity .25s ease, visibility .25s;
+}
+#splash[inert] { opacity:0; visibility:hidden; pointer-events:none; }
+.cover-art {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  object-position:59% center; z-index:-2;
+}
 #splash::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(15, 20, 25, 0.2) 0%, rgba(10, 14, 20, 0.85) 100%);
-  z-index: -1;
+  content:''; position:absolute; inset:0; z-index:-1;
+  background:linear-gradient(90deg,rgba(10,17,13,.86),rgba(10,17,13,.38) 43%,transparent 73%),
+    linear-gradient(0deg,rgba(10,17,13,.66),transparent 24%);
 }
-
-.splash-card{
-  text-align:center;
-  padding: 3rem 2.5rem;
-  max-width: 480px;
-  width: 100%;
-  background: rgba(15, 20, 25, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 32px;
-  box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.6);
-  animation: card-entrance 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+.title-content { width:min(100%,33rem); }
+.title-location {
+  color:#ffc47b; font-size:clamp(.64rem,1.15vw,.78rem);
+  font-weight:700; letter-spacing:.16em; text-transform:uppercase;
 }
-
-@keyframes card-entrance {
-  from { opacity: 0; transform: translateY(30px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+#gameTitle {
+  margin:.7rem 0 1.15rem; font:400 clamp(4.25rem,10vw,9rem)/.82 Georgia,serif;
+  letter-spacing:-.075em; text-shadow:0 3px 30px #101913;
 }
-
-/* ── splash left column (brand) shown in landscape ── */
-.splash-brand { display: none; }
-
-.logo{font-size:3.8rem;font-weight:900;color:#fff;letter-spacing:-.04em;margin-bottom:.5rem;line-height:1;text-shadow: 0 8px 24px rgba(0,0,0,0.8);}
-.logo span{color:#ffa64d; text-shadow: 0 0 30px rgba(255, 166, 77, 0.4);}
-.tag{color:#cbd5e1;font-size:1.1rem;margin-bottom:2rem;font-weight:500;text-shadow: 0 2px 8px rgba(0,0,0,0.6); letter-spacing: -0.01em;}
-.hi-line{color:#ffa64d;font-size:.85rem;font-weight:600;margin-bottom:1.6rem;letter-spacing:.05em;
-  padding:.7rem 1rem;background:rgba(255,166,77,.1);border:1px solid rgba(255,166,77,.2);border-radius:14px;
-  backdrop-filter: blur(8px); text-transform: uppercase;}
-.hi-line span{color:#fff;font-weight:800;}
-#nameIn{width:100%;padding:1rem 1.2rem;border:1.5px solid rgba(255,255,255,0.1);border-radius:14px;
-  background:rgba(0,0,0,0.5);color:#fff;font-family:inherit;font-size:1.1rem;text-align:center;outline:none;transition:all .3s ease;
-  backdrop-filter: blur(4px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);}
-#nameIn:focus{border-color:#ffa64d;background:rgba(0,0,0,0.7); box-shadow: 0 0 0 4px rgba(255, 166, 77, 0.15);}
-#nameIn::placeholder{color:rgba(255,255,255,0.3);}
-#playBtn{width:100%;margin-top:1rem;padding:1.1rem;border:none;border-radius:14px;
-  background:linear-gradient(135deg, #ffa64d 0%, #ff8c1a 100%);color:#0f1419;font-family:inherit;font-size:1.3rem;font-weight:900;cursor:pointer;
-  transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);letter-spacing:.03em;text-transform:uppercase;
-  box-shadow: 0 12px 25px rgba(255, 166, 77, 0.35);}
-#playBtn:hover{transform:translateY(-3px) scale(1.02);box-shadow: 0 18px 35px rgba(255, 166, 77, 0.45);}
-#playBtn:active{transform:scale(.96) translateY(0);box-shadow: 0 5px 15px rgba(255, 166, 77, 0.3);}
-.cause{margin-top:2rem;font-size:.78rem;color:rgba(255,255,255,0.5);line-height:1.7;}
-.cause a{color:#ffa64d;text-decoration:none;font-weight:700; transition: color 0.2s;}
-.cause a:hover{color:#fff; text-decoration: underline;}
-.controls-hint{margin-top:1.2rem;font-size:.8rem;color:rgba(255,255,255,0.4);font-weight:600; letter-spacing: 0.05em; text-transform: uppercase;}
+#gameTitle em { display:block; color:#ffc47b; font-weight:400; }
+.title-description {
+  max-width:22rem; color:#ecdfc8; line-height:1.55; font-size:clamp(.9rem,1.45vw,1.14rem);
+}
+.title-actions { display:flex; flex-wrap:wrap; gap:.65rem; margin:1.4rem 0 .95rem; }
+.title-button, #tutBtn, #orientBack {
+  border:1px solid #ffc47b; border-radius:7px;
+  background:#ffc47b; color:#171c13;
+  min-height:44px; padding:.66rem 1.05rem; font:700 .94rem/1.2 'Inter',system-ui,sans-serif; cursor:pointer;
+}
+.title-button:hover, #tutBtn:hover, #orientBack:hover { background:#ffdb9e; }
+#playBtn { display:inline-flex; gap:1.9rem; align-items:center; }
+#practiceBtn { background:#17251abf; color:#fff4db; border-color:#a5ac8a; }
+#practiceBtn:hover { background:#2e3f2d; }
+.player-details { width:min(100%,19rem); font-size:.84rem; color:#ecdfc8; }
+.player-details summary {
+  display:list-item; width:fit-content; cursor:pointer; padding:.42rem 0; font-weight:600;
+}
+.player-details summary:hover { color:#ffc47b; }
+.player-details label { display:block; margin:.35rem 0 .4rem; color:#ecdfc8; }
+#nameIn {
+  width:100%; padding:.58rem .68rem; border:1px solid #a5ac8a; border-radius:6px;
+  background:#121d15; color:#fff4db; font:inherit; font-size:1rem; user-select:text; touch-action:auto;
+}
+#nameIn::placeholder { color:#b6b4a2; }
+#splash :focus-visible, #tutorial button:focus-visible, #orient :focus-visible {
+  outline:2px solid #fff4db; outline-offset:4px;
+}
+.title-footer {
+  position:absolute; inset:auto clamp(1.5rem,6vw,7rem) clamp(1rem,3vh,2rem);
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem 1rem;
+  color:#e4d8bf; font-size:.78rem;
+}
+.title-footer strong { margin-left:.4rem; color:#fff4db; }
+.title-footer a { color:#fff4db; text-underline-offset:.24em; }
+.title-footer a:hover { color:#ffc47b; }
 
 /* ─── orientation lock overlay ─── */
 #orient{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
-  background:#0a0e14;color:#e8a35c;text-align:center;padding:2rem;}
+  background:#101913;color:#ffc47b;text-align:center;padding:2rem;}
 #orient.show{display:flex;}
 .orient-inner{max-width:300px;}
-.orient-icon{font-size:3.5rem;margin-bottom:1rem;animation:rot 2s ease-in-out infinite;display:inline-block;}
-@keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(-90deg)}}
-.orient-inner h2{font-size:1.2rem;margin-bottom:.5rem;font-weight:600;color:#fff;}
-.orient-inner p{color:#7a8590;font-size:.85rem;line-height:1.5;}
+.orient-inner h2{font:400 2rem/1.1 Georgia,serif;margin-bottom:.65rem;color:#fff4db;}
+.orient-inner p{color:#e4d8bf;font-size:.9rem;line-height:1.5;margin-bottom:1.15rem;}
 
 /* ─── fullscreen toggle ─── */
 #fsBtn{position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,.4);color:#fff;
   border:none;border-radius:6px;padding:6px 10px;font-size:.7rem;cursor:pointer;display:none;font-family:inherit;}
 #fsBtn.show{display:block;}
 
-/* ─── video transition ─── */
-#videoContainer {
-  position: fixed;
-  inset: 0;
-  z-index: 180;
-  background: #0f1419;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.5s ease-in-out;
-}
-#videoContainer.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-#introVideo {
-  width: 100%;
-  height: 100%;
-  max-width: 100vw;
-  max-height: 100vh;
-  object-fit: contain;
-}
-#skipVideoBtn {
-  position: absolute;
-  bottom: 30px;
-  right: 30px;
-  padding: 0.8rem 1.6rem;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
-  color: #fff;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-#skipVideoBtn:hover {
-  background: #ffa64d;
-  color: #0f1419;
-  border-color: #ffa64d;
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 15px 35px rgba(255, 166, 77, 0.4);
-}
-#skipVideoBtn:active {
-  transform: translateY(-1px) scale(0.97);
-  box-shadow: 0 8px 20px rgba(255, 166, 77, 0.3);
-}
-
-/* ─── tutorial ─── */
+/* ─── practice overlay ─── */
 #tutorial {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 150;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 90%;
-  max-width: 600px;
+  position:fixed; z-index:150; top:max(.7rem,env(safe-area-inset-top)); left:50%;
+  transform:translateX(-50%); width:min(38rem,calc(100% - 4.5rem));
+  pointer-events:none;
 }
+#tutorial[data-step="5"] { top:auto; bottom:max(.7rem,env(safe-area-inset-bottom)); }
 .tut-card {
-  background: rgba(15, 20, 25, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 166, 77, 0.35);
-  border-radius: 24px;
-  padding: 1.4rem 2rem;
-  text-align: center;
-  width: 100%;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  animation: tut-entrance 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:.9rem;
+  padding:.65rem .85rem; border:1px solid #829270; border-radius:12px;
+  background:#142017f5; color:#fff4db; text-align:left;
+  box-shadow:0 5px 22px #0007;
 }
-@keyframes tut-entrance {
-  from { opacity: 0; transform: translateY(-25px); }
-  to { opacity: 1; transform: translateY(0); }
+.tut-visual {
+  display:grid; place-items:center; width:3.4rem; height:3.4rem; border-radius:8px;
+  background:#283829; border:1px solid #687d60;
 }
-.tut-card h2 {
-  color: #ffa64d;
-  font-size: 1.5rem;
-  margin: 0;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-shadow: 0 0 20px rgba(255, 166, 77, 0.35);
+.tut-art {
+  width:2rem; height:2.667rem; background:url('assets/newt-crawl.png') left top/400% 200%;
 }
-.tut-card p {
-  color: #cbd5e1;
-  font-size: 1.05rem;
-  margin: 0;
-  line-height: 1.4;
-  font-weight: 500;
+#tutorial[data-step="2"] .tut-art { transform:rotate(-25deg); }
+#tutorial[data-step="3"] .tut-art {
+  width:2.9rem; height:1.359rem; background:url('assets/sedan-drive.png') left top/200% 200%;
 }
-.tut-card .tut-img {
-  font-size: 2.2rem;
-  margin: 0;
-  text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+#tutProgress {
+  display:block; margin-bottom:.19rem; color:#ffc47b; font-size:.64rem; font-weight:700;
+  letter-spacing:.11em; text-transform:uppercase;
 }
+#tutTitle { font:400 clamp(1.22rem,2.45vw,1.63rem)/1.1 Georgia,serif; }
+#tutTitle:focus { outline:none; }
+#tutText { margin-top:.23rem; color:#e4d8bf; font-size:clamp(.72rem,1.42vw,.88rem); line-height:1.35; }
 #tutBtn {
-  width: auto;
-  padding: 0.65rem 1.6rem;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #ffa64d 0%, #ff8c1a 100%);
-  color: #0f1419;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 900;
-  cursor: pointer;
-  margin-top: 0.2rem;
-  text-transform: uppercase;
-  box-shadow: 0 8px 20px rgba(255, 166, 77, 0.3);
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  min-height:40px; pointer-events:auto; font-size:.81rem; white-space:nowrap;
+  background:#26382a; border-color:#879779; color:#fff4db;
 }
-#tutBtn:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 25px rgba(255, 166, 77, 0.45);
+#tutBtn:hover { background:#38513a; }
+#tutorial[data-step="5"] #tutBtn { background:#ffc47b; border-color:#ffc47b; color:#171c13; }
+#tutorial[data-step="5"] #tutBtn:hover { background:#ffdb9e; }
+
+@media (orientation:portrait) {
+  #splash { justify-content:flex-start; padding-top:clamp(11rem,44svh,28rem); }
+  .cover-art { height:60%; object-position:86% center; }
+  #splash::before {
+    background:linear-gradient(0deg,#101913 37%,rgba(16,25,19,.84) 48%,transparent 72%);
+  }
+  #gameTitle { font-size:clamp(3.3rem,13vw,6.2rem); margin:.55rem 0 .75rem; }
+  #gameTitle em { display:inline; }
+  .title-actions { margin:1rem 0 .55rem; }
+  .title-footer { position:static; margin-top:auto; padding-top:1.2rem; }
 }
-#tutBtn:active {
-  transform: scale(0.96) translateY(0);
+@media (max-height:550px) and (orientation:landscape) {
+  #splash { padding:1.1rem 5vw 2.15rem; }
+  #gameTitle { font-size:clamp(3.4rem,8.6vw,5.75rem); margin:.5rem 0 .65rem; }
+  .title-description { max-width:19rem; font-size:.88rem; }
+  .title-actions { margin:.8rem 0 .4rem; }
+  .title-footer { inset:auto 5vw .65rem; }
+  .tut-card { gap:.6rem; padding:.45rem .65rem; }
+  .tut-visual { width:2.75rem; height:2.75rem; }
+  .tut-art { scale:.83; }
 }
-.skip-tut-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.75);
-  cursor: pointer;
-  user-select: none;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  transition: color 0.2s ease;
+@media (max-height:440px) and (orientation:landscape) {
+  #splash:has(.player-details[open]) { justify-content:flex-start; }
+  #splash:has(.player-details[open]) .title-footer { position:static; margin-top:.55rem; }
 }
-.skip-tut-container:hover {
-  color: #ffa64d;
+@media (max-height:370px) and (orientation:landscape) {
+  #gameTitle { font-size:clamp(2.8rem,7vw,4.2rem); line-height:1; }
+  #gameTitle em { display:inline; }
 }
-.skip-tut-container input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.45);
-  cursor: pointer;
-  display: inline-grid;
-  place-content: center;
-  transition: all 0.2s ease;
-}
-.skip-tut-container input[type="checkbox"]::before {
-  content: "";
-  width: 10px;
-  height: 10px;
-  transform: scale(0);
-  transform-origin: center;
-  background-color: #ffa64d;
-  clip-path: polygon(14% 44%, 0 58%, 38% 96%, 100% 16%, 86% 2%, 38% 68%);
-  transition: transform 0.1s ease-in-out;
-}
-.skip-tut-container input[type="checkbox"]:checked {
-  border-color: #ffa64d;
-  background: rgba(255, 166, 77, 0.15);
-}
-.skip-tut-container input[type="checkbox"]:checked::before {
-  transform: scale(1.15);
-}
-.skip-tut-container input[type="checkbox"]:focus-visible {
-  outline: 2px solid #ffa64d;
-  outline-offset: 2px;
-}
-
-/* ── portrait mobile ── */
-@media (max-width: 600px) and (orientation: portrait) {
-  .logo { font-size: 2.8rem; }
-  .splash-card { padding: 2rem 1.5rem; border-radius: 24px; }
-  .tag { font-size: 1rem; margin-bottom: 1.5rem; }
-  .hi-line { margin-bottom: 1.4rem; }
-  #nameIn { font-size: 1rem; padding: 0.9rem 1.1rem; }
-  #playBtn { font-size: 1.15rem; padding: 0.95rem; margin-top: 0.8rem; }
-  .cause { margin-top: 1.5rem; font-size: 0.73rem; }
-  .tut-card { padding: 2rem 1.5rem; }
-  .tut-card h2 { font-size: 1.8rem; }
-  .tut-card p { font-size: 1rem; }
-}
-
-/* ── mobile landscape: two-column layout ── */
-@media (max-height: 520px) and (orientation: landscape) {
-  #splash { padding: 0.75rem; }
-
-  .splash-card {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 1.5rem;
-    max-width: 860px;
-    padding: 1.5rem 2rem;
-    border-radius: 20px;
-    text-align: left;
-    animation: none;
-  }
-
-  /* left column: brand */
-  .splash-brand {
-    display: flex;
-    flex-direction: column;
-    flex: 0 0 auto;
-    width: 220px;
-    min-width: 180px;
-    align-items: flex-start;
-    gap: 0;
-  }
-
-  /* hide logo/tag from the right column; they live in .splash-brand now */
-  .splash-card > .logo,
-  .splash-card > .tag {
-    display: none;
-  }
-
-  .splash-brand .logo {
-    display: block;
-    font-size: 2.4rem;
-    margin-bottom: 0.5rem;
-    text-align: left;
-  }
-
-  .splash-brand .tag {
-    display: block;
-    font-size: 0.9rem;
-    margin-bottom: 0.8rem;
-    text-align: left;
-    color: #a0b0bf;
-  }
-
-  .splash-brand .cause {
-    display: block;
-    font-size: 0.7rem;
-    margin-top: 0.8rem;
-    color: rgba(255,255,255,0.4);
-    line-height: 1.6;
-  }
-
-  /* right column: form */
-  .splash-form {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  /* hide the original cause block below the form */
-  .splash-card > .cause { display: none; }
-
-  .hi-line { font-size: 0.75rem; padding: 0.5rem 0.9rem; margin-bottom: 0.8rem; border-radius: 10px; }
-  #nameIn { font-size: 0.95rem; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 0; }
-  #playBtn { font-size: 1.1rem; padding: 0.8rem; margin-top: 0.7rem; border-radius: 10px; box-shadow: none; }
-  .controls-hint { margin-top: 0.6rem; font-size: 0.7rem; text-align: center; }
-}
-
-/* tutorial: compact landscape */
-@media (max-height: 520px) and (orientation: landscape) {
-  #tutorial {
-    top: 12px;
-    max-width: 580px;
-  }
-  .tut-card {
-    flex-direction: row;
-    padding: 0.6rem 1.4rem;
-    gap: 1.2rem;
-    border-radius: 16px;
-    text-align: left;
-  }
-  .tut-card .tut-img {
-    font-size: 1.8rem;
-    margin-bottom: 0;
-    flex-shrink: 0;
-  }
-  .tut-card h2 {
-    font-size: 1.1rem;
-    margin: 0;
-  }
-  .tut-card p {
-    font-size: 0.85rem;
-    margin: 0;
-  }
-  .tut-card .tut-text-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-  #tutBtn {
-    margin-top: 0;
-    padding: 0.5rem 1.2rem;
-    font-size: 0.85rem;
-    border-radius: 10px;
-  }
+@media (prefers-reduced-motion:reduce) {
+  #splash { transition:none; }
 }
 </style>
 </head>
 <body>
 
-<!-- ─── orientation prompt ─── -->
 <div id="orient">
   <div class="orient-inner">
-    <div class="orient-icon">📱</div>
     <h2>Rotate to landscape</h2>
-    <p>Please turn your device sideways for the best experience.</p>
+    <p>Turn your device sideways to see the whole crossing.</p>
+    <button id="orientBack" type="button">Back to title</button>
   </div>
 </div>
 
-<!-- ─── video transition ─── -->
-<div id="videoContainer">
-  <video id="introVideo" src="assets/intro_video.mp4" playsinline></video>
-  <button id="skipVideoBtn">Skip →</button>
-</div>
-
-<!-- ─── tutorial ─── -->
-<div id="tutorial">
+<aside id="tutorial" aria-label="Practice crossing" hidden>
   <div class="tut-card">
-    <div class="tut-img" id="tutImg">🐸 ⬅️ ⬆️ ➡️</div>
-    <div class="tut-text-content">
-      <h2 id="tutTitle">How to Play</h2>
-      <p id="tutText">Swipe or use arrow keys to move the newt.</p>
+    <div class="tut-visual" aria-hidden="true"><div class="tut-art"></div></div>
+    <div aria-live="polite" aria-atomic="true">
+      <span id="tutProgress"></span>
+      <h2 id="tutTitle" tabindex="-1"></h2>
+      <p id="tutText"></p>
     </div>
-    <button id="tutBtn">Got It!</button>
+    <button id="tutBtn" type="button">Skip practice</button>
   </div>
-</div>
+</aside>
 
-<!-- ─── splash ─── -->
-<div id="splash">
-  <div class="splash-card">
-    <!-- brand column (visible in landscape as left panel) -->
-    <div class="splash-brand">
-      <div class="logo">Newt<span>·</span>Crosser</div>
-      <div class="tag">Help the newt cross Alma Bridge Road.</div>
-      <div class="cause">
-        Inspired by real newts that<br>risk their lives every winter.<br>
-        <a href="http://bioblitz.club/newts" target="_blank" rel="noopener">bioblitz.club/newts →</a>
-      </div>
+<main id="splash" aria-labelledby="gameTitle">
+  <img class="cover-art" src="assets/title-screen.webp" alt="" fetchpriority="high">
+  <div class="title-content">
+    <p class="title-location">Alma Bridge Road, California</p>
+    <h1 id="gameTitle">Newt <em>Crosser</em></h1>
+    <p class="title-description">Guide a California newt across a busy road to Lexington Reservoir.</p>
+    <div class="title-actions">
+      <button class="title-button" id="playBtn" type="button">Play <span aria-hidden="true">→</span></button>
+      <button class="title-button" id="practiceBtn" type="button">How to play</button>
     </div>
-    <!-- portrait-only brand (hidden in landscape) -->
-    <div class="logo">Newt<span>·</span>Crosser</div>
-    <div class="tag">Help the newt cross Alma Bridge Road.</div>
-    <!-- form column -->
-    <div class="splash-form">
-      <div class="hi-line">High Score: <span id="hiScore">—</span></div>
+    <details class="player-details">
+      <summary>Set leaderboard name</summary>
+      <label for="nameIn">Name on the leaderboard</label>
       <input id="nameIn" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
-      <label class="skip-tut-container">
-        <input type="checkbox" id="skipTutCheck"> Skip Tutorial
-      </label>
-      <button id="playBtn">Play</button>
-      <div class="controls-hint">Swipe or use arrow keys</div>
-    </div>
-    <div class="cause">
-      Inspired by real newts that risk their lives crossing this road every winter.<br>
-      <a href="http://bioblitz.club/newts" target="_blank" rel="noopener">bioblitz.club/newts →</a>
-    </div>
+    </details>
   </div>
-</div>
+  <footer class="title-footer">
+    <p>Top score <strong id="hiScore">—</strong></p>
+    <a href="http://bioblitz.club/newts" target="_blank" rel="noopener">About the real newt crossing ↗</a>
+  </footer>
+</main>
 
-<button id="fsBtn">⛶</button>
+<button id="fsBtn" type="button" aria-label="Toggle fullscreen">⛶</button>
 <div id="game-wrapper"></div>
 
 <script>
@@ -482,7 +228,7 @@ const supabaseClient = _supabase?.createClient(supabaseUrl, supabaseKey);
 
 let playerName='', leaderboardEntries=[], globalHigh=0, topScore=0, topScoreName='';
 let audioCtx=null, muted=false;
-window.tutorialShown = localStorage.getItem('tutorialCompleted') === 'true';
+
 
 /* ─── leaderboard ─── */
 function readLocalScores(){
@@ -586,129 +332,86 @@ function goFullscreen(){
 }
 function isFullscreen(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
 
-/* ─── orientation ─── */
-function isMobile(){return window.matchMedia('(max-width:1024px)').matches&&('ontouchstart' in window);}
-function checkOrient(){
-  const portrait=window.innerHeight>window.innerWidth;
-  const need=isMobile()&&portrait;
-  document.getElementById('orient').classList.toggle('show',need);
-  if(!need&&window._game) window._game.scale.refresh();
-}
-window.addEventListener('resize',checkOrient);
-window.addEventListener('orientationchange',()=>setTimeout(checkOrient,150));
-
-/* ─── splash wiring ─── */
+/* ─── title and practice ─── */
 const splash=document.getElementById('splash');
 const nameIn=document.getElementById('nameIn');
 const playBtn=document.getElementById('playBtn');
 const fsBtn=document.getElementById('fsBtn');
+const orient=document.getElementById('orient');
 const tutorial=document.getElementById('tutorial');
 const tutBtn=document.getElementById('tutBtn');
+let practiceRequested=false, launchPending=false;
+
+const lessonPrompts = [
+  ['Move forward', 'Swipe up or press ↑ to take a step toward the road.'],
+  ['Steer left and right', 'Swipe sideways or press ← or → to move along the shoulder.'],
+  ['Wait for a gap', 'Watch the car. When your lane is clear, move toward the water.'],
+  ['Reach the reservoir', 'Keep moving up until your newt reaches the shore.'],
+  ['Crossing complete', 'Your newt made it to Lexington Reservoir.'],
+];
+
+function showTutorialStep(step, [title, text] = lessonPrompts[step-1]){
+  tutorial.dataset.step=step;
+  document.getElementById('tutProgress').textContent=step===5?'Practice complete':`Practice · ${step} of 4`;
+  document.getElementById('tutTitle').textContent=title;
+  document.getElementById('tutText').textContent=text;
+  tutBtn.textContent=step===5?'Start game':'Skip practice';
+}
+
+function isMobile(){
+  return window.matchMedia('(max-width:1024px)').matches&&navigator.maxTouchPoints>0;
+}
+function checkOrient(){
+  const needsLandscape=splash.inert&&isMobile()&&innerHeight>innerWidth;
+  orient.classList.toggle('show',needsLandscape);
+  if(needsLandscape||!splash.inert) return;
+  if(launchPending){
+    launchPending=false;
+    startSelectedMode();
+  } else {
+    window._game?.scale.refresh();
+  }
+}
+window.addEventListener('resize',checkOrient);
+window.addEventListener('orientationchange',()=>setTimeout(checkOrient,150));
+
+function startSelectedMode(){
+  fsBtn.classList.add('show');
+  tutorial.hidden=true;
+  if(window._game) window._game.scene.getScene('Game').scene.restart();
+  else launchGame();
+  if(!practiceRequested) gtag('event','start_game',{event_category:'Game'});
+}
+
+function openTitle(){
+  launchPending=false;
+  splash.inert=false;
+  tutorial.hidden=true;
+  fsBtn.classList.remove('show');
+  checkOrient();
+  playBtn.focus();
+  if(isFullscreen()) document.exitFullscreen?.().catch(()=>{});
+}
+
+function beginRun(practice){
+  practiceRequested=practice;
+  playerName=nameIn.value.trim();
+  ensureAudio(); resumeAudio();
+  splash.inert=true;
+  launchPending=true;
+  if(isMobile()) goFullscreen();
+  checkOrient();
+}
 
 fetchLB();
-checkOrient();
-const skipTutCheck = document.getElementById('skipTutCheck');
-if (skipTutCheck) {
-  skipTutCheck.checked = window.tutorialShown;
-}
 nameIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();playBtn.click();}});
-nameIn.addEventListener('input',()=>{playerName=nameIn.value.trim();});
-
-function startGame() {
-  fsBtn.classList.add('show');
-  if(window._game) {
-    const scene = window._game.scene.getScene('Game');
-    scene.isTutorial = false;
-    scene.scene.restart();
-  } else {
-    launchGame();
-  }
-  gtag('event','start_game',{event_category:'Game'});
-}
-
-let videoTimeoutId = null;
-
-function startInteractiveTutorial() {
-  fsBtn.classList.add('show');
-  tutorial.style.display = 'flex';
-  if(window._game) {
-    const scene = window._game.scene.getScene('Game');
-    scene.isTutorial = true;
-    scene.scene.restart();
-  } else {
-    launchGame();
-  }
-}
-
-function onVideoEnd() {
-  if (videoTimeoutId) {
-    clearTimeout(videoTimeoutId);
-    videoTimeoutId = null;
-  }
-  const videoContainer = document.getElementById('videoContainer');
-  const introVideo = document.getElementById('introVideo');
-  if (introVideo) introVideo.pause();
-  if (videoContainer) videoContainer.classList.remove('show');
-  
-  if (window.videoTransitionCompleted) return;
-  window.videoTransitionCompleted = true;
-  
-  if(!window.tutorialShown) {
-    startInteractiveTutorial();
-  } else {
-    startGame();
-  }
-}
-
-const introVideo = document.getElementById('introVideo');
-const skipVideoBtn = document.getElementById('skipVideoBtn');
-if (introVideo) introVideo.addEventListener('ended', onVideoEnd);
-if (skipVideoBtn) skipVideoBtn.addEventListener('click', onVideoEnd);
-
-playBtn.addEventListener('click',()=>{
-  playerName=nameIn.value.trim()||playerName||'Anon';
-  const skipTutCheck = document.getElementById('skipTutCheck');
-  if (skipTutCheck) {
-    window.tutorialShown = skipTutCheck.checked;
-    if (skipTutCheck.checked) {
-      localStorage.setItem('tutorialCompleted', 'true');
-    } else {
-      localStorage.removeItem('tutorialCompleted');
-    }
-  }
-  ensureAudio(); resumeAudio();
-  goFullscreen();
-  splash.style.opacity='0'; splash.style.pointerEvents='none';
-  
-  window.videoTransitionCompleted = false;
-  
-  const isTest = navigator.webdriver || window.location.search.includes('test');
-  if (isTest) {
-    onVideoEnd();
-  } else {
-    const videoContainer = document.getElementById('videoContainer');
-    const introVideo = document.getElementById('introVideo');
-    videoContainer.classList.add('show');
-    introVideo.currentTime = 0;
-    
-    videoTimeoutId = setTimeout(() => {
-      onVideoEnd();
-    }, 10000);
-    
-    introVideo.play().catch(err => {
-      console.log("Video autoplay failed, skipping to next step:", err);
-      onVideoEnd();
-    });
-  }
-});
-
+playBtn.addEventListener('click',()=>beginRun(false));
+document.getElementById('practiceBtn').addEventListener('click',()=>beginRun(true));
+document.getElementById('orientBack').addEventListener('click',openTitle);
 tutBtn.addEventListener('click',()=>{
-  window.tutorialShown=true;
-  localStorage.setItem('tutorialCompleted', 'true');
-  tutorial.style.display='none';
-  startGame();
+  practiceRequested=false;
+  startSelectedMode();
 });
-
 fsBtn.addEventListener('click',()=>{ if(isFullscreen()) document.exitFullscreen?.(); else goFullscreen(); });
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1018,6 +721,7 @@ class GameScene extends Phaser.Scene {
     this.score=0;
     this.lives=3;
     this.isOver=false;
+    this.isTutorial=practiceRequested;
     this.gameOverShown=false; this.canReplay=false;
     this.newtAlive=true; this.targetAng=0; this.lastStep=0;
     this.invulnerable=false;
@@ -1242,7 +946,6 @@ class GameScene extends Phaser.Scene {
       if(!this.isOver && !this.isTutorial) this.diff=Math.min(3.5,this.diff+.08);
     }});
 
-    this.isTutorial = !window.tutorialShown;
     if (this.isTutorial) {
       this.startTutorialMode();
     }
@@ -1253,10 +956,9 @@ class GameScene extends Phaser.Scene {
     this.isTutorial = true;
     this.tutorialStep = 1;
 
-    document.getElementById('tutTitle').textContent = 'Step 1: Move forward';
-    document.getElementById('tutText').textContent = 'SWIPE UP or press UP/W key to move the newt forward.';
-    document.getElementById('tutImg').textContent = '🐸 ⬆️';
-    document.getElementById('tutBtn').textContent = 'Skip';
+    showTutorialStep(1);
+    tutorial.hidden=false;
+    document.getElementById('tutTitle').focus();
 
     if (this.scoreTxt) this.scoreTxt.setVisible(false);
     if (this.livesTxt) this.livesTxt.setVisible(false);
@@ -1270,11 +972,11 @@ class GameScene extends Phaser.Scene {
   spawnTutorialCar() {
     this.vehicles.clear(true, true);
     const lane = this.lanes[Math.floor(this.lanes.length / 2)] || { y: this.scale.height * 0.5, dir: 1 };
-    const x = lane.dir > 0 ? -100 : this.scale.width + 100;
+    const x = this.newt.x - lane.dir * this.TS * 4;
     const v = this.createVehicle(x, lane, 'sedan_img', this.TS * 2.5);
     v.dir = lane.dir;
-    v.baseSpd = 0.38;
-    v.spd = 0.38;
+    v.baseSpd = (this.TS * 4) / (this.scale.width * .085);
+    v.spd = v.baseSpd;
     v.wm = 2.5;
     v.hm = 1.25;
     v.isTutorialCar = true;
@@ -1293,9 +995,8 @@ class GameScene extends Phaser.Scene {
     this.tweens.killTweensOf(this.newt);
     this.newt.stop().setFrame(0).setVisible(false);
     
-    document.getElementById('tutTitle').textContent = 'Oops! Try again';
-    document.getElementById('tutText').textContent = 'Avoid vehicles! Stand still or move out of the way. Let\'s try dodging again.';
-    
+    showTutorialStep(3, ['Try again', 'Pause at the edge of the road until the car passes.']);
+
     this.time.delayedCall(800, () => {
       this.newt.setPosition(this.scale.width / 2, this.SPAWN_Y).setVisible(true).setAlpha(1);
       this.newt.angle=0;
@@ -1307,22 +1008,18 @@ class GameScene extends Phaser.Scene {
         onComplete:()=>{this.newt.setAlpha(1); this.invulnerable=false;}
       });
       this.spawnTutorialCar();
+      showTutorialStep(3);
     });
   }
 
   onTutorialCross() {
     this.isTutorial = false;
-    window.tutorialShown = true;
-    localStorage.setItem('tutorialCompleted', 'true');
     
     sfx('level'); vibrate(15);
     this.cameras.main.flash(80,90,180,90,true);
     
-    document.getElementById('tutTitle').textContent = 'You did it!';
-    document.getElementById('tutText').textContent = 'Awesome job! You are ready to save the newts of Alma Bridge Road.';
-    document.getElementById('tutImg').textContent = '🐸 🏆';
-    document.getElementById('tutBtn').textContent = 'Start Game';
-    
+    showTutorialStep(5);
+
     this.newtAlive = false;
     this.tweens.killTweensOf(this.newt);
     
@@ -1351,17 +1048,14 @@ class GameScene extends Phaser.Scene {
     if(!this.isOver||!this.gameOverShown||!this.canReplay) return;
     this.canReplay=false;
     this.scene.stop();
-    tutorial.style.display='none';
-    splash.style.opacity='1';
-    splash.style.pointerEvents='auto';
-    fsBtn.classList.remove('show');
+    openTitle();
     fetchLB();
-    if(isFullscreen()) document.exitFullscreen?.().catch(()=>{});
   }
 
   /* ── movement ── */
   step(dx,dy){
     if(!this.newtAlive||this.isOver) return;
+    if(this.isTutorial && ((this.tutorialStep===1 && dy>=0) || (this.tutorialStep===2 && !dx))) return;
     const now=this.time.now;
     if(now-this.lastStep<85) return;
     this.lastStep=now;
@@ -1379,14 +1073,10 @@ class GameScene extends Phaser.Scene {
     if (this.isTutorial) {
       if (this.tutorialStep === 1 && dy < 0) {
         this.tutorialStep = 2;
-        document.getElementById('tutTitle').textContent = 'Step 2: Steer left & right';
-        document.getElementById('tutText').textContent = 'Excellent! Now SWIPE or press LEFT/RIGHT (A/D) to steer.';
-        document.getElementById('tutImg').textContent = '🐸 ⬅️ ➡️';
+        showTutorialStep(2);
       } else if (this.tutorialStep === 2 && dx !== 0) {
         this.tutorialStep = 3;
-        document.getElementById('tutTitle').textContent = 'Step 3: Dodge vehicles';
-        document.getElementById('tutText').textContent = 'Watch out! A speeding car is coming. Stand still or move to dodge it!';
-        document.getElementById('tutImg').textContent = '🚗 ⚠️';
+        showTutorialStep(3);
         this.spawnTutorialCar();
       }
     }
@@ -1664,15 +1354,13 @@ class GameScene extends Phaser.Scene {
       v.x+=v.dir*baseSpd*v.spd*this.diff*dt;
       if (v.isTutorialCar) {
         const offScreen = (v.dir > 0 && v.x > W + vWidth) || (v.dir < 0 && v.x < -vWidth);
-        if (offScreen) {
-          v.destroy();
-          if (this.isTutorial && this.tutorialStep === 3) {
-            this.tutorialStep = 4;
-            document.getElementById('tutTitle').textContent = 'Step 4: Reach the reservoir';
-            document.getElementById('tutText').textContent = 'Perfect dodge! Now cross the road to Lexington Reservoir at the top!';
-            document.getElementById('tutImg').textContent = '🐸 🏁';
-          }
+        const passed = v.dir * (v.x - this.newt.x) > v.displayWidth / 2 + TS * .5;
+        if (this.isTutorial && this.tutorialStep === 3 && this.newtAlive &&
+            (offScreen || passed || this.newt.y < v.y - TS)) {
+          this.tutorialStep = 4;
+          showTutorialStep(4);
         }
+        if (offScreen) v.destroy();
       } else {
         if(v.dir>0&&v.x>W+vWidth) v.x=-vWidth;
         else if(v.dir<0&&v.x<-vWidth) v.x=W+vWidth;

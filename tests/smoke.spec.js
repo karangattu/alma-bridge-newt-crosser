@@ -9,8 +9,9 @@ async function startGameAtGameOver(page, { name = 'FinalLife', score = 3 } = {})
     body: '[]',
   }));
   await page.goto('/');
-  await page.getByPlaceholder('Your name').fill(name);
-  await page.getByRole('button', { name: 'Play' }).click();
+  await page.getByText('Set leaderboard name').click();
+  await page.getByLabel('Name on the leaderboard').fill(name);
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
 
   await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
 
@@ -32,20 +33,20 @@ async function startGameAtGameOver(page, { name = 'FinalLife', score = 3 } = {})
   })).toBe(true);
 }
 
-test('loads the splash screen and starts the game', async ({ page }) => {
+test('shows the illustrated title and starts a guest game', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
   await page.goto('/');
 
   await expect(page).toHaveTitle('Newt Crosser');
-  await expect(page.getByPlaceholder('Your name')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /bioblitz\.club\/newts/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Newt Crosser', level: 1 })).toBeVisible();
+  await expect.poll(() => page.locator('.cover-art').evaluate(img => img.naturalWidth)).toBeGreaterThan(0);
+  await expect(page.getByLabel('Name on the leaderboard')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'How to play' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /real newt crossing/i })).toHaveAttribute('href', /bioblitz/);
 
-  await page.getByPlaceholder('Your name').fill('Smoke');
-  await page.getByRole('button', { name: 'Play' }).click();
-  await page.locator('#tutBtn').click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
 
   await expect.poll(async () => page.evaluate(() => {
     const splash = document.getElementById('splash');
@@ -63,6 +64,8 @@ test('loads the splash screen and starts the game', async ({ page }) => {
   });
 
   await expect(page.locator('#game-wrapper canvas')).toHaveCount(1);
+  await expect(page.locator('#tutorial')).toBeHidden();
+  expect(await page.evaluate(() => playerName)).toBe('');
   expect(pageErrors).toEqual([]);
 });
 
@@ -71,9 +74,7 @@ test('newt walks through its poses only after moving and rests on respawn', asyn
     status: 200, contentType: 'application/json', body: '[]',
   }));
   await page.goto('/');
-  await page.getByPlaceholder('Your name').fill('WalkingNewt');
-  await page.locator('#skipTutCheck').check();
-  await page.getByRole('button', { name: 'Play' }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect.poll(() => page.evaluate(() => Boolean(window._game?.scene.getScene('Game').newt))).toBe(true);
 
   expect(await page.evaluate(() => window._game.scene.getScene('Game').newt.anims.isPlaying)).toBe(false);
@@ -158,6 +159,9 @@ test('Home returns to the splash screen from the end screen', async ({ page }) =
       pointerEvents: getComputedStyle(splash).pointerEvents,
     };
   })).toEqual({ opacity: '1', pointerEvents: 'auto' });
+  await page.getByRole('button', { name: 'How to play' }).click();
+  await expect(page.locator('#tutTitle')).toHaveText('Move forward');
+  await expect(page.locator('#game-wrapper canvas')).toHaveCount(1);
 });
 
 test('score submissions use the atomic personal-best endpoint', async ({ page }) => {
@@ -192,59 +196,74 @@ test('leaderboard migration keeps one case-insensitive personal best per name', 
   expect(sql).toMatch(/greatest\s*\(/i);
 });
 
-test('runs through the interactive tutorial successfully', async ({ page }) => {
+test('practices steering and waiting for traffic before crossing', async ({ page }) => {
   await page.goto('/');
-
-  await page.getByPlaceholder('Your name').fill('TutorialNewt');
-  await page.getByRole('button', { name: 'Play' }).click();
+  await page.getByRole('button', { name: 'How to play' }).click();
 
   await expect(page.locator('#tutorial')).toBeVisible();
-  await expect(page.locator('#tutTitle')).toHaveText('Step 1: Move forward');
+  await expect(page.locator('#tutTitle')).toHaveText('Move forward');
+  await expect(page.locator('#tutProgress')).toHaveText('Practice · 1 of 4');
+  expect(await page.evaluate(() => window._game.scene.getScene('Game').newt.texture.key)).toBe('newt_sheet');
 
-  await page.waitForTimeout(500);
   await page.keyboard.press('ArrowUp');
-  await expect(page.locator('#tutTitle')).toHaveText('Step 2: Steer left & right');
+  await expect(page.locator('#tutTitle')).toHaveText('Steer left and right');
 
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(120);
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('#tutTitle')).toHaveText('Steer left and right');
   await page.keyboard.press('ArrowLeft');
-  await expect(page.locator('#tutTitle')).toHaveText('Step 3: Dodge vehicles');
+  await expect(page.locator('#tutTitle')).toHaveText('Wait for a gap');
+  await expect(page.locator('#tutTitle')).toHaveText('Reach the reservoir');
 
-  for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(150);
+  for (let i = 0; i < 12; i++) {
     await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(120);
   }
 
-  await expect(page.locator('#tutTitle')).toHaveText('You did it!');
-  await page.getByRole('button', { name: 'Start Game' }).click();
-
-  const localStorageTutorial = await page.evaluate(() => localStorage.getItem('tutorialCompleted'));
-  expect(localStorageTutorial).toBe('true');
+  await expect(page.locator('#tutTitle')).toHaveText('Crossing complete');
+  await page.getByRole('button', { name: 'Start game' }).click();
   await expect(page.locator('#tutorial')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window._game.scene.getScene('Game').vehicles.getLength())).toBeGreaterThan(1);
 });
 
-test('allows skipping the tutorial from the splash screen checkbox', async ({ page }) => {
+test('allows skipping practice into normal traffic', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'How to play' }).click();
+  await page.getByRole('button', { name: 'Skip practice' }).click();
 
-  await page.getByPlaceholder('Your name').fill('Skipper');
-  await page.locator('#skipTutCheck').check();
-  await page.getByRole('button', { name: 'Play' }).click();
-
-  await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
   await expect(page.locator('#tutorial')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window._game.scene.getScene('Game').vehicles.getLength())).toBeGreaterThan(1);
+});
 
-  const localStorageTutorial = await page.evaluate(() => localStorage.getItem('tutorialCompleted'));
-  expect(localStorageTutorial).toBe('true');
+test.describe('touch title screen', () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+
+  test('shows the title in portrait and waits for landscape before starting practice', async ({ page }) => {
+    await page.addInitScript(() => {
+      Element.prototype.requestFullscreen = undefined;
+      Element.prototype.webkitRequestFullscreen = undefined;
+    });
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Newt Crosser', level: 1 })).toBeVisible();
+    await expect(page.locator('#orient')).toBeHidden();
+
+    await page.getByRole('button', { name: 'How to play' }).tap();
+    await expect(page.getByRole('heading', { name: 'Rotate to landscape' })).toBeVisible();
+    await expect(page.locator('canvas')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Back to title' }).tap();
+    await expect(page.locator('#orient')).toBeHidden();
+
+    await page.getByRole('button', { name: 'How to play' }).tap();
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(page.locator('#tutTitle')).toHaveText('Move forward');
+    await expect(page.locator('#orient')).toBeHidden();
+  });
 });
 
 for (const side of ['left', 'right']) {
   test(`volunteer walks from the ${side}, peels a splat, then walks away`, async ({ page }) => {
-    await page.addInitScript(() => {
-      window.tutorialCompleted = true;
-    });
-
     await page.goto('/');
-    await page.getByPlaceholder('Your name').fill('CleanerTest');
-    await page.getByRole('button', { name: 'Play' }).click();
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
 
     await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
 
@@ -343,8 +362,7 @@ for (const side of ['left', 'right']) {
 
 test('renders Alma Bridge Road text markings on the road itself', async ({ page }) => {
   await page.goto('/');
-  await page.getByPlaceholder('Your name').fill('RoadLabelTest');
-  await page.getByRole('button', { name: 'Play' }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect.poll(async () => page.evaluate(() => Boolean(window._game))).toBe(true);
 
   const roadTextExists = await page.evaluate(() => {
