@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f1419">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,7 +18,24 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:'Inter',system-ui,sans-serif;
   -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none;}
-#game-wrapper{position:fixed;inset:0;width:100vw;height:100vh;touch-action:none;}
+#game-wrapper {
+  position:fixed; inset:env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  touch-action:none;
+}
+#touchControls:not([hidden]) {
+  position:fixed; z-index:40; display:flex; justify-content:space-between; pointer-events:none;
+  inset:auto max(.75rem,env(safe-area-inset-right)) max(.75rem,env(safe-area-inset-bottom))
+    max(.75rem,env(safe-area-inset-left));
+}
+.move-group { display:flex; gap:.5rem; }
+.move-group button {
+  width:clamp(2.8rem,12vw,3.5rem); height:clamp(2.8rem,12vw,3.5rem);
+  display:grid; place-items:center; pointer-events:auto; touch-action:manipulation;
+  border:1px solid #a5ac8a; border-radius:12px; background:#142017eb; color:#fff4db;
+  font:700 1.5rem/1 system-ui,sans-serif; cursor:pointer;
+}
+.move-group button:active { background:#ffc47b; color:#142017; }
 
 /* ─── title screen ─── */
 #splash {
@@ -52,12 +69,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
   max-width:22rem; color:#ecdfc8; line-height:1.55; font-size:clamp(.9rem,1.45vw,1.14rem);
 }
 .title-actions { display:flex; flex-wrap:wrap; gap:.65rem; margin:1.4rem 0 .95rem; }
-.title-button, #tutBtn, #orientBack {
+.title-button, #tutBtn {
   border:1px solid #ffc47b; border-radius:7px;
   background:#ffc47b; color:#171c13;
   min-height:44px; padding:.66rem 1.05rem; font:700 .94rem/1.2 'Inter',system-ui,sans-serif; cursor:pointer;
 }
-.title-button:hover, #tutBtn:hover, #orientBack:hover { background:#ffdb9e; }
+.title-button:hover, #tutBtn:hover { background:#ffdb9e; }
 #playBtn { display:inline-flex; gap:1.9rem; align-items:center; }
 #practiceBtn { background:#17251abf; color:#fff4db; border-color:#a5ac8a; }
 #practiceBtn:hover { background:#2e3f2d; }
@@ -72,7 +89,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
   background:#121d15; color:#fff4db; font:inherit; font-size:1rem; user-select:text; touch-action:auto;
 }
 #nameIn::placeholder { color:#b6b4a2; }
-#splash :focus-visible, #tutorial button:focus-visible, #orient :focus-visible {
+#splash :focus-visible, #tutorial button:focus-visible, #touchControls :focus-visible {
   outline:2px solid #fff4db; outline-offset:4px;
 }
 .title-footer {
@@ -84,17 +101,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 .title-footer a { color:#fff4db; text-underline-offset:.24em; }
 .title-footer a:hover { color:#ffc47b; }
 
-/* ─── orientation lock overlay ─── */
-#orient{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
-  background:#101913;color:#ffc47b;text-align:center;padding:2rem;}
-#orient.show{display:flex;}
-.orient-inner{max-width:300px;}
-.orient-inner h2{font:400 2rem/1.1 Georgia,serif;margin-bottom:.65rem;color:#fff4db;}
-.orient-inner p{color:#e4d8bf;font-size:.9rem;line-height:1.5;margin-bottom:1.15rem;}
-
 /* ─── fullscreen toggle ─── */
-#fsBtn{position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,.4);color:#fff;
-  border:none;border-radius:6px;padding:6px 10px;font-size:.7rem;cursor:pointer;display:none;font-family:inherit;}
+#fsBtn {
+  position:fixed; top:max(3rem,calc(env(safe-area-inset-top) + 2.75rem));
+  right:max(.5rem,env(safe-area-inset-right)); z-index:50; display:none;
+  min-width:44px; min-height:44px; border:1px solid #a5ac8a; border-radius:8px;
+  background:#142017eb; color:#fff4db; font:700 1.15rem/1 system-ui,sans-serif; cursor:pointer;
+}
 #fsBtn.show{display:block;}
 
 /* ─── practice overlay ─── */
@@ -146,6 +159,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
   #gameTitle em { display:inline; }
   .title-actions { margin:1rem 0 .55rem; }
   .title-footer { position:static; margin-top:auto; padding-top:1.2rem; }
+  #tutorial { width:calc(100% - 1.5rem); }
+  .tut-card { column-gap:.55rem; }
+  .tut-visual { width:2.75rem; height:2.75rem; }
+  .tut-art { scale:.83; }
+  #tutBtn { padding-inline:.52rem; }
 }
 @media (max-height:550px) and (orientation:landscape) {
   #splash { padding:1.1rem 5vw 2.15rem; }
@@ -171,14 +189,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 </style>
 </head>
 <body>
-
-<div id="orient">
-  <div class="orient-inner">
-    <h2>Rotate to landscape</h2>
-    <p>Turn your device sideways to see the whole crossing.</p>
-    <button id="orientBack" type="button">Back to title</button>
-  </div>
-</div>
 
 <aside id="tutorial" aria-label="Practice crossing" hidden>
   <div class="tut-card">
@@ -216,6 +226,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 
 <button id="fsBtn" type="button" aria-label="Toggle fullscreen">⛶</button>
 <div id="game-wrapper"></div>
+<div id="touchControls" role="group" aria-label="Move the newt" hidden>
+  <div class="move-group">
+    <button type="button" data-x="-1" data-y="0" aria-label="Move left">←</button>
+    <button type="button" data-x="1" data-y="0" aria-label="Move right">→</button>
+  </div>
+  <div class="move-group">
+    <button type="button" data-x="0" data-y="1" aria-label="Move down">↓</button>
+    <button type="button" data-x="0" data-y="-1" aria-label="Move up">↑</button>
+  </div>
+</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -328,7 +348,6 @@ function goFullscreen(){
   const el=document.documentElement;
   const req=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
   if(req) try{ req.call(el).catch(()=>{}); }catch(e){}
-  if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{});
 }
 function isFullscreen(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
 
@@ -337,14 +356,14 @@ const splash=document.getElementById('splash');
 const nameIn=document.getElementById('nameIn');
 const playBtn=document.getElementById('playBtn');
 const fsBtn=document.getElementById('fsBtn');
-const orient=document.getElementById('orient');
+const touchControls=document.getElementById('touchControls');
 const tutorial=document.getElementById('tutorial');
 const tutBtn=document.getElementById('tutBtn');
-let practiceRequested=false, launchPending=false;
+let practiceRequested=false;
 
 const lessonPrompts = [
-  ['Move forward', 'Swipe up or press ↑ to take a step toward the road.'],
-  ['Steer left and right', 'Swipe sideways or press ← or → to move along the shoulder.'],
+  ['Move forward', 'Swipe up, tap ↑, or use the up arrow key.'],
+  ['Steer left and right', 'Swipe sideways or use ← and → to move along the shoulder.'],
   ['Wait for a gap', 'Watch the car. When your lane is clear, move toward the water.'],
   ['Reach the reservoir', 'Keep moving up until your newt reaches the shore.'],
   ['Crossing complete', 'Your newt made it to Lexington Reservoir.'],
@@ -358,23 +377,6 @@ function showTutorialStep(step, [title, text] = lessonPrompts[step-1]){
   tutBtn.textContent=step===5?'Start game':'Skip practice';
 }
 
-function isMobile(){
-  return window.matchMedia('(max-width:1024px)').matches&&navigator.maxTouchPoints>0;
-}
-function checkOrient(){
-  const needsLandscape=splash.inert&&isMobile()&&innerHeight>innerWidth;
-  orient.classList.toggle('show',needsLandscape);
-  if(needsLandscape||!splash.inert) return;
-  if(launchPending){
-    launchPending=false;
-    startSelectedMode();
-  } else {
-    window._game?.scale.refresh();
-  }
-}
-window.addEventListener('resize',checkOrient);
-window.addEventListener('orientationchange',()=>setTimeout(checkOrient,150));
-
 function startSelectedMode(){
   fsBtn.classList.add('show');
   tutorial.hidden=true;
@@ -384,11 +386,10 @@ function startSelectedMode(){
 }
 
 function openTitle(){
-  launchPending=false;
   splash.inert=false;
   tutorial.hidden=true;
+  touchControls.hidden=true;
   fsBtn.classList.remove('show');
-  checkOrient();
   playBtn.focus();
   if(isFullscreen()) document.exitFullscreen?.().catch(()=>{});
 }
@@ -398,19 +399,21 @@ function beginRun(practice){
   playerName=nameIn.value.trim();
   ensureAudio(); resumeAudio();
   splash.inert=true;
-  launchPending=true;
-  if(isMobile()) goFullscreen();
-  checkOrient();
+  startSelectedMode();
 }
 
 fetchLB();
 nameIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();playBtn.click();}});
 playBtn.addEventListener('click',()=>beginRun(false));
 document.getElementById('practiceBtn').addEventListener('click',()=>beginRun(true));
-document.getElementById('orientBack').addEventListener('click',openTitle);
 tutBtn.addEventListener('click',()=>{
   practiceRequested=false;
   startSelectedMode();
+});
+touchControls.querySelectorAll('button').forEach(button=>{
+  button.addEventListener('click',()=>{
+    window._game?.scene.getScene('Game').step(Number(button.dataset.x),Number(button.dataset.y));
+  });
 });
 fsBtn.addEventListener('click',()=>{ if(isFullscreen()) document.exitFullscreen?.(); else goFullscreen(); });
 
@@ -706,16 +709,8 @@ class GameScene extends Phaser.Scene {
 
   create(){
     const W=this.scale.width, H=this.scale.height;
-    /* tile size — based on smaller dim so it works in any aspect ratio */
-    const TS=Math.max(28,Math.min(W,H)/11);
-    this.TS=TS;
-
-    /* layout */
-    this.ROAD_TOP   = H*.26;
-    this.ROAD_BOT   = H*.74;
-    this.ROAD_MID   = (this.ROAD_TOP+this.ROAD_BOT)/2;
-    this.SHOULDER_H = TS*.7;
-    this.SPAWN_Y    = H-TS*1.0;
+    this.layoutBoard(W,H);
+    const TS=this.TS;
 
     /* state */
     this.score=0;
@@ -723,12 +718,14 @@ class GameScene extends Phaser.Scene {
     this.isOver=false;
     this.isTutorial=practiceRequested;
     this.gameOverShown=false; this.canReplay=false;
-    this.newtAlive=true; this.targetAng=0; this.lastStep=0;
+    this.newtAlive=true; this.targetAng=0; this.lastStep=-Infinity;
     this.invulnerable=false;
     this.diff=1;
+    this.resizeSafeUntil=0;
+    this.moveTween=null;
+    this.celebrateTween=null;
 
     /* textures */
-    const nw=Math.round(TS*.95), nh=Math.round(TS*1.35);
     if(!this.textures.exists('splat')) makeSplat(this,'splat',Math.round(TS*.55));
 
     /* vehicle textures */
@@ -795,51 +792,8 @@ class GameScene extends Phaser.Scene {
       }
     });
 
-    /* Reservoir and forest art include the gravel shoulders. */
-    const roadH=this.ROAD_BOT-this.ROAD_TOP;
-    this.add.image(0,0,'reservoir').setOrigin(0).setDisplaySize(W,this.ROAD_TOP+1).setDepth(-10);
-    this.add.image(0,this.ROAD_BOT-1,'forest').setOrigin(0).setDisplaySize(W,H-this.ROAD_BOT+1).setDepth(-10);
-    this.add.tileSprite(0,this.ROAD_TOP,W,roadH,'asphalt')
-      .setOrigin(0).setTileScale(TS/64).setDepth(-9);
-    const markings=this.add.graphics().setDepth(-7);
-    markings.lineStyle(Math.max(2,TS*.035),0xddd6ba,.72);
-    markings.lineBetween(0,this.ROAD_TOP+TS*.1,W,this.ROAD_TOP+TS*.1);
-    markings.lineBetween(0,this.ROAD_BOT-TS*.1,W,this.ROAD_BOT-TS*.1);
-
-    const upperY = this.ROAD_TOP + (this.ROAD_MID - this.ROAD_TOP) * 0.55;
-    const lowerY = this.ROAD_MID + (this.ROAD_BOT - this.ROAD_MID) * 0.45;
-    const roadLabels = W > 800 ? [W * 0.25, W * 0.75] : [W * 0.5];
-    roadLabels.forEach((x, idx) => {
-      const y = idx % 2 === 0 ? upperY : lowerY;
-      this.add.text(x, y, 'ALMA BRIDGE ROAD', {
-        fontFamily: 'Inter',
-        fontSize: Math.max(14, TS * 0.45) + 'px',
-        fontStyle: '800',
-        color: '#ffffff'
-      }).setOrigin(0.5).setDepth(-8).setAlpha(0.08);
-    });
-
-    /* LEXINGTON RESERVOIR label */
-    this.add.text(W/2,this.ROAD_TOP-this.SHOULDER_H-TS*.32,'LEXINGTON RESERVOIR',
-      {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',fontStyle:'700',color:'#c5ecf0',stroke:'#102e38',strokeThickness:3})
-      .setOrigin(.5).setDepth(-3);
-
-    /* ── lanes — adapt to road height ── */
-    /* keep lanes tall enough that vehicles in adjacent lanes never overlap vertically */
-    const laneCount=Math.max(2,Math.floor(roadH/(TS*1.8)));
-    this.lanes=[];
-    const laneH=roadH/laneCount;
-    for(let i=0;i<laneCount;i++){
-      this.lanes.push({
-        y:this.ROAD_TOP+laneH*(i+.5),
-        dir:i%2===0?-1:1
-      });
-    }
-    markings.lineStyle(Math.max(2,TS*.045),0xe7bb56,.76);
-    for(let i=1;i<laneCount;i++){
-      const y=this.ROAD_TOP+i*laneH;
-      for(let x=0;x<W;x+=TS*1.4) markings.lineBetween(x,y,x+TS*.7,y);
-    }
+    this.scenery=this.add.group();
+    this.drawBoard();
 
     /* vehicles */
     this.vehicles=this.physics.add.group();
@@ -857,7 +811,7 @@ class GameScene extends Phaser.Scene {
 
     this.newt=this.physics.add.sprite(W/2,this.SPAWN_Y,'newt_sheet').setDepth(5);
     this.newt.on('animationcomplete', () => this.newt.setFrame(0));
-    this.newt.setDisplaySize(nw, nh);
+    this.newt.setDisplaySize(TS*.95,TS*1.35);
     this.newt.body.setAllowGravity(false);
     this.newt.setCollideWorldBounds(true);
     // Body size should be relative to the display size for better accuracy
@@ -880,7 +834,7 @@ class GameScene extends Phaser.Scene {
     this.cleanerSp=this.physics.add.sprite(-TS*2,this.ROAD_BOT+this.SHOULDER_H*.6,'volunteer_sheet')
       .setDisplaySize(TS*2,TS*2).setOrigin(.5,.96).setDepth(4).setVisible(false);
     // Both sheets use different resolutions but share the same size in the game.
-    this.cleanerSp.on('animationstart',()=>this.cleanerSp.setDisplaySize(TS*2,TS*2));
+    this.cleanerSp.on('animationstart',()=>this.cleanerSp.setDisplaySize(this.TS*2,this.TS*2));
     this.cleanerSp.body.setAllowGravity(false);
     this.cleanerSp.setImmovable(true);
     this.cleanerState='idle';
@@ -889,16 +843,15 @@ class GameScene extends Phaser.Scene {
     /* HUD top bar */
     const fs=Math.max(13,TS*.4);
     const hudStyle={fontFamily:'Inter',fontSize:fs+'px',fontStyle:'600',color:'#fff'};
-    this.add.rectangle(0,0,W,fs*1.9,0x000000,.45).setOrigin(0,0).setDepth(10);
+    this.hudBar=this.add.rectangle(0,0,W,fs*1.9,0x000000,.45).setOrigin(0,0).setDepth(10);
     this.scoreTxt=this.add.text(TS*.4,fs*.5,'Score  0',hudStyle).setDepth(11);
     this.livesTxt=this.add.text(W-TS*.4,fs*.5,'',hudStyle).setOrigin(1,0).setDepth(11);
     this.bestTxt =this.add.text(W/2,fs*.5,'',{...hudStyle,color:'#e8a35c'}).setOrigin(.5,0).setDepth(11);
     this.updateHUD();
 
     /* mute button */
-    const muteSize=Math.max(16,TS*.5);
-    this.muteBt=this.add.text(TS*.4,fs*2.2,muted?'🔇':'🔊',
-      {fontSize:muteSize+'px'}).setDepth(11).setInteractive({useHandCursor:true});
+    this.muteBt=this.add.text(TS*.15,fs*1.9,muted?'🔇':'🔊',
+      {fontSize:Math.max(20,TS*.5)+'px'}).setPadding(10).setDepth(11).setInteractive({useHandCursor:true});
     this.muteBt.on('pointerdown',e=>{
       if(e&&e.event){e.event.stopPropagation();}
       muted=!muted; this.muteBt.setText(muted?'🔇':'🔊');
@@ -920,14 +873,17 @@ class GameScene extends Phaser.Scene {
 
     /* input — touch / pointer */
     let sx=0,sy=0,st=0,muteHit=false;
+    let gestureWidth, gestureHeight;
     this.input.on('pointerdown',p=>{
       /* ignore taps on the mute button area */
-      muteHit = p.x<TS*1.0 && p.y<TS*3.2 && p.y>fs*1.9;
+      muteHit = this.muteBt.visible && this.muteBt.getBounds().contains(p.x,p.y);
       if(this.isOver) return;
       sx=p.x; sy=p.y; st=this.time.now;
+      gestureWidth=this.boardWidth;
+      gestureHeight=this.boardHeight;
     });
     this.input.on('pointerup',p=>{
-      if(this.isOver||muteHit) return;
+      if(this.isOver||muteHit||gestureWidth!==this.boardWidth||gestureHeight!==this.boardHeight) return;
       const dx=p.x-sx, dy=p.y-sy, dist=Math.sqrt(dx*dx+dy*dy);
       const SWIPE=Math.max(15,this.TS*.35);
       if(dist>SWIPE){
@@ -946,10 +902,125 @@ class GameScene extends Phaser.Scene {
       if(!this.isOver && !this.isTutorial) this.diff=Math.min(3.5,this.diff+.08);
     }});
 
-    if (this.isTutorial) {
-      this.startTutorialMode();
-    }
+    if (this.isTutorial) this.startTutorialMode();
     window._game = this.game;
+    touchControls.hidden = navigator.maxTouchPoints===0&&!matchMedia('(any-pointer:coarse)').matches;
+    this.scale.on(Phaser.Scale.Events.RESIZE,this.resizeBoard,this);
+    // WebKit can resize the container before Phaser updates the game size.
+    const boardResize=new ResizeObserver(()=>{
+      const {clientWidth:width,clientHeight:height}=this.scale.parent;
+      if(width&&height&&(width!==this.scale.width||height!==this.scale.height)){
+        this.scale.setParentSize(width,height);
+      }
+    });
+    boardResize.observe(this.scale.parent);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
+      boardResize.disconnect();
+      this.scale.off(Phaser.Scale.Events.RESIZE,this.resizeBoard,this);
+    });
+  }
+
+  layoutBoard(W,H){
+    this.boardWidth=W;
+    this.boardHeight=H;
+    this.TS=Math.max(24,Math.min(W,H)/11);
+    const roadH=Math.min(H*.48,this.TS*5.3);
+    this.ROAD_MID=H*.5-Math.max(0,H-W)*.06;
+    this.ROAD_TOP=this.ROAD_MID-roadH/2;
+    this.ROAD_BOT=this.ROAD_MID+roadH/2;
+    this.SHOULDER_H=this.TS*.7;
+    this.SPAWN_Y=Math.min(H-this.TS,this.ROAD_BOT+this.TS*2);
+    this.lanes=[
+      {y:this.ROAD_MID-roadH/4,dir:-1},
+      {y:this.ROAD_MID+roadH/4,dir:1}
+    ];
+  }
+
+  drawBoard(){
+    const W=this.boardWidth, H=this.boardHeight, TS=this.TS;
+    /* Reservoir and forest art include the gravel shoulders. */
+    const roadH=this.ROAD_BOT-this.ROAD_TOP;
+    this.scenery.clear(true,true);
+    this.scenery.addMultiple([
+      this.add.image(0,0,'reservoir').setOrigin(0).setDisplaySize(W,this.ROAD_TOP+1).setDepth(-10),
+      this.add.image(0,this.ROAD_BOT-1,'forest').setOrigin(0).setDisplaySize(W,H-this.ROAD_BOT+1).setDepth(-10),
+      this.add.tileSprite(0,this.ROAD_TOP,W,roadH,'asphalt')
+        .setOrigin(0).setTileScale(TS/64).setDepth(-9)
+    ]);
+    const markings=this.add.graphics().setDepth(-7);
+    this.scenery.add(markings);
+    markings.lineStyle(Math.max(2,TS*.035),0xddd6ba,.72);
+    markings.lineBetween(0,this.ROAD_TOP+TS*.1,W,this.ROAD_TOP+TS*.1);
+    markings.lineBetween(0,this.ROAD_BOT-TS*.1,W,this.ROAD_BOT-TS*.1);
+
+    const upperY = this.ROAD_TOP + (this.ROAD_MID - this.ROAD_TOP) * 0.55;
+    const lowerY = this.ROAD_MID + (this.ROAD_BOT - this.ROAD_MID) * 0.45;
+    const roadLabels = W > 800 ? [W * 0.25, W * 0.75] : [W * 0.5];
+    roadLabels.forEach((x, idx) => {
+      const y = idx % 2 === 0 ? upperY : lowerY;
+      this.scenery.add(this.add.text(x, y, 'ALMA BRIDGE ROAD', {
+        fontFamily: 'Inter',
+        fontSize: Math.max(14, TS * 0.45) + 'px',
+        fontStyle: '800',
+        color: '#ffffff'
+      }).setOrigin(0.5).setDepth(-8).setAlpha(0.08));
+    });
+
+    /* LEXINGTON RESERVOIR label */
+    this.scenery.add(this.add.text(W/2,this.ROAD_TOP-this.SHOULDER_H-TS*.32,'LEXINGTON RESERVOIR',
+      {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',fontStyle:'700',color:'#c5ecf0',stroke:'#102e38',strokeThickness:3})
+      .setOrigin(.5).setDepth(-3));
+
+    markings.lineStyle(Math.max(2,TS*.045),0xe7bb56,.76);
+    for(let x=0;x<W;x+=TS*1.4) markings.lineBetween(x,this.ROAD_MID,x+TS*.7,this.ROAD_MID);
+  }
+
+  resizeBoard(gameSize){
+    const {width:W,height:H}=gameSize;
+    if(!W||!H||(W===this.boardWidth&&H===this.boardHeight)) return;
+    const oldWidth=this.boardWidth, oldTile=this.TS;
+    const oldTop=this.ROAD_TOP, oldBottom=this.ROAD_BOT, oldSpawn=this.SPAWN_Y;
+    this.layoutBoard(W,H);
+    const TS=this.TS, tileScale=TS/oldTile, xScale=W/oldWidth;
+    const mapY=y=>{
+      if(y<oldTop) return this.ROAD_TOP+(y-oldTop)*tileScale;
+      if(y>oldBottom) return this.ROAD_BOT+(y-oldBottom)*(this.SPAWN_Y-this.ROAD_BOT)/(oldSpawn-oldBottom);
+      return this.ROAD_TOP+(y-oldTop)*(this.ROAD_BOT-this.ROAD_TOP)/(oldBottom-oldTop);
+    };
+
+    // Finish an in-flight step in the old coordinates before moving the board.
+    if(this.moveTween?.isPlaying()){
+      this.moveTween.stop();
+      this.newt.setPosition(this.moveTarget.x,this.moveTarget.y);
+    }
+    if(this.celebrateTween?.isPlaying()) this.celebrateTween.stop();
+    this.newt.setPosition(
+      Phaser.Math.Clamp(this.newt.x*xScale,TS*.6,W-TS*.6),
+      Phaser.Math.Clamp(mapY(this.newt.y),TS,H-TS*.6)
+    ).setDisplaySize(TS*.95,TS*1.35);
+    this.physics.world.setBounds(0,0,W,H);
+    this.resizeSafeUntil=this.time.now+500;
+
+    this.vehicles.children.iterate(v=>{
+      v.setPosition(v.x*xScale,mapY(v.y)).setScale(v.scaleX*tileScale);
+      if(v.isTutorialCar) v.baseSpd=(TS*4)/(W*.085);
+    });
+    this.splats.forEach(({sprite})=>{
+      sprite.setPosition(sprite.x*xScale,mapY(sprite.y)).setScale(sprite.scaleX*tileScale);
+    });
+    this.cleanerSp.setPosition(this.cleanerSp.x*xScale,mapY(this.cleanerSp.y)).setDisplaySize(TS*2,TS*2);
+    if(this.cleanerState==='cleaning'&&this.cleanerTarget?.sprite.active){
+      this.cleanerSp.x=this.cleanerTarget.sprite.x+(this.cleanerSp.flipX?1:-1)*TS*.65;
+    }
+
+    this.drawBoard();
+    const fs=Math.max(13,TS*.4);
+    this.hudBar.setSize(W,fs*1.9);
+    this.scoreTxt.setPosition(TS*.4,fs*.5).setFontSize(fs);
+    this.livesTxt.setPosition(W-TS*.4,fs*.5).setFontSize(fs);
+    this.bestTxt.setPosition(W/2,fs*.5).setFontSize(fs);
+    this.muteBt.setPosition(TS*.15,fs*1.9).setFontSize(Math.max(20,TS*.5));
+    if(this.gameOverShown) this.showGameOver(false);
   }
 
   startTutorialMode() {
@@ -1023,7 +1094,8 @@ class GameScene extends Phaser.Scene {
     this.newtAlive = false;
     this.tweens.killTweensOf(this.newt);
     
-    this.tweens.add({
+    touchControls.hidden=true;
+    this.celebrateTween=this.tweens.add({
       targets: this.newt,
       scaleX: this.newt.scaleX * 1.3,
       scaleY: this.newt.scaleY * 1.3,
@@ -1068,7 +1140,8 @@ class GameScene extends Phaser.Scene {
     else if(dx<0) this.targetAng=-90;
     else if(dx>0) this.targetAng=90;
     if(nx!==this.newt.x||ny!==this.newt.y) this.newt.play('crawl',true);
-    this.tweens.add({targets:this.newt,x:nx,y:ny,duration:80,ease:'Power2'});
+    this.moveTarget={x:nx,y:ny};
+    this.moveTween=this.tweens.add({targets:this.newt,x:nx,y:ny,duration:80,ease:'Power2'});
 
     if (this.isTutorial) {
       if (this.tutorialStep === 1 && dy < 0) {
@@ -1138,6 +1211,7 @@ class GameScene extends Phaser.Scene {
     this.updateHUD();
     if(this.lives<=0){
       this.isOver=true;
+      touchControls.hidden=true;
       this.vehicles.children.iterate(v=>v.anims.pause());
       submitScore(this.score);
       gtag('event','game_over',{event_category:'Game',value:this.score});
@@ -1237,10 +1311,11 @@ class GameScene extends Phaser.Scene {
   }
 
   /* ── game over screen with leaderboard ── */
-  showGameOver(){
+  showGameOver(animate=true){
     const W=this.scale.width,H=this.scale.height,TS=this.TS,c=this.goContainer;
     this.gameOverShown=true;
-    this.canReplay=false;
+    this.canReplay=!animate;
+    this.tweens.killTweensOf(c);
     c.removeAll(true);
     c.add(this.add.rectangle(W/2,H/2,W,H,0x0a0e14,.92));
 
@@ -1276,9 +1351,9 @@ class GameScene extends Phaser.Scene {
     }
 
     const actionsY=Math.min(H*.42+Math.max(1,leaderboardEntries.length)*TS*.6+TS*1.5,H*.86);
-    const buttonWidth=Math.min(220,Math.max(130,W*.3));
-    const buttonHeight=Math.max(36,TS*.65);
     const buttonGap=Math.max(12,TS*.3);
+    const buttonWidth=Math.min(220,Math.max(130,W*.3),(W-buttonGap-24)/2);
+    const buttonHeight=Math.max(44,TS*.65);
     const buttonOffset=(buttonWidth+buttonGap)/2;
     const addActionButton=(x,label,fillColor,textColor,onActivate)=>{
       const bg=this.add.rectangle(x,actionsY,buttonWidth,buttonHeight,fillColor,1)
@@ -1303,8 +1378,8 @@ class GameScene extends Phaser.Scene {
     c.add(this.add.text(W/2,H*.96,'bioblitz.club/newts',
       {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',color:'#5a8a4f'}).setOrigin(.5));
 
-    c.setVisible(true).setAlpha(0);
-    this.tweens.add({targets:c,alpha:1,duration:350,onComplete:()=>{this.canReplay=true;}});
+    c.setVisible(true).setAlpha(animate?0:1);
+    if(animate) this.tweens.add({targets:c,alpha:1,duration:350,onComplete:()=>{this.canReplay=true;}});
   }
 
   /* ─────────────────────────────────────────────────────────
@@ -1404,7 +1479,7 @@ class GameScene extends Phaser.Scene {
     }
 
     /* collision check */
-    if(this.newtAlive&&this.newt&&!this.invulnerable){
+    if(this.newtAlive&&this.newt&&!this.invulnerable&&time>=this.resizeSafeUntil){
       const nb=this.newt.getBounds();
       const m=TS*.2;
       const nR=new Phaser.Geom.Rectangle(nb.x+m,nb.y+m,nb.width-m*2,nb.height-m*2);
@@ -1433,8 +1508,8 @@ function launchGame(){
   new Phaser.Game({
     type:Phaser.AUTO,
     parent:'game-wrapper',
-    width:window.innerWidth,
-    height:window.innerHeight,
+    width:document.getElementById('game-wrapper').clientWidth,
+    height:document.getElementById('game-wrapper').clientHeight,
     backgroundColor:'#0f1419',
     physics:{default:'arcade',arcade:{debug:false,gravity:{y:0}}},
     scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},

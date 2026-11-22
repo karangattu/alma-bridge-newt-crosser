@@ -1,5 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
+test.use({ hasTouch: true, viewport: { width: 820, height: 1180 } });
+
 test('Android bundle starts without online resources and keeps personal bests after reopening', async ({ page }) => {
   const errors = [];
   const externalRequests = [];
@@ -53,6 +55,11 @@ test('Android bundle starts without online resources and keeps personal bests af
   expect(await page.evaluate(() => document.fonts.check('700 16px Inter'))).toBe(true);
   await page.getByRole('button', { name: 'How to play' }).click();
   await expect(page.locator('#tutTitle')).toHaveText('Move forward');
+  await page.getByRole('button', { name: 'Move up' }).tap();
+  await expect(page.locator('#tutTitle')).toHaveText('Steer left and right');
+  await page.setViewportSize({ width: 1180, height: 820 });
+  await expect.poll(() => page.evaluate(() => window._game.scene.getScene('Game').boardWidth)).toBe(1180);
+  await expect(page.locator('#tutTitle')).toHaveText('Steer left and right');
   expect(externalRequests).toEqual([]);
   expect(errors).toEqual([]);
 });

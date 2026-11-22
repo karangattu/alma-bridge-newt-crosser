@@ -235,28 +235,68 @@ test('allows skipping practice into normal traffic', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window._game.scene.getScene('Game').vehicles.getLength())).toBeGreaterThan(1);
 });
 
-test.describe('touch title screen', () => {
+test.describe('touch play', () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
 
-  test('shows the title in portrait and waits for landscape before starting practice', async ({ page }) => {
-    await page.addInitScript(() => {
-      Element.prototype.requestFullscreen = undefined;
-      Element.prototype.webkitRequestFullscreen = undefined;
-    });
+  test('supports portrait touch controls and keeps the crossing on rotation', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Newt Crosser', level: 1 })).toBeVisible();
-    await expect(page.locator('#orient')).toBeHidden();
+    await page.getByRole('button', { name: 'Play', exact: true }).tap();
+    const controls = page.getByRole('group', { name: 'Move the newt' });
+    await expect(controls).toBeVisible();
 
-    await page.getByRole('button', { name: 'How to play' }).tap();
-    await expect(page.getByRole('heading', { name: 'Rotate to landscape' })).toBeVisible();
-    await expect(page.locator('canvas')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Back to title' }).tap();
-    await expect(page.locator('#orient')).toBeHidden();
+    const boardState = () => page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return {
+        width: scene.boardWidth,
+        height: scene.boardHeight,
+        score: scene.score,
+        lives: scene.lives,
+        lanes: scene.lanes.length,
+        progress: (scene.newt.y - scene.ROAD_BOT) / (scene.SPAWN_Y - scene.ROAD_BOT)
+      };
+    });
+    expect(await boardState()).toMatchObject({ width: 390, height: 844, lanes: 2, progress: 1 });
+    await controls.getByRole('button', { name: 'Move up' }).tap();
+    await expect.poll(async () => (await boardState()).progress).toBeCloseTo(0.5);
+    await page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      scene.score = 6;
+      scene.lives = 2;
+      scene.updateHUD();
+    });
 
-    await page.getByRole('button', { name: 'How to play' }).tap();
     await page.setViewportSize({ width: 844, height: 390 });
+    await expect.poll(boardState).toMatchObject({ width: 844, height: 390, score: 6, lives: 2, lanes: 2 });
+    expect((await boardState()).progress).toBeCloseTo(0.5);
+    await expect(controls).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(boardState).toMatchObject({ width: 390, height: 844, score: 6, lives: 2 });
+    expect((await boardState()).progress).toBeCloseTo(0.5);
+  });
+
+  test('plays practice in portrait and accepts a swipe after rotating', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'How to play' }).tap();
     await expect(page.locator('#tutTitle')).toHaveText('Move forward');
-    await expect(page.locator('#orient')).toBeHidden();
+    await page.getByRole('button', { name: 'Move up' }).tap();
+    await expect(page.locator('#tutTitle')).toHaveText('Steer left and right');
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect.poll(() => page.evaluate(() => window._game.scene.getScene('Game').boardWidth)).toBe(844);
+    await expect.poll(() => page.evaluate(() => {
+      const scene = window._game.scene.getScene('Game');
+      return scene.time.now - scene.lastStep;
+    })).toBeGreaterThan(85);
+    const session = await page.context().newCDPSession(page);
+    const dispatch = (type, touchPoints) => session.send('Input.dispatchTouchEvent', { type, touchPoints });
+    await dispatch('touchStart', [{ x: 400, y: 326 }]);
+    await dispatch('touchMove', [{ x: 340, y: 326 }]);
+    await dispatch('touchEnd', []);
+
+    await expect(page.locator('#tutTitle')).toHaveText('Wait for a gap');
+    await expect(page.locator('#tutTitle')).toHaveText('Reach the reservoir');
   });
 });
 
