@@ -18,6 +18,26 @@ test('Android bundle starts without online resources and keeps personal bests af
   await page.getByRole('button', { name: 'Play' }).click();
   await expect.poll(() => page.evaluate(() => window._game?.scene.getScene('Game')?.newt?.texture.key)).toBe('newt_sheet');
   expect(await page.evaluate(() => window._game.scene.getScene('Game').cleanerSp.texture.getFrameNames().length)).toBe(16);
+  const art = await page.evaluate(() => {
+    const scene = window._game.scene.getScene('Game');
+    const traffic = new Set(scene.vehPool.flatMap(type => type.variants.map(variant => variant.key)));
+    const vehicle = scene.vehicles.getChildren()[0];
+    window.trafficFrames = new Set([vehicle.frame.name]);
+    vehicle.on('animationupdate', (_animation, frame) => window.trafficFrames.add(frame.textureFrame));
+    return {
+      backgrounds: ['asphalt', 'reservoir', 'forest'].every(key => scene.textures.exists(key)),
+      newtFrames: scene.newt.texture.getFrameNames().length,
+      trafficFrames: Array.from(traffic, key => scene.anims.get(key).frames.length),
+      trafficPlaying: vehicle.anims.isPlaying,
+    };
+  });
+  expect(art).toEqual({
+    backgrounds: true,
+    newtFrames: 8,
+    trafficFrames: Array(12).fill(4),
+    trafficPlaying: true,
+  });
+  await expect.poll(() => page.evaluate(() => window.trafficFrames.size)).toBe(4);
 
   await page.evaluate(async () => {
     await submitScore(9);

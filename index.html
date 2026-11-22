@@ -975,22 +975,30 @@ class GameScene extends Phaser.Scene {
   constructor(){ super('Game'); }
 
   preload(){
-    this.load.spritesheet('newt_sheet', 'assets/newt_walk.png', { frameWidth: 384, frameHeight: 512 });
+    this.load.spritesheet('newt_sheet', 'assets/newt-crawl.png', { frameWidth: 192, frameHeight: 256 });
     // The generated 1254px sheet has four equal cells per row.
     this.load.spritesheet('volunteer_sheet', 'assets/volunteer_sprite_sheet.png', { frameWidth: 313.5, frameHeight: 313.5 });
     this.load.spritesheet('volunteer_walk_sheet', 'assets/volunteer_walk.png', { frameWidth: 443.5, frameHeight: 443.5 });
-    this.load.image('sedan_img', 'assets/sedan.png');
-    this.load.image('sedan_red', 'assets/sedan_red.png');
-    this.load.image('hatchback_blue', 'assets/hatchback_blue.png');
-    this.load.image('coupe_silver', 'assets/coupe_silver.png');
-    this.load.image('suv_img', 'assets/suv.png');
-    this.load.image('suv_black', 'assets/suv_black.png');
-    this.load.image('truck_img', 'assets/truck.png');
-    this.load.image('truck_yellow', 'assets/truck_yellow.png');
-    this.load.image('truck_red', 'assets/truck_red.png');
-    this.load.image('moto_img', 'assets/moto.png');
-    this.load.image('moto_orange', 'assets/moto_orange.png');
-    this.load.image('cyclist_img', 'assets/cyclist.png');
+    this.load.image('asphalt', 'assets/road-asphalt.webp');
+    this.load.image('reservoir', 'assets/reservoir-shore.webp');
+    this.load.image('forest', 'assets/forest-edge.webp');
+    const trafficSheets = [
+      ['sedan_img', 'assets/sedan-drive.png', 120],
+      ['sedan_red', 'assets/sedan-red-drive.png', 102],
+      ['hatchback_blue', 'assets/hatchback-blue-drive.png', 122],
+      ['coupe_silver', 'assets/coupe-silver-drive.png', 130],
+      ['suv_img', 'assets/suv-drive.png', 123],
+      ['suv_black', 'assets/suv-black-drive.png', 128],
+      ['truck_img', 'assets/truck-drive.png', 110],
+      ['truck_yellow', 'assets/truck-yellow-drive.png', 126],
+      ['truck_red', 'assets/truck-red-drive.png', 144],
+      ['moto_img', 'assets/moto-drive.png', 110],
+      ['moto_orange', 'assets/moto-orange-drive.png', 119],
+      ['cyclist_img', 'assets/cyclist-drive.png', 103]
+    ];
+    trafficSheets.forEach(([key, file, frameHeight]) => {
+      this.load.spritesheet(key, file, { frameWidth: 256, frameHeight });
+    });
   }
 
   create(){
@@ -1067,6 +1075,14 @@ class GameScene extends Phaser.Scene {
     ];
 
     vTypes.forEach(vt=>{
+      vt.variants.forEach(({key})=>{
+        if(this.textures.exists(key)&&!this.anims.exists(key)){
+          this.anims.create({
+            key, frames:this.anims.generateFrameNumbers(key,{start:0,end:3}),
+            frameRate:12, repeat:-1
+          });
+        }
+      });
       for(let n=0;n<vt.weight;n++) {
         this.vehPool.push({
           variants: vt.variants,
@@ -1075,43 +1091,16 @@ class GameScene extends Phaser.Scene {
       }
     });
 
-    /* ── background — flat minimal bands ── */
-    const bg=this.add.graphics().setDepth(-10);
-    /* upper reservoir (safe zone) */
-    bg.fillGradientStyle(0x133847, 0x133847, 0x1f5c78, 0x1f5c78, 1);
-    bg.fillRect(0,0,W,this.ROAD_TOP-this.SHOULDER_H);
-    /* reservoir reflections/ripples */
-    const waterH = this.ROAD_TOP-this.SHOULDER_H;
-    for (let i = 0; i < 15; i++) {
-      bg.fillStyle(0xffffff, 0.06);
-      bg.fillRect(Math.random()*W, Math.random()*waterH, 15+Math.random()*30, 2);
-    }
-    /* dirt shoulder top */
-    bg.fillStyle(0x5a4a35); bg.fillRect(0,this.ROAD_TOP-this.SHOULDER_H,W,this.SHOULDER_H);
-    /* asphalt */
-    bg.fillStyle(0x2a2d33); bg.fillRect(0,this.ROAD_TOP,W,this.ROAD_BOT-this.ROAD_TOP);
-    /* asphalt subtle texture */
-    for(let i=0;i<50;i++){
-      bg.fillStyle(0x35383e,.4);
-      bg.fillRect(Math.random()*W,this.ROAD_TOP+Math.random()*(this.ROAD_BOT-this.ROAD_TOP),Math.random()*3,1);
-    }
-    /* edge lines */
-    bg.fillStyle(0xeeeeee,.7); bg.fillRect(0,this.ROAD_TOP+2,W,2);
-    bg.fillStyle(0xeeeeee,.7); bg.fillRect(0,this.ROAD_BOT-4,W,2);
-    /* shoulder bottom */
-    bg.fillStyle(0x5a4a35); bg.fillRect(0,this.ROAD_BOT,W,this.SHOULDER_H);
-    /* lower grass */
-    bg.fillStyle(0x3a5a3a); bg.fillRect(0,this.ROAD_BOT+this.SHOULDER_H,W,H-this.ROAD_BOT-this.SHOULDER_H);
-
-    /* sparse grass tufts (lower zone only) */
-    for(let i=0;i<20;i++){
-      bg.fillStyle(0x2a4a2a,.5);
-      const y=this.ROAD_BOT+this.SHOULDER_H+Math.random()*(H-this.ROAD_BOT-this.SHOULDER_H);
-      bg.fillCircle(Math.random()*W,y,1+Math.random()*1.5);
-    }
-
-    /* dashed centre line */
-    this.dashGfx=this.add.graphics().setDepth(-4);
+    /* Reservoir and forest art include the gravel shoulders. */
+    const roadH=this.ROAD_BOT-this.ROAD_TOP;
+    this.add.image(0,0,'reservoir').setOrigin(0).setDisplaySize(W,this.ROAD_TOP+1).setDepth(-10);
+    this.add.image(0,this.ROAD_BOT-1,'forest').setOrigin(0).setDisplaySize(W,H-this.ROAD_BOT+1).setDepth(-10);
+    this.add.tileSprite(0,this.ROAD_TOP,W,roadH,'asphalt')
+      .setOrigin(0).setTileScale(TS/64).setDepth(-9);
+    const markings=this.add.graphics().setDepth(-7);
+    markings.lineStyle(Math.max(2,TS*.035),0xddd6ba,.72);
+    markings.lineBetween(0,this.ROAD_TOP+TS*.1,W,this.ROAD_TOP+TS*.1);
+    markings.lineBetween(0,this.ROAD_BOT-TS*.1,W,this.ROAD_BOT-TS*.1);
 
     const upperY = this.ROAD_TOP + (this.ROAD_MID - this.ROAD_TOP) * 0.55;
     const lowerY = this.ROAD_MID + (this.ROAD_BOT - this.ROAD_MID) * 0.45;
@@ -1128,11 +1117,10 @@ class GameScene extends Phaser.Scene {
 
     /* LEXINGTON RESERVOIR label */
     this.add.text(W/2,this.ROAD_TOP-this.SHOULDER_H-TS*.32,'LEXINGTON RESERVOIR',
-      {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',fontStyle:'700',color:'#84cbf0'})
-      .setOrigin(.5).setDepth(-3).setAlpha(.8);
+      {fontFamily:'Inter',fontSize:Math.max(10,TS*.28)+'px',fontStyle:'700',color:'#c5ecf0',stroke:'#102e38',strokeThickness:3})
+      .setOrigin(.5).setDepth(-3);
 
     /* ── lanes — adapt to road height ── */
-    const roadH=this.ROAD_BOT-this.ROAD_TOP;
     /* keep lanes tall enough that vehicles in adjacent lanes never overlap vertically */
     const laneCount=Math.max(2,Math.floor(roadH/(TS*1.8)));
     this.lanes=[];
@@ -1142,6 +1130,11 @@ class GameScene extends Phaser.Scene {
         y:this.ROAD_TOP+laneH*(i+.5),
         dir:i%2===0?-1:1
       });
+    }
+    markings.lineStyle(Math.max(2,TS*.045),0xe7bb56,.76);
+    for(let i=1;i<laneCount;i++){
+      const y=this.ROAD_TOP+i*laneH;
+      for(let x=0;x<W;x+=TS*1.4) markings.lineBetween(x,y,x+TS*.7,y);
     }
 
     /* vehicles */
@@ -1278,17 +1271,13 @@ class GameScene extends Phaser.Scene {
     this.vehicles.clear(true, true);
     const lane = this.lanes[Math.floor(this.lanes.length / 2)] || { y: this.scale.height * 0.5, dir: 1 };
     const x = lane.dir > 0 ? -100 : this.scale.width + 100;
-    const v = this.physics.add.image(x, lane.y, 'sedan_img').setDepth(2);
-    v.setScale((this.TS * 2.5) / v.width);
-    v.body.setSize(v.width * 0.9, v.height * 0.9);
-    v.body.setAllowGravity(false);
+    const v = this.createVehicle(x, lane, 'sedan_img', this.TS * 2.5);
     v.dir = lane.dir;
     v.baseSpd = 0.38;
     v.spd = 0.38;
     v.wm = 2.5;
     v.hm = 1.25;
     v.isTutorialCar = true;
-    v.setFlipX(lane.dir > 0);
     this.vehicles.add(v);
   }
 
@@ -1404,6 +1393,15 @@ class GameScene extends Phaser.Scene {
   }
 
   /* ── spawn vehicles ── */
+  createVehicle(x,lane,key,width){
+    const v=this.physics.add.sprite(x,lane.y,key,0).setDepth(2);
+    v.setScale(width/v.width).setFlipX(lane.dir>0);
+    v.body.setSize(v.width*.9,v.height*.9);
+    v.body.setAllowGravity(false);
+    if(this.anims.exists(key)) v.play({key,randomFrame:true});
+    return v;
+  }
+
   spawnCars(){
     this.vehicles.clear(true,true);
     if(this.isTutorial) return;
@@ -1420,19 +1418,13 @@ class GameScene extends Phaser.Scene {
         const variant=Phaser.Utils.Array.GetRandom(entry.variants);
         const sVar = 1 + (Math.random() * 0.1 - 0.05);
         const targetWidth = TS * variant.wm * sVar;
-        const v=this.physics.add.image(cursor,lane.y,variant.key).setDepth(2);
-        const scale = targetWidth / v.width;
-        v.setScale(scale);
-        v.body.setSize(v.width*.9, v.height*.9);
-        v.body.setAllowGravity(false);
+        const v=this.createVehicle(cursor,lane,variant.key,targetWidth);
         v.dir=lane.dir;
         v.baseSpd=laneBaseSpd*entry.spdMul;
         v.spd=v.baseSpd;
         v.wm=variant.wm;
         v.hm=variant.hm;
         v.sVar=sVar;
-        /* sprite is drawn pointing left (front on left side); flip if traveling right */
-        v.setFlipX(lane.dir>0);
         this.vehicles.add(v);
         cursor += targetWidth + minGap + Phaser.Math.Between(0, Math.round(TS*1.6));
       }
@@ -1456,6 +1448,7 @@ class GameScene extends Phaser.Scene {
     this.updateHUD();
     if(this.lives<=0){
       this.isOver=true;
+      this.vehicles.children.iterate(v=>v.anims.pause());
       submitScore(this.score);
       gtag('event','game_over',{event_category:'Game',value:this.score});
       this.time.delayedCall(450,()=>this.showGameOver());
@@ -1628,7 +1621,7 @@ class GameScene extends Phaser.Scene {
      UPDATE
      ───────────────────────────────────────────────────────── */
   update(time,delta){
-    const W=this.scale.width, H=this.scale.height, TS=this.TS, dt=delta/1000;
+    const W=this.scale.width, TS=this.TS, dt=delta/1000;
     if(this.isOver){
       this.updateCleaner(time,dt);
       return;
@@ -1650,7 +1643,8 @@ class GameScene extends Phaser.Scene {
       /* desired center-to-center gap depends on both vehicles' widths */
       let minFollow=TS*2.6;
       let nearestDist=Infinity;
-      const wrapW=W+v.width*2;
+      const vWidth=TS*v.wm;
+      const wrapW=W+vWidth*2;
       vehs.forEach(o=>{
         if(!o||!o.active||o===v) return;
         if(Math.abs(o.y-v.y)>TS*.6) return;
@@ -1666,8 +1660,8 @@ class GameScene extends Phaser.Scene {
         /* slow down (or stop) so the gap can open up again */
         v.spd=v.baseSpd*Math.max(0, nearestDist/minFollow);
       }
+      v.anims.timeScale=v.spd*this.diff;
       v.x+=v.dir*baseSpd*v.spd*this.diff*dt;
-      const vWidth = TS * v.wm;
       if (v.isTutorialCar) {
         const offScreen = (v.dir > 0 && v.x > W + vWidth) || (v.dir < 0 && v.x < -vWidth);
         if (offScreen) {
@@ -1710,15 +1704,6 @@ class GameScene extends Phaser.Scene {
         }
       }
     });
-
-    /* dashed centre line */
-    this.dashGfx.clear();
-    if(this.lanes.length>1){
-      this.dashGfx.lineStyle(2,0xffd24a,.55);
-      const dl=TS*.7, gl=TS*.7, td=dl+gl, off=(time*.05)%td;
-      const midY=this.ROAD_MID;
-      for(let x=-off;x<W;x+=td) this.dashGfx.lineBetween(x,midY,x+dl,midY);
-    }
 
     /* success check FIRST */
     if(this.newtAlive&&this.newt&&this.newt.y<this.ROAD_TOP-this.SHOULDER_H*.5){

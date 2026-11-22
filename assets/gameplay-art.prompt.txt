@@ -1,0 +1,48 @@
+Built-in ImageGen prompts for the gameplay art
+
+newt-crawl.png
+
+Use case: stylized-concept. Production sprite sheet for a road-crossing game. Input reference images: newt.png is the species and design reference, newt_walk.png is a guide to orientation and grid. Generate exactly eight clearly different phases of a California newt walking in a precise 4 column by 2 row grid, uniform spacing and broad gutters. Every newt faces UP seen directly from overhead, head at top and long tapered tail below, identical scale and same center of mass in each cell. Alternate forefoot and opposite hind foot in a natural salamander walk. Pose the four legs with substantial visible forward/backward sweeps, with left forefoot reaching furthest on frame 3 and right forefoot reaching furthest on frame 7. Tail sways visibly left then right. Broad blunt head, pebbled brown back, rich burnt orange toes and flanks, dark bead eyes, restrained warm rim for readability against gray asphalt. Hand-painted 2D realistic natural-history game art. Each complete pose fits entirely in its cell. No lettering, lines, scenery or shadows. Actual transparent alpha, no drawn checkerboard. Wide 3:2 sheet.
+
+Vehicle sheets
+
+Use case: stylized-concept. Production animation sprite sheet for a top-down California road-crossing game. Input image is appearance reference for a {vehicle}. Draw the SAME vehicle in four consecutive looping motion phases in an evenly spaced 2 column × 2 row grid. Each cell contains one complete vehicle, all centers precisely registered, with generous transparent gutters, all at the same scale and fixed camera angle. Every vehicle points directly LEFT with its long axis strictly horizontal, front on the left, rear on the right. Camera is almost directly overhead, approximately 80 degrees down, with just enough tilt to see near-side tires. {motion} Realistically proportioned detailed hand-painted game art, soft daylight, clear silhouette readable at small size. No shadow, ground, motion streaks, logos, text, grid lines, extra objects, or diagonal poses. Actual transparent background including between the wheels. Landscape 3:2 sheet.
+
+Each row lists output, reference, and {vehicle}.
+
+sedan-drive.png | sedan.png | slate-blue four-door sedan
+sedan-red-drive.png | sedan_red.png | deep red four-door sedan
+hatchback-blue-drive.png | hatchback_blue.png | bright cobalt blue compact hatchback, abbreviated rear
+coupe-silver-drive.png | coupe_silver.png | silver two-door sports coupe, black panoramic roof
+suv-drive.png | suv.png | steel blue modern four-door SUV with silver roof rails
+suv-black-drive.png | suv_black.png | black off-road SUV with roof rack and visible spare tire
+truck-drive.png | truck.png | charcoal blue pickup truck with open empty bed
+truck-yellow-drive.png | truck_yellow.png | golden yellow box truck, cab at left and rectangular cargo box at right
+truck-red-drive.png | truck_red.png | red pickup truck with open empty black bed
+moto-drive.png | moto.png | navy blue motorcycle with rider in dark blue jacket and helmet
+moto-orange-drive.png | moto_orange.png | bright orange motorcycle with rider in charcoal jacket and dark helmet
+cyclist-drive.png | cyclist.png | road racing bicycle with a pedaling rider in cyan and orange kit
+
+{motion} for the cars, SUVs, and trucks
+
+Clearly visible alternate phases of rotating wheel spokes and black tires along the lower flank. Very subtle suspension compression and shift in windshield and roof highlights so the cycle reads at small sizes. Keep paint, chassis geometry and panel boundaries fixed.
+
+{motion} for the motorcycles
+
+Wheel spoke blur and a subtle alternating rider shoulder and knee lean, linked to the suspension shifting through four consecutive phases. Keep front wheel aligned left.
+
+{motion} for the cyclist
+
+Four distinct quarter-turn pedal positions (near pedal forward, down, back, up), visible alternating bent knees, alternating arm/torso weight and changes in wheel spokes. Keep front wheel aligned left.
+
+road-asphalt.webp
+
+Use case: stylized-concept. Seamless repeatable tile material for a playable top-down road in a realistic painterly nature game. Straight-down orthographic texture of gently weathered dry charcoal gray asphalt, subtle fine gray slate aggregate grain and very soft warm-gray tonal changes. Mid-dark to support bright vehicles and a burnt orange newt. Uniform overall value and no bright or high contrast elements, no big cracks, no repeat-identifiable marks. Absolutely no lines, edges, markings, arrows, rocks, leaves, objects, shadows, raised features, text, borders, or scene perspective. Fill the entire square with one uninterrupted paved surface, with tileable edges.
+
+reservoir-shore.webp
+
+Use case: stylized-concept. Game environment texture for Lexington Reservoir in the Santa Cruz Mountains. Beautiful painterly top-down surface of blue-green freshwater, rich deep teal with soft reflections of nearby woodland, broad horizontal bands of blue with fine silver ripples and subtle sun glints. Orthographic looking directly down, flat scene surface with no horizon and no sky. Bottom quarter is a continuous mostly horizontal local rocky shoreline from left to right, with muted ochre gravel, a few stones and occasional sedges, water ABOVE it. No islands, structures, animals, symbols, roads, signs, lettering or frame. Water fills the canvas cleanly along its upper edge. Composition for a horizontally cropped very wide strip, visually restrained and legible under a game HUD. Natural color, detailed hand-painted game environment, 3:2 landscape image.
+
+forest-edge.webp
+
+Use case: stylized-concept. Top-down wide game environment for Alma Bridge Road, Santa Cruz Mountains California oak and redwood woodland. Orthographic overhead look at a woodland EDGE. Composition has a rough gravel and dry ochre leaf-litter margin at the upper 15 percent, followed by a natural unbroken open dirt and mossy clearing in center, flanked by partial oak and redwood canopies from bottom left, bottom right and the bottom edge. Keep the entire central 50 percent width of the image visibly OPEN as a traversable dirt and moss clearing. Small ferns, oak leaves, redwood needles, soft dappled shadows and subdued greens. Natural woodland, editorial hand-painted game texture, detailed but no high contrast elements in the clearing so an orange-brown newt remains readable. Directly overhead no vanishing point, no road, no horizon, no sky, no humans, no animals, no buildings, no text or frame. Wide 3:2 landscape, artwork throughout.

@@ -25,7 +25,7 @@ await cp(path.join(root, 'node_modules/phaser/dist/phaser.min.js'), path.join(ou
 await cp(path.join(root, 'node_modules/phaser/LICENSE.md'), path.join(output, 'vendor/PHASER-LICENSE.md'));
 await cp(path.join(root, 'node_modules/@fontsource/inter/LICENSE'), path.join(output, 'vendor/INTER-LICENSE.txt'));
 
-const assetPaths = new Set(html.match(/assets\/[\w.-]+\.(?:png|mp4)/g));
+const assetPaths = new Set(html.match(/assets\/[\w.-]+\.(?:png|webp|mp4)/g));
 await mkdir(path.join(output, 'assets'));
 for (const asset of assetPaths) await cp(path.join(root, asset), path.join(output, asset));
 
