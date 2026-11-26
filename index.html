@@ -132,7 +132,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f1419;font-family:
 }
 #tutorial[data-step="2"] .tut-art { transform:rotate(-25deg); }
 #tutorial[data-step="3"] .tut-art {
-  width:2.9rem; height:1.359rem; background:url('assets/sedan-drive.png') left top/200% 200%;
+  width:2.9rem; height:auto; aspect-ratio:256/142; background:url('assets/sedan-drive.png') left top/200% 200%;
 }
 #tutProgress {
   display:block; margin-bottom:.19rem; color:#ffc47b; font-size:.64rem; font-weight:700;
@@ -689,18 +689,18 @@ class GameScene extends Phaser.Scene {
     this.load.image('reservoir', 'assets/reservoir-shore.webp');
     this.load.image('forest', 'assets/forest-edge.webp');
     const trafficSheets = [
-      ['sedan_img', 'assets/sedan-drive.png', 120],
-      ['sedan_red', 'assets/sedan-red-drive.png', 102],
-      ['hatchback_blue', 'assets/hatchback-blue-drive.png', 122],
-      ['coupe_silver', 'assets/coupe-silver-drive.png', 130],
-      ['suv_img', 'assets/suv-drive.png', 123],
-      ['suv_black', 'assets/suv-black-drive.png', 128],
-      ['truck_img', 'assets/truck-drive.png', 110],
-      ['truck_yellow', 'assets/truck-yellow-drive.png', 126],
-      ['truck_red', 'assets/truck-red-drive.png', 144],
-      ['moto_img', 'assets/moto-drive.png', 110],
-      ['moto_orange', 'assets/moto-orange-drive.png', 119],
-      ['cyclist_img', 'assets/cyclist-drive.png', 103]
+      ['sedan_img', 'assets/sedan-drive.png', 142],
+      ['sedan_red', 'assets/sedan-red-drive.png', 142],
+      ['hatchback_blue', 'assets/hatchback-blue-drive.png', 156],
+      ['coupe_silver', 'assets/coupe-silver-drive.png', 136],
+      ['suv_img', 'assets/suv-drive.png', 150],
+      ['suv_black', 'assets/suv-black-drive.png', 144],
+      ['truck_img', 'assets/truck-drive.png', 142],
+      ['truck_yellow', 'assets/truck-yellow-drive.png', 140],
+      ['truck_red', 'assets/truck-red-drive.png', 136],
+      ['moto_img', 'assets/moto-drive.png', 148],
+      ['moto_orange', 'assets/moto-orange-drive.png', 150],
+      ['cyclist_img', 'assets/cyclist-drive.png', 114]
     ];
     trafficSheets.forEach(([key, file, frameHeight]) => {
       this.load.spritesheet(key, file, { frameWidth: 256, frameHeight });
@@ -780,7 +780,7 @@ class GameScene extends Phaser.Scene {
         if(this.textures.exists(key)&&!this.anims.exists(key)){
           this.anims.create({
             key, frames:this.anims.generateFrameNumbers(key,{start:0,end:3}),
-            frameRate:12, repeat:-1
+            frameRate:key === 'cyclist_img' ? 6 : 5, repeat:-1
           });
         }
       });
